@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leerpaletten - Login</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div><b>Leerpaletten Management</b></div>
+    <div class="right"><span class="badge">Intranet</span></div>
+  </header>
+
+  <main>
+    <div class="card" style="max-width:520px;margin:32px auto;">
+      <h2 style="margin-top:0;">Anmelden</h2>
+      <div class="row">
+        <div>
+          <label>Benutzername</label>
+          <input id="username" autocomplete="username">
+        </div>
+        <div>
+          <label>Passwort</label>
+          <input id="password" type="password" autocomplete="current-password">
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="loginBtn">Login</button>
+      </div>
+      <p id="err" style="color:#b00020; margin-bottom:0;"></p>
+      <small class="muted">Hinweis: Bei Problemen Admin kontaktieren (Passwort zurücksetzen).</small>
+    </div>
+  </main>
+
+  <script src="/login.js"></script>
+</body>
+</html>

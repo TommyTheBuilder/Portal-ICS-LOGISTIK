@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Palettenmanagement</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body { background:#f6f7fb; }
+
+    .topbar {
+      background:#0b2a4a;
+      color:#fff;
+      padding:14px 18px;
+      border-bottom: 1px solid #0b2440;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .topbar .pill { background: rgba(255,255,255,0.15); color:#fff; }
+    .topbar .secondary { background:#e9eef5; color:#0b2a4a; }
+    .topbar .row > * { flex: 0 0 auto; min-width: auto; }
+
+    .tabs { display:flex; gap:10px; flex-wrap:wrap; margin: 12px 0; }
+    .tabs button {
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #d1d5db;
+      background:#f9fafb;
+      color:#111827;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tabs button:hover { background:#eef2f7; }
+    .tabs button.active {
+      background:#111827;
+      color:#ffffff;
+      border-color:#111827;
+    }
+
+    .card { background:#fff; padding: 14px; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); margin-bottom: 14px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    label { display:block; font-size: 12px; color:#6b7280; margin-bottom:4px; }
+    input, select { padding: 10px; border-radius: 10px; border: 1px solid #e5e7eb; min-width: 200px; background:#fff; }
+    button { padding: 10px 12px; border-radius: 10px; border:0; cursor:pointer; }
+    button.primary { background:#111827; color:#fff; }
+    button.secondary { background:#e5e7eb; color:#111827; }
+    button.danger { background:#b91c1c; color:#fff; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; font-size: 12px; }
+    table { width:100%; border-collapse: collapse; background:#fff; border-radius:12px; overflow:hidden; }
+    th, td { border-bottom:1px solid #e5e7eb; padding: 10px; font-size: 14px; text-align:left; vertical-align: top; }
+    th { background:#f9fafb; }
+    .modalBack { position:fixed; inset:0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding: 14px; }
+    .modal { background:#fff; width:min(900px, 100%); border-radius: 14px; padding: 14px; }
+    .muted { color:#6b7280; font-size: 12px; }
+    .history-filters .rollcard-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
+    .history-filters .rollcard-item button { width: 100%; }
+    .toggle-btn { width: 36px; height: 36px; padding: 0; display:flex; align-items:center; justify-content:center; }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div><b>Palettenmanagement</b> <span class="pill" id="me">-</span></div>
+  <div class="row" style="align-items:center;">
+    <button class="secondary" id="adminBtn" style="display:none;">Admin</button>
+    <button class="secondary" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<main style="max-width: 1100px; margin: 0 auto; padding: 16px;">
+  <div class="row">
+    <div>
+      <label>Standort</label>
+      <select id="locationSelect"></select>
+    </div>
+    <div>
+      <label>Abteilung (für Historie/Export)</label>
+      <select id="departmentSelect"></select>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="aviso">Aviso</button>
+    <button data-tab="cases">Vorgänge</button>
+    <button data-tab="history">Historie</button>
+    <button data-tab="entrepreneur-history">Unternehmer Historie</button>
+    <button data-tab="export">Export</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="secondary toggle-btn" id="toggleStockBtn" type="button" aria-expanded="true">−</button>
+          <h3 style="margin:0;">Bestände (Live)</h3>
+        </div>
+        <div>
+          <label>Ansicht</label>
+          <select id="stockMode">
+            <option value="location">Standort-Bestand (je Abteilung)</option>
+            <option value="overall">Komplett-Bestand (je Abteilung)</option>
+            <option value="entrepreneur">Unternehmer-Bestand (gesamt)</option>
+          </select>
+        </div>
+      </div>
+      <div id="stockContent">
+        <div class="muted" id="stockHint" style="margin-top:6px;"></div>
+        <div id="stockTableWrap" style="overflow:auto; margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="secondary toggle-btn" id="toggleCasesBtn" type="button" aria-expanded="true">−</button>
+        <h3 style="margin:0;">Vorgänge (Live)</h3>
+      </div>
+      <div id="casesContent">
+      <div class="muted">Status: 0 Storniert • 1 Aviso • 2 In Bearbeitung • 3 In Prüfung • 4 Gebucht</div>
+        <div id="casesDashWrap" style="overflow:auto; margin-top:8px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVISO -->
+  <section id="tab-aviso" style="display:none;">
+    <div class="card">
+      <h3 style="margin-top:0;">Neue Buchung eröffnen (Aviso)</h3>
+      <div class="row">
+        <div>
+          <label>Abteilung (Pflicht)</label>
+          <select id="avisoDept"></select>
+        </div>
+        <div>
+          <label>Kennzeichen (Pflicht, ohne -)</label>
+          <input id="avisoPlate" placeholder="z.B. W123AB">
+        </div>
+        <div class="inline-field">
+          <div class="grow">
+            <label>Unternehmer (Stammdaten)</label>
+            <select id="avisoEntrepreneur"></select>
+          </div>
+          <button class="secondary" id="addEntrepreneurBtn" type="button" title="Unternehmer hinzufügen" aria-label="Unternehmer hinzufügen">+</button>
+        </div>
+        <div>
+          <label>Unternehmer (frei, nicht speichern)</label>
+          <input id="avisoEntrepreneurFree" placeholder="optional">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>Eingang (IN)</label>
+          <input id="avisoIn" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label>Ausgang (OUT)</label>
+          <input id="avisoOut" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label id="avisoEmployeeCodeLabel">Mitarbeiterkürzel (2-stellig, optional)</label>
+          <input id="avisoEmployeeCode" maxlength="2" placeholder="z.B. AB">
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <label>Notiz</label>
+          <input id="avisoNote" placeholder="optional">
+        </div>
+        <div>
+          <button class="primary" id="createAvisoBtn">Aviso erstellen</button>
+        </div>
+      </div>
+      <p id="avisoMsg"></p>
+    </div>
+  </section>
+
+  <!-- CASES -->
+  <section id="tab-cases" style="display:none;">
+    <div class="card">
+      <h3 style="margin-top:0;">Vorgänge</h3>
+      <div class="row">
+        <div>
+          <label>Status</label>
+          <select id="caseStatusFilter">
+            <option value="">Alle</option>
+            <option value="0">0 Storniert</option>
+            <option value="1">1 Aviso</option>
+            <option value="2">2 In Bearbeitung</option>
+            <option value="3">3 In Prüfung</option>
+            <option value="4">4 Gebucht</option>
+          </select>
+        </div>
+        <div>
+          <label>Suche (ID/Kennzeichen/Unternehmer/Notiz)</label>
+          <input id="caseSearch" placeholder="z.B. W123AB oder 1042">
+        </div>
+        <div>
+          <button class="secondary" id="reloadCasesBtn">Neu laden</button>
+        </div>
+      </div>
+      <div id="casesTableWrap" style="overflow:auto; margin-top:10px;"></div>
+      <p class="muted">
+        Auto: wenn du „claim“ hast und ein Aviso öffnest, wird es automatisch auf „In Bearbeitung“ gesetzt.
+      </p>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="tab-history" style="display:none;">
+    <div class="card">
+      <h3 style="margin-top:0;">Historie</h3>
+      <div class="rollcard history-filters" style="margin-bottom:10px;">
+        <div class="rollcard-grid">
+          <div class="rollcard-item">
+            <label>Von</label>
+            <input id="histFrom" type="date">
+          </div>
+          <div class="rollcard-item">
+            <label>Bis</label>
+            <input id="histTo" type="date">
+          </div>
+          <div class="rollcard-item">
+            <label>Unternehmer</label>
+            <input id="histEntrepreneur" placeholder="optional">
+          </div>
+          <div class="rollcard-item">
+            <label>Kennzeichen</label>
+            <input id="histPlate" placeholder="optional">
+          </div>
+          <div class="rollcard-item">
+            <label>Beleg</label>
+            <input id="histReceipt" placeholder="optional">
+          </div>
+          <div class="rollcard-item">
+            <label>&nbsp;</label>
+            <button class="secondary" id="reloadHistoryBtn">Neu laden</button>
+          </div>
+        </div>
+      </div>
+      <div id="historyWrap" style="overflow:auto; margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <!-- ENTREPRENEUR HISTORY -->
+  <section id="tab-entrepreneur-history" style="display:none;">
+    <div class="card">
+      <h3 style="margin-top:0;">Unternehmer Historie</h3>
+      <div class="row">
+        <div>
+          <label>Unternehmer</label>
+          <select id="entHistEntrepreneur">
+            <option value="">Alle</option>
+          </select>
+        </div>
+        <div>
+          <label>Abteilung</label>
+          <select id="entHistDept">
+            <option value="">Alle</option>
+          </select>
+        </div>
+        <div>
+          <label>Kennzeichen</label>
+          <select id="entHistPlate">
+            <option value="">Alle</option>
+          </select>
+        </div>
+        <div>
+          <button class="secondary" id="entHistReloadBtn">Neu laden</button>
+        </div>
+      </div>
+      <div class="muted" id="entHistTotal" style="margin-top:8px;"></div>
+      <div id="entrepreneurHistoryWrap" style="overflow:auto; margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <!-- EXPORT -->
+  <section id="tab-export" style="display:none;">
+    <div class="card">
+      <h3 style="margin-top:0;">Export</h3>
+      <div class="row">
+        <button class="secondary" id="csvBtn">CSV</button>
+        <button class="secondary" id="xlsxBtn">Excel</button>
+      </div>
+      <p class="muted">Export bezieht sich auf ausgewählten Standort + Abteilung.</p>
+    </div>
+  </section>
+</main>
+
+<!-- Case Modal -->
+<div class="modalBack" id="caseModalBack">
+  <div class="modal">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">Vorgang bearbeiten</h3>
+      <button class="secondary" id="closeCaseModalBtn">Schließen</button>
+    </div>
+    <div class="muted" id="caseModalMeta" style="margin-top:6px;"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Abteilung</label>
+        <select id="caseDept"></select>
+      </div>
+      <div>
+        <label>Kennzeichen</label>
+        <input id="casePlate">
+      </div>
+      <div>
+        <label>Unternehmer</label>
+        <input id="caseEntrepreneur">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>IN</label>
+        <input id="caseIn" type="number" min="0">
+      </div>
+      <div>
+        <label>OUT</label>
+        <input id="caseOut" type="number" min="0">
+      </div>
+      <div style="flex:1; min-width:260px;">
+        <label>Notiz</label>
+        <input id="caseNote">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <button class="primary" id="saveCaseBtn">Speichern</button>
+      <button class="secondary" id="claimCaseBtn">In Bearbeitung nehmen</button>
+      <button class="secondary" id="submitCaseBtn">In Prüfung senden</button>
+      <button class="secondary" id="printCaseBtn">Vorläufig drucken</button>
+      <button class="primary" id="approveCaseBtn">Abschließen (Buchen)</button>
+      <button class="secondary" id="cancelCaseBtn">Stornieren</button>
+      <button class="danger" id="deleteCaseBtn">Löschen</button>
+    </div>
+
+    <p id="caseModalMsg"></p>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

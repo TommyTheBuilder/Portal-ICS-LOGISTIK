@@ -1,0 +1,29 @@
+:root { font-family: Arial, sans-serif; }
+body { margin: 0; background: #f6f7f9; color: #111; }
+header { background: #0b2a4a; color: #fff; padding: 12px 16px; display:flex; justify-content:space-between; align-items:center; }
+header .right { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+.card { background:#fff; border-radius: 10px; padding: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 12px; }
+.row { display:flex; gap:12px; flex-wrap:wrap; }
+.row > * { flex: 1; min-width: 220px; }
+.inline-field { display:flex; gap:8px; align-items:flex-end; }
+.inline-field .grow { flex:1; min-width: 0; }
+.inline-field button { width:auto; min-width:44px; padding:10px 12px; }
+label { display:block; font-size: 12px; color:#444; margin-bottom:6px; }
+input, select, button, textarea { width:100%; padding:10px; border:1px solid #d7dbe0; border-radius:8px; box-sizing:border-box; }
+button { background:#0b2a4a; color:#fff; border:none; cursor:pointer; }
+button.secondary { background:#e9eef5; color:#0b2a4a; }
+button:disabled { opacity:.6; cursor:not-allowed; }
+table { width:100%; border-collapse: collapse; }
+th, td { border-bottom: 1px solid #eee; padding: 8px; text-align:left; font-size: 14px; }
+.badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; background:#e9eef5; color:#0b2a4a; }
+nav { display:flex; gap:8px; margin-bottom: 12px; flex-wrap:wrap; }
+nav a { text-decoration:none; padding:8px 10px; border-radius:8px; background:#fff; color:#0b2a4a; border:1px solid #d7dbe0; }
+nav a.active { background:#0b2a4a; color:#fff; border-color:#0b2a4a; }
+small.muted { color:#666; }
+hr { border:none; border-top:1px solid #eee; margin: 12px 0; }
+.rollcard-list { display:flex; flex-direction:column; gap:10px; }
+.rollcard { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#fff; }
+.rollcard-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:8px 12px; }
+.rollcard-item label { display:block; font-size:12px; color:#6b7280; margin-bottom:2px; }
+.rollcard-item div { font-size:14px; font-weight:600; }

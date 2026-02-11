@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Palettenschein</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: #fff;
+      font-family: Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .btnBar{
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display:flex;
+      gap:10px;
+      z-index: 2147483647;
+    }
+    .btn { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; font-weight:700; }
+    .primary { background:#111827; color:#fff; }
+    .secondary { background:#e5e7eb; color:#111827; }
+    @media print { .btnBar{ display:none !important; } }
+
+    .sheet {
+      position: relative;
+      width: 210mm;
+      height: 297mm;
+      overflow: hidden;
+    }
+
+    .bg {
+      position: absolute;
+      inset: 0;
+      width: 210mm;
+      height: 297mm;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .layer { position: absolute; inset: 0; }
+
+    .field {
+      position: absolute;
+      background: rgba(255,255,255,0.90);
+      border: 1px solid rgba(207,216,227,0.95);
+      border-radius: 6px;
+      padding: 5px 7px;
+      box-sizing: border-box;
+    }
+    .field label{
+      display:block;
+      font-size: 9pt;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+    .field .val{
+      font-size: 11pt;
+      font-weight: 700;
+      color: #111827;
+    }
+    .field .val.multiline{
+      white-space: pre-line;
+      line-height: 1.2;
+    }
+
+    .title {
+      position: absolute;
+      left: 18mm;
+      top: 54mm;
+      font-size: 15pt;
+      font-weight: 800;
+      background: rgba(255,255,255,0.75);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .f-receipt { left: 132mm; top: 54mm; width: 66mm; height: 16mm; }
+    .f-dt      { left: 132mm; top: 72mm; width: 66mm; height: 16mm; }
+
+    .f-loc     { left: 18mm; top: 76mm; width: 88mm; height: 18mm; }
+    .f-dept    { left: 112mm; top: 96mm; width: 86mm; height: 18mm; }
+
+    /* 🔁 GETAUSCHT */
+    .f-plate   { left: 18mm; top: 98mm; width: 88mm; height: 18mm; }
+    .f-out     { left: 112mm; top: 118mm; width: 86mm; height: 18mm; }
+    .f-in      { left: 18mm; top: 120mm; width: 88mm; height: 18mm; }
+    .f-ent     { left: 112mm; top: 140mm; width: 86mm; height: 24mm; }
+
+    .f-user    { left: 18mm; top: 140mm; width: 88mm; height: 24mm; }
+    .f-note    { left: 18mm; top: 172mm; width: 180mm; height: 10mm; }
+    .f-details { left: 18mm; top: 186mm; width: 180mm; height: 16mm; }
+
+    .signTitle{
+      position:absolute;
+      left:18mm;
+      top: 214mm;
+      font-size: 10pt;
+      font-weight: 700;
+      background: rgba(255,255,255,0.75);
+      padding: 3px 6px;
+      border-radius: 6px;
+    }
+
+    .signBox {
+      position: absolute;
+      top: 222mm;
+      width: 85mm;
+      height: 30mm;
+      background: rgba(255,255,255,0.90);
+      border: 1px solid rgba(207,216,227,0.95);
+      border-radius: 6px;
+      padding: 7px;
+      box-sizing: border-box;
+    }
+    .signLeft  { left: 18mm; }
+    .signRight { left: 112mm; }
+
+    .signHint { font-size: 8.5pt; color:#6b7280; margin-bottom: 8mm; }
+
+    .signLine {
+      position:absolute;
+      left: 7px;
+      right: 7px;
+      bottom: 7px;
+      border-top: 1px solid #111827;
+      padding-top: 3px;
+      font-size: 8.5pt;
+      display:flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+<div class="btnBar">
+  <button id="btnPrint" class="btn primary">Drucken</button>
+  <button id="btnClose" class="btn secondary">Schließen</button>
+</div>
+
+<div class="sheet">
+  <img class="bg" src="/briefkopf.png" />
+
+  <div class="layer">
+    <div class="title">Palettenschein / Buchungsbeleg</div>
+
+    <div class="field f-receipt">
+      <label>Belegnummer</label>
+      <div class="val" id="receiptNo"></div>
+    </div>
+
+    <div class="field f-dt">
+      <label>Datum/Zeit</label>
+      <div class="val" id="dateTime"></div>
+    </div>
+
+    <div class="field f-loc">
+      <label>Standort / Lager</label>
+      <div class="val" id="location"></div>
+    </div>
+
+    <div class="field f-dept">
+      <label>Abteilung</label>
+      <div class="val" id="department"></div>
+    </div>
+
+    <!-- GETAUSCHT -->
+    <div class="field f-plate">
+      <label>Kennzeichen</label>
+      <div class="val" id="plate"></div>
+    </div>
+
+    <div class="field f-out">
+      <label>Ausgang (OUT)</label>
+      <div class="val" id="qtyOut"></div>
+    </div>
+
+    <div class="field f-in">
+      <label>Eingang (IN)</label>
+      <div class="val" id="qtyIn"></div>
+    </div>
+
+    <div class="field f-ent">
+      <label>Unternehmer</label>
+      <div class="val multiline" id="entrepreneur"></div>
+    </div>
+
+    <div class="field f-user">
+      <label>Benutzer/Mitarbeiterkürzel</label>
+      <div class="val" id="username"></div>
+    </div>
+
+    <div class="field f-note">
+      <label>Notiz</label>
+      <div class="val" id="note"></div>
+    </div>
+
+    <div class="field f-details">
+      <label>Details</label>
+      <div class="val" id="details"></div>
+    </div>
+
+    <div class="signTitle">Unterschriften</div>
+
+    <div class="signBox signLeft">
+      <div class="signHint">Ich bestätige die Richtigkeit der Buchung.</div>
+      <div class="signLine">
+        <span>Unterschrift Fahrer</span>
+        <span>Datum</span>
+      </div>
+    </div>
+
+    <div class="signBox signRight">
+      <div class="signHint">Geprüft / übernommen.</div>
+      <div class="signLine">
+        <span>Unterschrift Lagermitarbeiter</span>
+        <span>Datum</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/receipt.js"></script>
+</body>
+</html>

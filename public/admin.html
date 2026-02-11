@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Administration</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body { background:#f8fafc; color:#0f172a; }
+    .tabs { display:flex; gap:10px; margin: 12px 0 18px; flex-wrap: wrap; }
+    .tabs button { padding: 10px 14px; border-radius: 999px; border: 1px solid #e2e8f0; background:#f1f5f9; cursor:pointer; font-weight:600; color:#334155; }
+    .tabs button.active { background:#111827; color:#fff; border-color:#111827; box-shadow: 0 6px 12px rgba(15,23,42,.18); }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .card { background:#fff; padding: 16px; border-radius: 16px; box-shadow: 0 10px 24px rgba(15,23,42,.08); margin-bottom: 16px; border: 1px solid #e2e8f0; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+    label { display:block; font-size: 12px; color:#64748b; margin-bottom:4px; font-weight:600; }
+    input, select { padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; min-width: 200px; background:#fff; }
+    button { padding: 10px 14px; border-radius: 12px; border:0; cursor:pointer; font-weight:600; }
+    button.primary { background:#111827; color:#fff; }
+    button.secondary { background:#e2e8f0; color:#111827; }
+    button.danger { background:#b91c1c; color:#fff; }
+    small.muted { color:#64748b; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom:1px solid #e2e8f0; padding: 10px; font-size: 14px; text-align:left; vertical-align: top; }
+    th { color:#475569; font-weight:600; background:#f8fafc; }
+    .pill { display:inline-block; padding: 2px 10px; border-radius: 999px; background:#e2e8f0; font-size: 12px; color:#334155; }
+    .permGrid { display:grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+    .permBox { border:1px solid #e2e8f0; border-radius: 14px; padding: 12px; background:#f8fafc; }
+    .permBox b { display:block; margin-bottom:8px; color:#0f172a; }
+    .permBox label { display:flex; gap:8px; align-items:center; margin: 6px 0; font-size: 13px; color:#0f172a; }
+    .permBox small.muted { display:block; margin-top: 6px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; margin: 12px 0; gap:10px; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+<header style="padding:14px 18px; border-bottom: 1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
+  <div><b>Admin</b> <span class="pill" id="me">-</span></div>
+  <div class="row" style="align-items:center;">
+    <button class="secondary" id="backBtn">Zur App</button>
+    <button class="secondary" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<main style="max-width: 1100px; margin: 0 auto; padding: 16px;">
+  <div class="tabs">
+    <button data-tab="roles" class="active">Rollen & Rechte</button>
+    <button data-tab="master">Stammdaten</button>
+    <button data-tab="users">Benutzer</button>
+  </div>
+
+  <!-- ROLES -->
+  <section id="tab-roles">
+    <div class="card">
+      <h3 style="margin-top:0;">Neue Rolle anlegen</h3>
+      <div class="row">
+        <div>
+          <label>Rollenname</label>
+          <input id="roleName" placeholder="z.B. Dispo">
+        </div>
+        <div>
+          <button class="primary" id="createRoleBtn">Rolle anlegen</button>
+        </div>
+      </div>
+      <p id="roleMsg"></p>
+    </div>
+
+    <div class="card">
+      <div class="topbar">
+        <h3 style="margin:0;">Rollen bearbeiten</h3>
+        <button class="secondary" id="reloadRolesBtn">Neu laden</button>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Rolle auswählen</label>
+          <select id="roleSelect"></select>
+        </div>
+        <div>
+          <button class="secondary" id="saveRoleBtn">Berechtigungen speichern</button>
+        </div>
+        <div>
+          <button class="danger" id="deleteRoleBtn">Rolle löschen</button>
+        </div>
+      </div>
+
+      <div class="permGrid">
+        <div class="permBox">
+          <b>Buchungen</b>
+          <label><input type="checkbox" id="p_bookings_create"> Anlegen</label>
+          <label><input type="checkbox" id="p_bookings_view"> Anzeigen</label>
+          <label><input type="checkbox" id="p_bookings_export"> Exportieren</label>
+          <label><input type="checkbox" id="p_bookings_receipt"> Beleg</label>
+          <label><input type="checkbox" id="p_bookings_edit"> Bearbeiten (manuell ändern)</label>
+          <label><input type="checkbox" id="p_bookings_delete"> Löschen</label>
+        </div>
+
+        <div class="permBox">
+          <b>Bestände</b>
+          <label><input type="checkbox" id="p_stock_view"> Anzeigen</label>
+          <label><input type="checkbox" id="p_stock_overall"> Gesamtbestand (Komplett-Bestand)</label>
+          <small class="muted">Steuert die Auswahl „Komplett-Bestand (je Abteilung)“ im Dashboard.</small>
+        </div>
+
+        <div class="permBox">
+          <b>Vorgänge</b>
+          <label><input type="checkbox" id="p_cases_create"> Aviso anlegen</label>
+          <label><input type="checkbox" id="p_cases_employee_code"> Mitarbeiterkürzel (2-stellig) Pflicht</label>
+          <label><input type="checkbox" id="p_cases_claim"> Übernehmen</label>
+          <label><input type="checkbox" id="p_cases_edit"> Ändern</label>
+          <label><input type="checkbox" id="p_cases_submit"> Zur Prüfung senden</label>
+          <label><input type="checkbox" id="p_cases_approve"> Buchen/abschließen</label>
+          <label><input type="checkbox" id="p_cases_cancel"> Stornieren/Löschen</label>
+        </div>
+
+        <div class="permBox">
+          <b>Stammdaten</b>
+          <label><input type="checkbox" id="p_master_manage"> Verwalten</label>
+          <small class="muted">Standorte/Abteilungen pflegen</small>
+        </div>
+
+        <div class="permBox">
+          <b>Benutzer</b>
+          <label><input type="checkbox" id="p_users_manage"> Verwalten</label>
+          <label><input type="checkbox" id="p_users_view_department"> Nur eigene Abteilung anzeigen</label>
+          <small class="muted">Benutzer anlegen/ändern</small>
+        </div>
+
+        <div class="permBox">
+          <b>Rollen</b>
+          <label><input type="checkbox" id="p_roles_manage"> Verwalten</label>
+          <small class="muted">Business-Rollen & Rechte verwalten</small>
+        </div>
+      </div>
+
+      <p id="roleEditMsg"></p>
+    </div>
+  </section>
+
+  <!-- MASTERDATA -->
+  <section id="tab-master" style="display:none;">
+    <div class="grid2">
+      <div class="card">
+        <h3 style="margin-top:0;">Standorte</h3>
+        <div class="row">
+          <div>
+            <label>Neuer Standort</label>
+            <input id="locName" placeholder="z.B. Lager Wien">
+          </div>
+          <button class="primary" id="createLocBtn">Anlegen</button>
+        </div>
+        <p id="locMsg"></p>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead><tr><th>Name</th><th>Aktion</th></tr></thead>
+            <tbody id="locBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Unternehmer</h3>
+        <div class="row">
+          <div>
+            <label>Unternehmername</label>
+            <input id="entName" placeholder="z.B. Spedition Müller">
+          </div>
+          <div>
+            <label>Straße</label>
+            <input id="entStreet" placeholder="z.B. Musterstraße 12">
+          </div>
+          <div>
+            <label>PLZ</label>
+            <input id="entPostal" placeholder="z.B. 1010">
+          </div>
+          <div>
+            <label>Ort</label>
+            <input id="entCity" placeholder="z.B. Wien">
+          </div>
+          <div>
+            <button class="primary" id="saveEntBtn">Speichern</button>
+          </div>
+          <div>
+            <button class="secondary" id="clearEntBtn">Zurücksetzen</button>
+          </div>
+        </div>
+        <small class="muted">Zum Bearbeiten in der Liste unten auf „Bearbeiten“ klicken.</small>
+        <p id="entMsg"></p>
+
+        <div style="overflow:auto; margin-top:8px;">
+          <table>
+            <thead><tr><th>Unternehmer</th><th>Adresse</th><th>Aktion</th></tr></thead>
+            <tbody id="entBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Abteilungen</h3>
+        <div class="row">
+          <div>
+            <label>Neue Abteilung</label>
+            <input id="depName" placeholder="z.B. Wareneingang">
+          </div>
+          <button class="primary" id="createDepBtn">Anlegen</button>
+        </div>
+        <p id="depMsg"></p>
+        <small class="muted">Beim Löschen bleiben bestehende Buchungen/Vorgänge erhalten.</small>
+
+        <div style="overflow:auto; margin-top:8px;">
+          <table>
+            <thead><tr><th>Name</th><th>Aktion</th></tr></thead>
+            <tbody id="depBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- USERS -->
+  <section id="tab-users" style="display:none;">
+    <div class="card">
+      <h3 style="margin-top:0;">Benutzer anlegen</h3>
+      <div class="row">
+        <div>
+          <label>Benutzername</label>
+          <input id="uName" placeholder="z.B. max">
+        </div>
+        <div>
+          <label>Passwort</label>
+          <input id="uPass" placeholder="Passwort" type="password">
+        </div>
+        <div>
+          <label>Rolle (Admin/Disponent/Lager)</label>
+          <select id="uRole">
+            <option value="disponent">Disponent</option>
+            <option value="lager">Lager</option>
+            <option value="admin">Admin</option>
+          </select>
+          <small class="muted" id="roleLocationHint">Für Lager ist ein Standort Pflicht.</small>
+        </div>
+        <div>
+          <label>E-Mail</label>
+          <input id="uEmail" placeholder="name@firma.de" type="email">
+        </div>
+        <div>
+          <label>Standort</label>
+          <select id="uLocation"></select>
+        </div>
+        <div>
+          <label>Business-Rolle</label>
+          <select id="uRoleId"></select>
+          <small class="muted">Optional (für Berechtigungen)</small>
+        </div>
+        <div>
+          <label>Fixe Abteilung</label>
+          <select id="uFixedDepartment"></select>
+          <small class="muted">Optional (für Status-3-Mails)</small>
+        </div>
+        <div>
+          <button class="primary" id="createUserBtn">Anlegen</button>
+        </div>
+      </div>
+      <p id="userMsg"></p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Benutzer bearbeiten</h3>
+      <div class="row">
+        <div>
+          <label>Benutzer</label>
+          <select id="editUserSelect"></select>
+        </div>
+        <div>
+          <label>Rolle</label>
+          <select id="editUserRole">
+            <option value="disponent">Disponent</option>
+            <option value="lager">Lager</option>
+            <option value="admin">Admin</option>
+          </select>
+          <small class="muted" id="editRoleLocationHint">Für Lager ist ein Standort Pflicht.</small>
+        </div>
+        <div>
+          <label>Standort</label>
+          <select id="editUserLocation"></select>
+        </div>
+        <div>
+          <label>E-Mail</label>
+          <input id="editUserEmail" placeholder="name@firma.de" type="email">
+        </div>
+        <div>
+          <label>Fixe Abteilung</label>
+          <select id="editUserDepartment"></select>
+        </div>
+        <div>
+          <button class="primary" id="saveUserBtn">Speichern</button>
+        </div>
+      </div>
+      <p id="userEditMsg"></p>
+    </div>
+
+    <div class="card">
+      <div class="topbar">
+        <h3 style="margin:0;">Benutzerliste</h3>
+        <button class="secondary" id="reloadUsersBtn">Neu laden</button>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Benutzer</th>
+              <th>Rolle</th>
+              <th>E-Mail</th>
+              <th>Standort</th>
+              <th>Business-Rolle</th>
+              <th>Fixe Abteilung</th>
+              <th>Status</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/admin.js"></script>
+</body>
+</html>
