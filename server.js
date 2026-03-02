@@ -45,6 +45,13 @@ io.on("connection", (socket) => {
   socket.on("joinLocation", (locationId) => {
     if (locationId) socket.join(`loc:${locationId}`);
   });
+
+  socket.on("joinUser", (userId) => {
+    const parsedUserId = Number(userId);
+    if (Number.isInteger(parsedUserId) && parsedUserId > 0) {
+      socket.join(`user:${parsedUserId}`);
+    }
+  });
 });
 
 async function q(sql, params = []) {
@@ -225,6 +232,38 @@ async function notifyStatus3(caseRow) {
   }
 }
 
+async function createStatus3Notifications(caseRow) {
+  try {
+    const recipients = await q(
+      `SELECT id FROM users WHERE is_active=TRUE AND fixed_department_id=$1`,
+      [caseRow.department_id]
+    );
+    if (recipients.rowCount === 0) return;
+
+    const info = await q(
+      `SELECT d.name AS department, l.name AS location
+       FROM departments d, locations l
+       WHERE d.id=$1 AND l.id=$2`,
+      [caseRow.department_id, caseRow.location_id]
+    );
+    const department = info.rowCount ? info.rows[0].department : `Abteilung ${caseRow.department_id}`;
+    const location = info.rowCount ? info.rows[0].location : `Standort ${caseRow.location_id}`;
+    const message = `Aviso #${caseRow.id} ist jetzt in Prüfung (${department}, ${location}).`;
+
+    for (const recipient of recipients.rows) {
+      const inserted = await q(
+        `INSERT INTO user_notifications (user_id, case_id, title, message)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, user_id, case_id, title, message, is_read, created_at`,
+        [recipient.id, caseRow.id, "Aviso in Prüfung", message]
+      );
+      io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
+    }
+  } catch (err) {
+    console.error("Status-3-Notification fehlgeschlagen:", err);
+  }
+}
+
 async function getMyPermissions(user) {
   if (user.role === "admin") {
     return {
@@ -357,9 +396,60 @@ app.get("/api/me", authRequired, async (req, res) => {
   res.json(user);
 });
 
+app.get("/api/theme", async (req, res) => {
+  const ipAddress = String(req.ip || req.headers["x-forwarded-for"] || "unknown");
+  const pref = await q(
+    `SELECT theme FROM ip_preferences WHERE ip_address=$1 LIMIT 1`,
+    [ipAddress]
+  );
+  res.json({ theme: pref.rowCount ? pref.rows[0].theme : "light" });
+});
+
+app.put("/api/theme", async (req, res) => {
+  const nextTheme = String(req.body?.theme || "").trim().toLowerCase();
+  if (!["light", "dark"].includes(nextTheme)) {
+    return res.status(400).json({ error: "invalid theme" });
+  }
+  const ipAddress = String(req.ip || req.headers["x-forwarded-for"] || "unknown");
+  await q(
+    `INSERT INTO ip_preferences (ip_address, theme)
+     VALUES ($1, $2)
+     ON CONFLICT (ip_address)
+     DO UPDATE SET theme=EXCLUDED.theme, updated_at=now()`,
+    [ipAddress, nextTheme]
+  );
+  res.json({ ok: true, theme: nextTheme });
+});
+
 app.get("/api/my-permissions", authRequired, async (req, res) => {
   const perms = await getMyPermissions(req.user);
   res.json(perms);
+});
+
+app.get("/api/notifications", authRequired, async (req, res) => {
+  const rows = (await q(
+    `SELECT id, user_id, case_id, title, message, is_read, created_at
+     FROM user_notifications
+     WHERE user_id=$1
+     ORDER BY created_at DESC
+     LIMIT 50`,
+    [req.user.id]
+  )).rows;
+  const unread = rows.filter((item) => !item.is_read).length;
+  res.json({ items: rows, unread });
+});
+
+app.put("/api/notifications/:id/read", authRequired, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: "invalid id" });
+
+  await q(
+    `UPDATE user_notifications
+     SET is_read=TRUE, read_at=now()
+     WHERE id=$1 AND user_id=$2`,
+    [id, req.user.id]
+  );
+  res.json({ ok: true });
 });
 
 // ---------- LOCATIONS ----------
@@ -928,6 +1018,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     void notifyStatus3(c);
+    void createStatus3Notifications(c);
     return res.json({ ok: true });
   }
 
@@ -1509,5 +1600,37 @@ app.get("/api/export/xlsx", authRequired, requirePermission("bookings.export"), 
   res.end();
 });
 
+
+async function ensureRuntimeTables() {
+  await q(`
+    CREATE TABLE IF NOT EXISTS ip_preferences (
+      ip_address TEXT PRIMARY KEY,
+      theme TEXT NOT NULL DEFAULT 'light' CHECK (theme IN ('light','dark')),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      case_id INTEGER REFERENCES booking_cases(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC);`);
+}
+
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+ensureRuntimeTables()
+  .then(() => {
+    httpServer.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+  })
+  .catch((err) => {
+    console.error("Startup failed:", err);
+    process.exit(1);
+  });

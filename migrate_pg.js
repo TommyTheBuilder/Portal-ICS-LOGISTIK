@@ -190,6 +190,28 @@ async function migrate() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER REFERENCES departments(id);`);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ip_preferences (
+      ip_address TEXT PRIMARY KEY,
+      theme TEXT NOT NULL DEFAULT 'light' CHECK (theme IN ('light','dark')),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      case_id INTEGER REFERENCES booking_cases(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC);`);
+
   // Default Rolle anlegen
   await pool.query(`
     INSERT INTO roles (name, permissions)

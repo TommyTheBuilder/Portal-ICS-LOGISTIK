@@ -109,6 +109,7 @@ async function loadMe() {
   ME = await r.json();
   $("me").textContent = `${ME.username} • ${ME.role}`;
   $("adminBtn").style.display = (ME.role === "admin") ? "" : "none";
+  socket.emit("joinUser", ME.id);
 }
 
 async function loadPerms() {
@@ -373,39 +374,75 @@ if ($("stockProductType")) {
 // ---------- Cases ----------
 let CASES = [];
 let ACTIVE_CASE_ID = null;
-let HAS_LOADED_CASES = false;
+let NOTIFICATIONS = [];
 
-function notifyStatus3(caseItem) {
-  if (!("Notification" in window)) return;
+function renderNotifications() {
+  const panel = $("notificationPanel");
+  const badge = $("notificationBadge");
+  if (!panel || !badge) return;
 
-  const title = `Aviso #${caseItem.id} in Prüfung`;
-  const bodyParts = [
-    caseItem.license_plate ? `Kennzeichen: ${caseItem.license_plate}` : null,
-    caseItem.department ? `Abteilung: ${caseItem.department}` : null
-  ].filter(Boolean);
+  const unreadCount = NOTIFICATIONS.filter((n) => !n.is_read).length;
+  badge.textContent = String(unreadCount);
+  badge.style.display = unreadCount > 0 ? "" : "none";
 
-  const show = () => {
-    new Notification(title, {
-      body: bodyParts.join(" · ")
-    });
-  };
-
-  if (Notification.permission === "granted") {
-    show();
-  } else if (Notification.permission === "default") {
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") show();
-    });
+  if (NOTIFICATIONS.length === 0) {
+    panel.innerHTML = '<div class="notification-item">Keine Benachrichtigungen</div>';
+    return;
   }
+
+  panel.innerHTML = NOTIFICATIONS.map((n) => `
+    <div class="notification-item ${n.is_read ? "" : "unread"}" data-notification-id="${n.id}" data-case-id="${n.case_id || ""}">
+      <div><b>${n.title}</b></div>
+      <div>${n.message}</div>
+      <div class="muted">${new Date(n.created_at).toLocaleString("de-DE")}</div>
+    </div>
+  `).join("");
+
+  document.querySelectorAll("[data-notification-id]").forEach((el) => {
+    el.addEventListener("click", async () => {
+      const id = Number(el.getAttribute("data-notification-id"));
+      const caseId = Number(el.getAttribute("data-case-id") || 0);
+      if (id) {
+        await api(`/api/notifications/${encodeURIComponent(id)}/read`, { method: "PUT", body: JSON.stringify({}) });
+      }
+      if (caseId) {
+        await loadCases();
+        openCaseModal(caseId);
+      }
+      await loadNotifications();
+    });
+  });
+}
+
+async function loadNotifications() {
+  const r = await api("/api/notifications", { method: "GET", headers: {} });
+  if (!r.ok) return;
+  const data = await r.json();
+  NOTIFICATIONS = Array.isArray(data.items) ? data.items : [];
+  renderNotifications();
+}
+
+function bindNotificationPanel() {
+  const btn = $("notificationBtn");
+  const panel = $("notificationPanel");
+  if (!btn || !panel) return;
+
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    panel.classList.toggle("open");
+  });
+
+  document.addEventListener("click", () => panel.classList.remove("open"));
+  panel.addEventListener("click", (event) => event.stopPropagation());
 }
 
 async function loadCases() {
+
   if (!CURRENT_LOCATION) return;
 
   const f = $("caseStatusFilter").value;
   const search = ($("caseSearch").value || "").trim();
   const mine = canSeeAllCases() ? "0" : "1";
-  const previousStatuses = new Map(CASES.map(c => [Number(c.id), Number(c.status)]));
 
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
@@ -416,15 +453,6 @@ async function loadCases() {
 
   const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
   CASES = r.ok ? await r.json() : [];
-  if (HAS_LOADED_CASES) {
-    CASES.forEach((c) => {
-      const prev = previousStatuses.get(Number(c.id));
-      if (prev !== 3 && Number(c.status) === 3) {
-        notifyStatus3(c);
-      }
-    });
-  }
-  HAS_LOADED_CASES = true;
 
   renderCasesTable();
   renderCasesDashboard();
@@ -985,6 +1013,7 @@ $("locationSelect").addEventListener("change", async () => {
   joinLocationRoom();
   await loadStock();
   await loadCases();
+  await loadNotifications();
   await loadHistory();
 });
 
@@ -1043,6 +1072,10 @@ socket.on("casesUpdated", async (payload) => {
     await loadCases();
   }
 });
+socket.on("notificationCreated", async () => {
+  await loadNotifications();
+});
+
 socket.on("bookingsUpdated", async (payload) => {
   if (!payload?.location_id) return;
   if (Number(payload.location_id) !== Number(CURRENT_LOCATION)) return;
@@ -1056,6 +1089,7 @@ socket.on("bookingsUpdated", async (payload) => {
 (async function init() {
   bindTabs();
   bindLiveToggles();
+  bindNotificationPanel();
   await loadMe();
   await loadPerms();
   await loadLocations();
@@ -1072,6 +1106,7 @@ socket.on("bookingsUpdated", async (payload) => {
 
   await loadStock();
   await loadCases();
+  await loadNotifications();
   await loadHistory();
   await loadEntrepreneurHistoryPlates();
   await loadEntrepreneurHistory();
