@@ -55,14 +55,25 @@
       z-index: 1;
     }
 
-    .companyLogo {
+    .logoFrame {
       position: absolute;
-      top: 8mm;
-      left: 12mm;
-      width: 56mm;
-      height: auto;
+      top: 4.5mm;
+      left: 7.5mm;
+      width: 90mm;
+      height: 33mm;
+      background: #fff;
+      border-radius: 1.2mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 2;
       pointer-events: none;
+    }
+
+    .companyLogo {
+      width: 78mm;
+      height: auto;
+      object-fit: contain;
     }
 
     .title {
@@ -188,7 +199,9 @@
 
 <div class="sheet">
   <img class="briefkopf" src="/briefkopf.svg" alt="Briefkopf" />
-  <img class="companyLogo" src="/logo.png" alt="ICS Firmenlogo" />
+  <div class="logoFrame">
+    <img class="companyLogo" src="/logo.png" alt="ICS Firmenlogo" />
+  </div>
   <div class="content">
     <div class="title">LADEMITTEL GEGENSCHEIN</div>
 
