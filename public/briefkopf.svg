@@ -11,14 +11,14 @@
 
   <!-- Top brand block (centered) -->
   <g transform="translate(1050,150)">
-    <text class="logo" x="0" y="170" text-anchor="middle" font-size="332" letter-spacing="-10">ICS</text>
-    <text class="meta" x="0" y="238" text-anchor="middle" font-size="33" font-weight="700" letter-spacing="5">LOGISTIK UND TRANSPORT GMBH</text>
+    <text class="logo" x="0" y="170" text-anchor="middle" font-size="338" letter-spacing="-14">ICS</text>
+    <text class="meta" x="0" y="238" text-anchor="middle" font-size="33" font-weight="700" letter-spacing="6">LOGISTIK UND TRANSPORT GMBH</text>
 
-    <g transform="translate(390,52)">
-      <text class="blue" x="0" y="0" font-size="48" font-style="italic">• Spedition</text>
-      <text class="blue" x="0" y="64" font-size="48" font-style="italic">• Lagerung</text>
-      <text class="blue" x="0" y="128" font-size="48" font-style="italic">• Transport</text>
-      <text class="blue" x="0" y="192" font-size="48" font-style="italic">• LKW-Werkstatt</text>
+    <g transform="translate(395,54)">
+      <text class="blue" x="0" y="0" font-size="44" font-style="italic">• Spedition</text>
+      <text class="blue" x="0" y="60" font-size="44" font-style="italic">• Lagerung</text>
+      <text class="blue" x="0" y="120" font-size="44" font-style="italic">• Transport</text>
+      <text class="blue" x="0" y="180" font-size="44" font-style="italic">• LKW-Werkstatt</text>
     </g>
   </g>
 
