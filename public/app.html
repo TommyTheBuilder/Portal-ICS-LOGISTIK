@@ -52,6 +52,19 @@
     th { background:#f9fafb; }
     .modalBack { position:fixed; inset:0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding: 14px; }
     .modal { background:#fff; width:min(900px, 100%); border-radius: 14px; padding: 14px; }
+    .confirm-modal { width:min(520px, 100%); box-shadow:0 20px 45px rgba(15,23,42,.28); border:1px solid #e5e7eb; padding:18px; }
+    .confirm-modal h3 { margin:0; font-size:18px; }
+    .confirm-modal .icon {
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#eef2ff;
+      color:#3730a3;
+      font-size:22px;
+    }
     .muted { color:#6b7280; font-size: 12px; }
     .history-filters .rollcard-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
     .history-filters .rollcard-item button { width: 100%; }
@@ -402,6 +415,24 @@
     </div>
 
     <p id="caseModalMsg"></p>
+  </div>
+</div>
+
+<div class="modalBack" id="approveConfirmBack" aria-hidden="true">
+  <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="approveConfirmTitle">
+    <div class="row" style="justify-content:space-between; align-items:center; gap:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="icon">✓</div>
+        <h3 id="approveConfirmTitle">Vorgang final abschließen?</h3>
+      </div>
+      <button class="secondary" id="closeApproveConfirmBtn">Schließen</button>
+    </div>
+    <p style="margin:14px 0 4px 0; line-height:1.5;">Mit dem Abschluss wird der Vorgang verbindlich gebucht und die Bestände werden aktualisiert.</p>
+    <p class="muted" style="margin:0;">Bitte prüfen Sie die Angaben im Vorgang, bevor Sie fortfahren.</p>
+    <div class="row" style="justify-content:flex-end; margin-top:16px;">
+      <button class="secondary" id="approveConfirmCancelBtn">Abbrechen</button>
+      <button class="primary" id="approveConfirmBtn">Ja, verbindlich buchen</button>
+    </div>
   </div>
 </div>
 

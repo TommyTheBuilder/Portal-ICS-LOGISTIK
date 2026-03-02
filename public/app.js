@@ -21,6 +21,56 @@ function setMsg(elId, text, ok = false) {
   el.textContent = text || "";
 }
 
+function showApproveConfirmModal(show) {
+  const back = $("approveConfirmBack");
+  if (!back) return;
+  back.style.display = show ? "flex" : "none";
+  back.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function askApproveConfirmation() {
+  return new Promise(resolve => {
+    const approveBtn = $("approveConfirmBtn");
+    const cancelBtn = $("approveConfirmCancelBtn");
+    const closeBtn = $("closeApproveConfirmBtn");
+    const back = $("approveConfirmBack");
+    if (!approveBtn || !cancelBtn || !closeBtn || !back) {
+      resolve(confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich)."));
+      return;
+    }
+
+    let isDone = false;
+    const done = (ok) => {
+      if (isDone) return;
+      isDone = true;
+      showApproveConfirmModal(false);
+      approveBtn.removeEventListener("click", onApprove);
+      cancelBtn.removeEventListener("click", onCancel);
+      closeBtn.removeEventListener("click", onCancel);
+      back.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeydown);
+      resolve(ok);
+    };
+
+    const onApprove = () => done(true);
+    const onCancel = () => done(false);
+    const onBackdrop = (event) => {
+      if (event.target === back) done(false);
+    };
+    const onKeydown = (event) => {
+      if (event.key === "Escape") done(false);
+    };
+
+    approveBtn.addEventListener("click", onApprove);
+    cancelBtn.addEventListener("click", onCancel);
+    closeBtn.addEventListener("click", onCancel);
+    back.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeydown);
+
+    showApproveConfirmModal(true);
+  });
+}
+
 async function readJsonSafe(res) {
   try { return await res.json(); } catch { return null; }
 }
@@ -626,7 +676,8 @@ $("saveCaseBtn").addEventListener("click", async () => {
 
 $("approveCaseBtn").addEventListener("click", async () => {
   setMsg("caseModalMsg", "");
-  if (!confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich).")) return;
+  const isConfirmed = await askApproveConfirmation();
+  if (!isConfirmed) return;
 
   const { ok, data } = await caseAction("approve");
   if (!ok) return;
