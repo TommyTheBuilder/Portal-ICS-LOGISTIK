@@ -6,7 +6,7 @@ const DEFAULTS = {
   bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false },
   stock: { view: true, overall: true },
   cases: { create: true, claim: false, edit: false, submit: false, approve: false },
-  masterdata: { manage: false },
+  masterdata: { manage: false, entrepreneurs_manage: false },
   users: { manage: false, view_department: false },
   roles: { manage: false }
 };
@@ -41,7 +41,7 @@ async function loadPermissionsForUser(user) {
       bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true },
       stock: { view: true, overall: true },
       cases: { create: true, claim: true, edit: true, submit: true, approve: true },
-      masterdata: { manage: true },
+      masterdata: { manage: true, entrepreneurs_manage: true },
       users: { manage: true },
       roles: { manage: true }
     };
