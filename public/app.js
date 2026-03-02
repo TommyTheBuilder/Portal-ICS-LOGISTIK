@@ -600,6 +600,7 @@ async function openCaseModal(id) {
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
   $("submitCaseBtn").style.display = (PERMS?.cases?.submit && c.status === 2) ? "" : "none";
   $("printCaseBtn").style.display = (PERMS?.bookings?.receipt && [3, 4].includes(Number(c.status))) ? "" : "none";
+  $("printCaseBtn").textContent = Number(c.status) === 4 ? "Drucken" : "Vorläufig drucken";
   $("approveCaseBtn").style.display = (PERMS?.cases?.approve && c.status === 3) ? "" : "none";
   $("cancelCaseBtn").style.display = (PERMS?.cases?.cancel && [1, 2, 3].includes(Number(c.status))) ? "" : "none";
   $("deleteCaseBtn").style.display = (PERMS?.cases?.cancel && [0, 1].includes(Number(c.status))) ? "" : "none";
