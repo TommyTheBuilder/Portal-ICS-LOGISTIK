@@ -24,11 +24,11 @@
 
     <text class="logoBlue" x="-118" y="332" text-anchor="middle" font-size="78" letter-spacing="0" font-family="Arial Narrow, Arial, Helvetica, sans-serif">LOGISTIK UND TRANSPORT GMBH</text>
 
-    <g transform="translate(520,35)">
-      <text class="blue" x="0" y="0" font-size="76" font-style="italic">• Spedition</text>
-      <text class="blue" x="0" y="102" font-size="76" font-style="italic">• Lagerung</text>
-      <text class="blue" x="0" y="204" font-size="76" font-style="italic">• Transport</text>
-      <text class="blue" x="0" y="306" font-size="76" font-style="italic">• LKW-Werkstatt</text>
+    <g transform="translate(420,18)">
+      <text class="blue" x="0" y="0" font-size="70" font-style="italic">• Spedition</text>
+      <text class="blue" x="0" y="86" font-size="70" font-style="italic">• Lagerung</text>
+      <text class="blue" x="0" y="172" font-size="70" font-style="italic">• Transport</text>
+      <text class="blue" x="0" y="258" font-size="70" font-style="italic">• LKW-Werkstatt</text>
     </g>
   </g>
 
