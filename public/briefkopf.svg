@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2100 2970" width="2100" height="2970">
   <defs>
     <style>
-      .logoBlue { fill:#0b3f8a; font-family: Arial Black, Arial, Helvetica, sans-serif; font-weight:900; }
+      .logoBlue { fill:#0b3f8a; font-family: "Montserrat ExtraBold", Montserrat, "Arial Black", Arial, Helvetica, sans-serif; font-weight:900; }
       .meta { fill:#4d4d4d; font-family: Arial, Helvetica, sans-serif; }
       .blue { fill:#1d4f8f; font-family: Arial, Helvetica, sans-serif; }
     </style>
