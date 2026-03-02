@@ -23,7 +23,7 @@
   </g>
 
   <!-- Contact lines under logo -->
-  <text class="meta" x="1050" y="510" text-anchor="middle" font-size="38">
+  <text class="meta" x="1050" y="510" text-anchor="middle" font-size="34" textLength="1950" lengthAdjust="spacingAndGlyphs">
     D-83395 Freilassing, Breslauer Strasse 49, Tel. (0049)8654 / 4697-0, Fax (0049)8654 / 4697-19, E-Mail: office@ics-logistik.com
   </text>
   <text class="meta" x="1050" y="576" text-anchor="middle" font-size="42">www.ics-logistik.com</text>
