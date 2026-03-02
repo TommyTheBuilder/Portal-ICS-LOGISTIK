@@ -125,6 +125,7 @@ body.darkmode .topbar {
   max-height: 380px;
   overflow: auto;
   background: #fff;
+  color: #111827;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 12px 24px rgba(0,0,0,.15);
@@ -132,7 +133,7 @@ body.darkmode .topbar {
   z-index: 1300;
 }
 .notification-panel.open { display: block; }
-.notification-item { padding: 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer; }
+.notification-item { padding: 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer; color: #111827; }
 .notification-item.unread { background: #eff6ff; }
 body.darkmode .notification-panel { background: #1f2937; border-color: #374151; }
 body.darkmode .notification-item { border-bottom-color: #374151; }
