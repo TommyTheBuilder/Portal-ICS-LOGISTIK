@@ -141,7 +141,7 @@ body.darkmode .topbar {
 .notification-item { padding: 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer; color: #111827; }
 .notification-item.unread { background: #eff6ff; }
 body.darkmode .notification-panel { background: #1f2937; border-color: #374151; }
-body.darkmode .notification-item { border-bottom-color: #374151; }
+body.darkmode .notification-item { border-bottom-color: #374151; color: #ffffff; }
 body.darkmode .notification-item.unread { background: #1e3a8a; }
 
 @media print { .theme-toggle { display:none !important; } }
