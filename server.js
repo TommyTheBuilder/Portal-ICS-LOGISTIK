@@ -1187,7 +1187,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     `
     SELECT
       c.id, c.created_at, c.license_plate, c.entrepreneur, c.note,
-      c.qty_in, c.qty_out, c.employee_code, c.product_type,
+      c.qty_in, c.qty_out, c.employee_code, c.product_type, c.status, c.receipt_no,
       l.id AS location_id, l.name AS location,
       d.id AS department_id, COALESCE(d.name, '(gelöschte Abteilung)') AS department,
       COALESCE(u.username, '(gelöscht)') AS aviso_created_by,
@@ -1214,14 +1214,15 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
 
   const qty_in = Number(row.qty_in ?? 0);
   const qty_out = Number(row.qty_out ?? 0);
-  const previewNo = await previewReceiptNo(row.location_id);
+  const isBooked = Number(row.status) === 4 && !!row.receipt_no;
+  const displayReceiptNo = isBooked ? row.receipt_no : await previewReceiptNo(row.location_id);
   const lines = [];
   if (qty_in > 0) lines.push({ type: "IN", quantity: qty_in });
   if (qty_out > 0) lines.push({ type: "OUT", quantity: qty_out });
 
   res.json({
-    receipt_no: previewNo,
-    provisional: true,
+    receipt_no: displayReceiptNo,
+    provisional: !isBooked,
     created_at: row.created_at,
     location: row.location,
     department: row.department,
