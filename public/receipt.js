@@ -92,6 +92,9 @@
     setText("placeDate", `${data.location || "-"} / ${formattedDate}`);
     setText("trailerNo", data.license_plate || "-");
     setText("receiptNoInline", receiptLabel);
+    setText("department", data.department || "-");
+    setText("entrepreneur", data.entrepreneur || "-");
+    setText("note", data.note || "-");
 
     const qtyIn = Number(data.qty_in ?? 0);
     const qtyOut = Number(data.qty_out ?? 0);
