@@ -63,22 +63,42 @@
       margin: 0 0 4.2mm;
     }
 
-    .lineRow {
+    .metaCard {
+      border: 1px solid #d6deea;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fbfcff 0%, #f6f8fc 100%);
+      padding: 3.2mm 3.4mm 2.2mm;
+      margin-bottom: 2.6mm;
+      box-shadow: 0 1mm 2.4mm rgba(17, 24, 39, 0.06);
+    }
+    .metaRow {
       display: grid;
-      grid-template-columns: auto 1fr auto 1fr;
-      align-items: end;
-      gap: 2.2mm;
-      font-size: 4mm;
-      margin-bottom: 1.9mm;
+      grid-template-columns: 1fr 1fr;
+      gap: 3mm;
+      margin-bottom: 1.5mm;
     }
-    .lineRow.single {
+    .metaRow.single {
+      grid-template-columns: 1fr;
+    }
+    .metaField {
+      display: grid;
       grid-template-columns: auto 1fr;
+      gap: 2.2mm;
+      align-items: center;
+      border-bottom: 1px solid #243650;
+      padding-bottom: 1mm;
+      min-height: 6mm;
     }
-    .line {
-      border-bottom: 1px solid #111;
-      min-height: 4.8mm;
-      padding: 0 1.2mm 0.35mm;
+    .metaLabel {
+      font-size: 3.6mm;
+      font-weight: 700;
+      color: #22324d;
+      white-space: nowrap;
+    }
+    .metaValue {
+      font-size: 3.9mm;
       font-weight: 500;
+      color: #111;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -161,31 +181,45 @@
   <div class="content">
     <div class="title">LADEMITTEL GEGENSCHEIN</div>
 
-    <div class="lineRow">
-      <div>Ort/Datum:</div>
-      <div class="line" id="placeDate"></div>
-      <div>Kennzeichen:</div>
-      <div class="line" id="trailerNo"></div>
-    </div>
+    <div class="metaCard">
+      <div class="metaRow">
+        <div class="metaField">
+          <div class="metaLabel">Ort/Datum:</div>
+          <div class="metaValue" id="placeDate"></div>
+        </div>
+        <div class="metaField">
+          <div class="metaLabel">Kennzeichen:</div>
+          <div class="metaValue" id="trailerNo"></div>
+        </div>
+      </div>
 
-    <div class="lineRow single">
-      <div>Belegnummer:</div>
-      <div class="line" id="receiptNoInline"></div>
-    </div>
+      <div class="metaRow single">
+        <div class="metaField">
+          <div class="metaLabel">Belegnummer:</div>
+          <div class="metaValue" id="receiptNoInline"></div>
+        </div>
+      </div>
 
-    <div class="lineRow single">
-      <div>Abteilung:</div>
-      <div class="line" id="department"></div>
-    </div>
+      <div class="metaRow single">
+        <div class="metaField">
+          <div class="metaLabel">Abteilung:</div>
+          <div class="metaValue" id="department"></div>
+        </div>
+      </div>
 
-    <div class="lineRow single">
-      <div>Unternehmer:</div>
-      <div class="line" id="entrepreneur"></div>
-    </div>
+      <div class="metaRow single">
+        <div class="metaField">
+          <div class="metaLabel">Unternehmer:</div>
+          <div class="metaValue" id="entrepreneur"></div>
+        </div>
+      </div>
 
-    <div class="lineRow single">
-      <div>Notiz:</div>
-      <div class="line" id="note"></div>
+      <div class="metaRow single" style="margin-bottom:0;">
+        <div class="metaField">
+          <div class="metaLabel">Notiz:</div>
+          <div class="metaValue" id="note"></div>
+        </div>
+      </div>
     </div>
 
     <div class="tableWrap">
