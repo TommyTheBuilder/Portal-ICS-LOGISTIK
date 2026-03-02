@@ -92,7 +92,12 @@ body.darkmode .topbar {
   border-color: #1f2937 !important;
 }
 
-.notification-wrap { position: relative; }
+.notification-wrap {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 2000;
+}
 .notification-toggle {
   width: 40px;
   height: 40px;
@@ -140,6 +145,8 @@ body.darkmode .notification-item { border-bottom-color: #374151; }
 body.darkmode .notification-item.unread { background: #1e3a8a; }
 
 @media print { .theme-toggle { display:none !important; } }
+
+@media print { .notification-wrap { display:none !important; } }
 
 #themeToggleMount .theme-toggle {
   position: static;
