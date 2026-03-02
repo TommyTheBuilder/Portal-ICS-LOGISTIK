@@ -9,24 +9,24 @@
 
   <rect width="2100" height="2970" fill="#ffffff"/>
 
-  <!-- Top brand block -->
-  <g transform="translate(735,150)">
-    <text class="logo" x="0" y="168" font-size="332" letter-spacing="-14">ICS</text>
-    <text class="meta" x="20" y="234" font-size="33" font-weight="700" letter-spacing="8">LOGISTIK UND TRANSPORT GMBH</text>
+  <!-- Top brand block (centered) -->
+  <g transform="translate(1050,150)">
+    <text class="logo" x="0" y="170" text-anchor="middle" font-size="332" letter-spacing="-10">ICS</text>
+    <text class="meta" x="0" y="238" text-anchor="middle" font-size="33" font-weight="700" letter-spacing="5">LOGISTIK UND TRANSPORT GMBH</text>
 
-    <g transform="translate(768,48)">
-      <text class="blue" x="0" y="0" font-size="50" font-style="italic">• Spedition</text>
-      <text class="blue" x="0" y="66" font-size="50" font-style="italic">• Lagerung</text>
-      <text class="blue" x="0" y="132" font-size="50" font-style="italic">• Transport</text>
-      <text class="blue" x="0" y="198" font-size="50" font-style="italic">• LKW-Werkstatt</text>
+    <g transform="translate(390,52)">
+      <text class="blue" x="0" y="0" font-size="48" font-style="italic">• Spedition</text>
+      <text class="blue" x="0" y="64" font-size="48" font-style="italic">• Lagerung</text>
+      <text class="blue" x="0" y="128" font-size="48" font-style="italic">• Transport</text>
+      <text class="blue" x="0" y="192" font-size="48" font-style="italic">• LKW-Werkstatt</text>
     </g>
   </g>
 
   <!-- Contact lines under logo -->
-  <text class="meta" x="1050" y="415" text-anchor="middle" font-size="38">
+  <text class="meta" x="1050" y="510" text-anchor="middle" font-size="38">
     D-83395 Freilassing, Breslauer Strasse 49, Tel. (0049)8654 / 4697-0, Fax (0049)8654 / 4697-19, E-Mail: office@ics-logistik.com
   </text>
-  <text class="meta" x="1050" y="480" text-anchor="middle" font-size="42">www.ics-logistik.com</text>
+  <text class="meta" x="1050" y="576" text-anchor="middle" font-size="42">www.ics-logistik.com</text>
 
   <!-- Bottom legal/footer lines -->
   <g text-anchor="middle" transform="translate(1050,0)">
