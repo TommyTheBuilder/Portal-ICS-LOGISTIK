@@ -30,42 +30,37 @@
     @media print { .btnBar { display: none !important; } }
 
     .sheet {
+      position: relative;
       width: 210mm;
-      min-height: 297mm;
+      height: 297mm;
       margin: 0 auto;
-      padding: 14mm 18mm 10mm;
+      padding: 54mm 18mm 14mm;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
-    .header {
-      display: grid;
-      grid-template-columns: 1fr 62mm;
-      align-items: start;
-      margin-bottom: 8mm;
+    .briefkopf {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 210mm;
+      height: 297mm;
+      object-fit: cover;
+      pointer-events: none;
+      z-index: 0;
     }
-    .company {
-      text-align: center;
-      font-size: 7.8mm;
-      line-height: 1.2;
-      font-weight: 700;
-    }
-    .company .name {
-      font-size: 6.5mm;
-      font-weight: 800;
-    }
-    .logo {
-      justify-self: end;
-      width: 58mm;
-      height: auto;
-      margin-top: -2mm;
+
+    .content {
+      position: relative;
+      z-index: 1;
     }
 
     .title {
       text-align: center;
-      font-size: 8.5mm;
+      font-size: 7.2mm;
       font-weight: 800;
       letter-spacing: 0.4px;
-      margin: 2mm 0 7mm;
+      margin: 0 0 5.5mm;
     }
 
     .lineRow {
@@ -73,16 +68,16 @@
       grid-template-columns: auto 1fr auto 1fr;
       align-items: end;
       gap: 3mm;
-      font-size: 6.2mm;
-      margin-bottom: 4mm;
+      font-size: 4.4mm;
+      margin-bottom: 2.3mm;
     }
     .lineRow.single {
       grid-template-columns: auto 1fr;
     }
     .line {
       border-bottom: 1px solid #111;
-      min-height: 7mm;
-      padding: 0 2mm 0.6mm;
+      min-height: 5.2mm;
+      padding: 0 1.5mm 0.45mm;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
@@ -91,34 +86,34 @@
 
     .tableWrap {
       border: 1px solid #123d7a;
-      margin: 5mm auto 4.5mm;
+      margin: 3mm auto 3mm;
       width: 100%;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 5.5mm;
+      font-size: 4.1mm;
     }
     th, td {
       border: 1px solid #123d7a;
-      padding: 2.5mm 3mm;
+      padding: 1.7mm 2.2mm;
       text-align: center;
     }
     th {
       color: #0d2f64;
-      font-size: 5.9mm;
+      font-size: 4.7mm;
       font-weight: 800;
       background: #f4f7fb;
     }
     td.type {
       width: 34%;
       text-align: left;
-      padding-left: 6mm;
-      font-size: 5.4mm;
+      padding-left: 4mm;
+      font-size: 4.1mm;
     }
     td.qty {
       width: 16%;
-      font-size: 8.5mm;
+      font-size: 5.4mm;
       line-height: 1;
     }
 
@@ -126,30 +121,30 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 3mm;
-      margin-bottom: 6mm;
+      margin-bottom: 3.2mm;
     }
     .sigBox {
       border: 1px solid #123d7a;
-      min-height: 31mm;
-      padding: 3.8mm;
+      min-height: 24mm;
+      padding: 2.8mm;
       box-sizing: border-box;
       text-align: center;
     }
     .sigTitle {
-      font-size: 7mm;
+      font-size: 4.8mm;
       font-weight: 500;
-      margin: 0 0 10mm;
+      margin: 0 0 7.2mm;
     }
     .sigLine {
       border-top: 1px dotted #888;
-      padding-top: 1.8mm;
-      font-size: 5.2mm;
+      padding-top: 1.2mm;
+      font-size: 3.7mm;
     }
 
     .footerText {
       text-align: center;
-      font-size: 6mm;
-      line-height: 1.35;
+      font-size: 4.3mm;
+      line-height: 1.25;
     }
     .footerText b { font-weight: 800; }
   </style>
@@ -162,15 +157,8 @@
 </div>
 
 <div class="sheet">
-  <div class="header">
-    <div class="company">
-      <div class="name">ICS LOGISTIK &amp; TRANSPORT GMBH</div>
-      Breslauer Straße 49<br>
-      D-83395 Freilassing<br>
-      Tel.: 08654 / 4697 0
-    </div>
-    <img class="logo" src="/briefkopf.png" alt="ICS Logo" />
-  </div>
+  <img class="briefkopf" src="/briefkopf.png" alt="Briefkopf" />
+  <div class="content">
 
   <div class="title">LADEMITTEL GEGENSCHEIN</div>
 
@@ -233,6 +221,7 @@
     Die Rückgabe ist <b>nur innerhalb von 8 Wochen</b> mit diesem Originalschein bei ICS-Logistik möglich.<br>
     Die Gebühr wird <b>nicht gutgeschrieben</b>. Bei Nichttausch durch den Empfänger ist<br>
     ICS sofort zu informieren. Spätere Reklamationen werden nicht akzeptiert.
+  </div>
   </div>
 </div>
 
