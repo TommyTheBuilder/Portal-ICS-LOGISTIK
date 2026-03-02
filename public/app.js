@@ -844,6 +844,10 @@ function renderHistory() {
               <div>${h.entrepreneur || "-"}</div>
             </div>
             <div class="rollcard-item">
+              <label>Produkt</label>
+              <div>${PRODUCT_TYPE_LABELS[h.product_type] || h.product_type || "-"}</div>
+            </div>
+            <div class="rollcard-item">
               <label>IN</label>
               <div>${h.qty_in}</div>
             </div>
@@ -911,6 +915,10 @@ function renderEntrepreneurHistory() {
             <div class="rollcard-item">
               <label>Kennzeichen</label>
               <div>${h.license_plate || "-"}</div>
+            </div>
+            <div class="rollcard-item">
+              <label>Produkt</label>
+              <div>${PRODUCT_TYPE_LABELS[h.product_type] || h.product_type || "-"}</div>
             </div>
             <div class="rollcard-item">
               <label>Soll</label>

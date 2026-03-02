@@ -1214,6 +1214,7 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
       MAX(COALESCE(uc.username, '(gelöscht)')) AS aviso_created_by,
       MAX(COALESCE(ua.username, '(gelöscht)')) AS aviso_approved_by,
       MAX(bc.employee_code) AS employee_code,
+      MAX(COALESCE(b.product_type, 'euro')) AS product_type,
       COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0)  AS qty_in,
       COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS qty_out
     FROM bookings b
@@ -1259,6 +1260,7 @@ app.get("/api/entrepreneur-history", authRequired, requirePermission("bookings.v
       MAX(eh.created_at) AS last_seen,
       eh.entrepreneur,
       eh.license_plate,
+      COALESCE(eh.product_type, 'euro') AS product_type,
       COALESCE(d.name, '(gelöschte Abteilung)') AS department,
       COALESCE(SUM(eh.qty_in), 0) AS qty_in,
       COALESCE(SUM(eh.qty_out), 0) AS qty_out,
@@ -1266,7 +1268,7 @@ app.get("/api/entrepreneur-history", authRequired, requirePermission("bookings.v
     FROM entrepreneur_history eh
     LEFT JOIN departments d ON d.id=eh.department_id
     WHERE ${where.join(" AND ")}
-    GROUP BY eh.entrepreneur, eh.license_plate, COALESCE(d.name, '(gelöschte Abteilung)')
+    GROUP BY eh.entrepreneur, eh.license_plate, COALESCE(eh.product_type, 'euro'), COALESCE(d.name, '(gelöschte Abteilung)')
     ORDER BY MAX(eh.created_at) DESC
     LIMIT 500
     `,
