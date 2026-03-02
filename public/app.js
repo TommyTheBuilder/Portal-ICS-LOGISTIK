@@ -1165,6 +1165,21 @@ socket.on("notificationCreated", async () => {
   await loadNotifications();
 });
 
+socket.on("notificationsDeleted", async (payload) => {
+  const ids = Array.isArray(payload?.notification_ids)
+    ? payload.notification_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+    : [];
+
+  if (ids.length > 0) {
+    const idSet = new Set(ids);
+    NOTIFICATIONS = NOTIFICATIONS.filter((item) => !idSet.has(Number(item.id)));
+    renderNotifications();
+    return;
+  }
+
+  await loadNotifications();
+});
+
 socket.on("bookingsUpdated", async (payload) => {
   if (!payload?.location_id) return;
   if (Number(payload.location_id) !== Number(CURRENT_LOCATION)) return;
