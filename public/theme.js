@@ -55,7 +55,9 @@
       applyTheme(nextTheme);
       await persistTheme(nextTheme);
     });
-    document.body.appendChild(btn);
+    const mountTarget = document.getElementById("themeToggleMount");
+    if (mountTarget) mountTarget.appendChild(btn);
+    else document.body.appendChild(btn);
     applyTheme(localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light");
   }
 

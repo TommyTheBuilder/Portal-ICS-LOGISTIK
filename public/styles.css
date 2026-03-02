@@ -139,3 +139,10 @@ body.darkmode .notification-item { border-bottom-color: #374151; }
 body.darkmode .notification-item.unread { background: #1e3a8a; }
 
 @media print { .theme-toggle { display:none !important; } }
+
+#themeToggleMount .theme-toggle {
+  position: static;
+  width: 36px;
+  height: 36px;
+  box-shadow: none;
+}

@@ -101,6 +101,7 @@ $("logoutBtn").addEventListener("click", () => {
   localStorage.removeItem("token");
   window.location.href = "/login.html";
 });
+$("entrepreneursMasterBtn")?.addEventListener("click", () => window.location.href = "/entrepreneurs.html");
 $("adminBtn").addEventListener("click", () => window.location.href = "/admin.html");
 
 async function loadMe() {
@@ -159,6 +160,10 @@ function applyPermsToUI() {
   if (tabBtn("history")) tabBtn("history").style.display = canHistory ? "" : "none";
   if (tabBtn("entrepreneur-history")) tabBtn("entrepreneur-history").style.display = canHistory ? "" : "none";
   if (tabBtn("export")) tabBtn("export").style.display = canExport ? "" : "none";
+
+  if ($("entrepreneursMasterBtn")) {
+    $("entrepreneursMasterBtn").style.display = PERMS?.masterdata?.entrepreneurs_manage ? "" : "none";
+  }
 
   ensureOverallOption();
 
@@ -730,17 +735,48 @@ $("createAvisoBtn").addEventListener("click", async () => {
   await loadCases();
 });
 
-$("addEntrepreneurBtn").addEventListener("click", async () => {
+function toggleEntrepreneurModal(show) {
+  const back = $("entrepreneurModalBack");
+  if (!back) return;
+  back.style.display = show ? "flex" : "none";
+}
+
+function setEntrepreneurModalMsg(text, ok = false) {
+  const el = $("entrepreneurModalMsg");
+  if (!el) return;
+  el.style.color = ok ? "#0a7a2f" : "#b00020";
+  el.textContent = text || "";
+}
+
+function clearEntrepreneurModal() {
+  ["modalEntrepreneurName", "modalEntrepreneurStreet", "modalEntrepreneurPostal", "modalEntrepreneurCity"].forEach((id) => {
+    if ($(id)) $(id).value = "";
+  });
+  setEntrepreneurModalMsg("");
+}
+
+$("addEntrepreneurBtn").addEventListener("click", () => {
   setMsg("avisoMsg", "");
   if (!PERMS?.cases?.create) return setMsg("avisoMsg", "Keine Berechtigung für Aviso");
+  clearEntrepreneurModal();
+  toggleEntrepreneurModal(true);
+  $("modalEntrepreneurName")?.focus();
+});
 
-  const raw = window.prompt("Neuen Unternehmer (Name)");
-  if (raw === null) return;
-  const name = raw.trim();
-  if (!name) return setMsg("avisoMsg", "Bitte einen Unternehmer-Namen eingeben");
-  const street = (window.prompt("Straße (optional)") || "").trim();
-  const postal_code = (window.prompt("PLZ (optional)") || "").trim();
-  const city = (window.prompt("Ort (optional)") || "").trim();
+$("closeEntrepreneurModalBtn")?.addEventListener("click", () => toggleEntrepreneurModal(false));
+$("cancelEntrepreneurModalBtn")?.addEventListener("click", () => toggleEntrepreneurModal(false));
+$("entrepreneurModalBack")?.addEventListener("click", (e) => {
+  if (e.target?.id === "entrepreneurModalBack") toggleEntrepreneurModal(false);
+});
+
+$("saveEntrepreneurModalBtn")?.addEventListener("click", async () => {
+  setEntrepreneurModalMsg("");
+  const name = ($("modalEntrepreneurName")?.value || "").trim();
+  const street = ($("modalEntrepreneurStreet")?.value || "").trim();
+  const postal_code = ($("modalEntrepreneurPostal")?.value || "").trim();
+  const city = ($("modalEntrepreneurCity")?.value || "").trim();
+
+  if (!name) return setEntrepreneurModalMsg("Bitte einen Unternehmer-Namen eingeben");
 
   const r = await api("/api/entrepreneurs", {
     method: "POST",
@@ -752,11 +788,12 @@ $("addEntrepreneurBtn").addEventListener("click", async () => {
     })
   });
   const data = await readJsonSafe(r);
-  if (!r.ok) return setMsg("avisoMsg", data?.error || "Unternehmer konnte nicht gespeichert werden");
+  if (!r.ok) return setEntrepreneurModalMsg(data?.error || "Unternehmer konnte nicht gespeichert werden");
 
   await loadEntrepreneurs(data?.name || name);
   $("avisoEntrepreneur").value = data?.name || name;
   setMsg("avisoMsg", "Unternehmer gespeichert", true);
+  toggleEntrepreneurModal(false);
 });
 
 // ---------- Historie ----------

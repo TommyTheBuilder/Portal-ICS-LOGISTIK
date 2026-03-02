@@ -278,7 +278,7 @@ async function getMyPermissions(user) {
         cancel: true,
         require_employee_code: false
       },
-      masterdata: { manage: true },
+      masterdata: { manage: true, entrepreneurs_manage: true },
       users: { manage: true, view_department: true },
       roles: { manage: true }
     };
@@ -297,7 +297,7 @@ async function getMyPermissions(user) {
         cancel: false,
         require_employee_code: false
       },
-      masterdata: { manage: false },
+      masterdata: { manage: false, entrepreneurs_manage: false },
       users: { manage: false, view_department: false },
       roles: { manage: false }
     };
@@ -319,7 +319,7 @@ async function getMyPermissions(user) {
       cancel: false,
       require_employee_code: false
     },
-    masterdata: { manage: false },
+    masterdata: { manage: false, entrepreneurs_manage: false },
     users: { manage: false, view_department: false },
     roles: { manage: false }
   };
@@ -525,6 +525,64 @@ app.post("/api/entrepreneurs", authRequired, async (req, res) => {
     [name, street, postal_code, city]
   );
   res.json(r.rows[0]);
+});
+
+app.get("/api/entrepreneurs/manage", authRequired, requirePermission("masterdata.entrepreneurs_manage"), async (req, res) => {
+  res.json((await q(`SELECT id, name, street, postal_code, city FROM entrepreneurs ORDER BY name`)).rows);
+});
+
+app.post("/api/entrepreneurs/manage", authRequired, requirePermission("masterdata.entrepreneurs_manage"), async (req, res) => {
+  const name = safeTrim(req.body?.name);
+  const street = safeTrim(req.body?.street);
+  const postal_code = safeTrim(req.body?.postal_code);
+  const city = safeTrim(req.body?.city);
+  if (!name) return res.status(400).json({ error: "Name erforderlich" });
+
+  try {
+    const r = await q(
+      `INSERT INTO entrepreneurs (name, street, postal_code, city)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, street, postal_code, city`,
+      [name, street, postal_code, city]
+    );
+    res.json(r.rows[0]);
+  } catch (e) {
+    if (e && e.code === "23505") return res.status(400).json({ error: "Unternehmer existiert bereits" });
+    throw e;
+  }
+});
+
+app.put("/api/entrepreneurs/manage/:id", authRequired, requirePermission("masterdata.entrepreneurs_manage"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: "invalid id" });
+
+  const name = safeTrim(req.body?.name);
+  const street = safeTrim(req.body?.street);
+  const postal_code = safeTrim(req.body?.postal_code);
+  const city = safeTrim(req.body?.city);
+  if (!name) return res.status(400).json({ error: "Name erforderlich" });
+
+  try {
+    const r = await q(
+      `UPDATE entrepreneurs
+       SET name=$1, street=$2, postal_code=$3, city=$4
+       WHERE id=$5
+       RETURNING id, name, street, postal_code, city`,
+      [name, street, postal_code, city, id]
+    );
+    if (!r.rowCount) return res.status(404).json({ error: "Unternehmer nicht gefunden" });
+    res.json(r.rows[0]);
+  } catch (e) {
+    if (e && e.code === "23505") return res.status(400).json({ error: "Unternehmer existiert bereits" });
+    throw e;
+  }
+});
+
+app.delete("/api/entrepreneurs/manage/:id", authRequired, requirePermission("masterdata.entrepreneurs_manage"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: "invalid id" });
+  await q(`DELETE FROM entrepreneurs WHERE id=$1`, [id]);
+  res.json({ ok: true });
 });
 
 app.get("/api/admin/entrepreneurs", authRequired, adminRequired, async (req, res) => {

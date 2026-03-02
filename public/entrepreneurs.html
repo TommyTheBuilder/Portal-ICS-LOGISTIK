@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Unternehmerstammdaten</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <div><b>Unternehmerstammdaten</b></div>
+  <div class="right" style="display:flex; gap:8px;">
+    <button class="secondary" id="backBtn" style="width:auto;">Zur App</button>
+    <button class="secondary" id="logoutBtn" style="width:auto;">Logout</button>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <h3 style="margin-top:0;">Unternehmer verwalten</h3>
+    <div class="row">
+      <div>
+        <label>Name</label>
+        <input id="entName" placeholder="z.B. Spedition Müller">
+      </div>
+      <div>
+        <label>Straße</label>
+        <input id="entStreet" placeholder="z.B. Musterstraße 12">
+      </div>
+      <div>
+        <label>PLZ</label>
+        <input id="entPostal" placeholder="z.B. 1010">
+      </div>
+      <div>
+        <label>Ort</label>
+        <input id="entCity" placeholder="z.B. Wien">
+      </div>
+      <div>
+        <button id="saveBtn">Speichern</button>
+      </div>
+      <div>
+        <button class="secondary" id="resetBtn">Zurücksetzen</button>
+      </div>
+    </div>
+    <p id="msg"></p>
+    <div style="overflow:auto; margin-top:8px;">
+      <table>
+        <thead><tr><th>Unternehmer</th><th>Adresse</th><th>Aktion</th></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="/theme.js"></script>
+<script src="/entrepreneurs.js"></script>
+</body>
+</html>

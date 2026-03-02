@@ -27,7 +27,16 @@
     .btn { padding: 10px 12px; border-radius: 10px; border: 0; cursor: pointer; font-weight: 700; }
     .primary { background: #111827; color: #fff; }
     .secondary { background: #e5e7eb; color: #111827; }
-    @media print { .btnBar { display: none !important; } }
+    @media print {
+      .btnBar { display: none !important; }
+      html, body { height: auto !important; }
+      .sheet {
+        height: auto !important;
+        min-height: 297mm;
+        page-break-after: avoid;
+        break-after: avoid-page;
+      }
+    }
 
     .sheet {
       position: relative;
