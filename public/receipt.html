@@ -13,128 +13,145 @@
       font-family: Arial, sans-serif;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      color: #111;
     }
 
-    .btnBar{
+    .btnBar {
       position: fixed;
       top: 12px;
       right: 12px;
-      display:flex;
-      gap:10px;
-      z-index: 2147483647;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
     }
-    .btn { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; font-weight:700; }
-    .primary { background:#111827; color:#fff; }
-    .secondary { background:#e5e7eb; color:#111827; }
-    @media print { .btnBar{ display:none !important; } }
+    .btn { padding: 10px 12px; border-radius: 10px; border: 0; cursor: pointer; font-weight: 700; }
+    .primary { background: #111827; color: #fff; }
+    .secondary { background: #e5e7eb; color: #111827; }
+    @media print { .btnBar { display: none !important; } }
 
     .sheet {
-      position: relative;
       width: 210mm;
-      height: 297mm;
-      overflow: hidden;
-    }
-
-    .bg {
-      position: absolute;
-      inset: 0;
-      width: 210mm;
-      height: 297mm;
-      object-fit: cover;
-      pointer-events: none;
-    }
-
-    .layer { position: absolute; inset: 0; }
-
-    .field {
-      position: absolute;
-      background: rgba(255,255,255,0.90);
-      border: 1px solid rgba(207,216,227,0.95);
-      border-radius: 6px;
-      padding: 5px 7px;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 14mm 18mm 10mm;
       box-sizing: border-box;
     }
-    .field label{
-      display:block;
-      font-size: 9pt;
-      color: #6b7280;
-      margin-bottom: 2px;
+
+    .header {
+      display: grid;
+      grid-template-columns: 1fr 62mm;
+      align-items: start;
+      margin-bottom: 8mm;
     }
-    .field .val{
-      font-size: 11pt;
-      font-weight: 700;
-      color: #111827;
-    }
-    .field .val.multiline{
-      white-space: pre-line;
+    .company {
+      text-align: center;
+      font-size: 7.8mm;
       line-height: 1.2;
+      font-weight: 700;
+    }
+    .company .name {
+      font-size: 6.5mm;
+      font-weight: 800;
+    }
+    .logo {
+      justify-self: end;
+      width: 58mm;
+      height: auto;
+      margin-top: -2mm;
     }
 
     .title {
-      position: absolute;
-      left: 18mm;
-      top: 54mm;
-      font-size: 15pt;
+      text-align: center;
+      font-size: 8.5mm;
       font-weight: 800;
-      background: rgba(255,255,255,0.75);
-      padding: 4px 8px;
-      border-radius: 6px;
+      letter-spacing: 0.4px;
+      margin: 2mm 0 7mm;
     }
 
-    .f-receipt { left: 132mm; top: 54mm; width: 66mm; height: 16mm; }
-    .f-dt      { left: 132mm; top: 72mm; width: 66mm; height: 16mm; }
-
-    .f-loc     { left: 18mm; top: 76mm; width: 88mm; height: 18mm; }
-    .f-dept    { left: 112mm; top: 96mm; width: 86mm; height: 18mm; }
-
-    /* 🔁 GETAUSCHT */
-    .f-plate   { left: 18mm; top: 98mm; width: 88mm; height: 18mm; }
-    .f-out     { left: 112mm; top: 118mm; width: 86mm; height: 18mm; }
-    .f-in      { left: 18mm; top: 120mm; width: 88mm; height: 18mm; }
-    .f-ent     { left: 112mm; top: 140mm; width: 86mm; height: 24mm; }
-
-    .f-user    { left: 18mm; top: 140mm; width: 88mm; height: 24mm; }
-    .f-note    { left: 18mm; top: 172mm; width: 180mm; height: 10mm; }
-    .f-details { left: 18mm; top: 186mm; width: 180mm; height: 16mm; }
-
-    .signTitle{
-      position:absolute;
-      left:18mm;
-      top: 214mm;
-      font-size: 10pt;
-      font-weight: 700;
-      background: rgba(255,255,255,0.75);
-      padding: 3px 6px;
-      border-radius: 6px;
+    .lineRow {
+      display: grid;
+      grid-template-columns: auto 1fr auto 1fr;
+      align-items: end;
+      gap: 3mm;
+      font-size: 6.2mm;
+      margin-bottom: 4mm;
+    }
+    .lineRow.single {
+      grid-template-columns: auto 1fr;
+    }
+    .line {
+      border-bottom: 1px solid #111;
+      min-height: 7mm;
+      padding: 0 2mm 0.6mm;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .signBox {
-      position: absolute;
-      top: 222mm;
-      width: 85mm;
-      height: 30mm;
-      background: rgba(255,255,255,0.90);
-      border: 1px solid rgba(207,216,227,0.95);
-      border-radius: 6px;
-      padding: 7px;
+    .tableWrap {
+      border: 1px solid #123d7a;
+      margin: 5mm auto 4.5mm;
+      width: 100%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 5.5mm;
+    }
+    th, td {
+      border: 1px solid #123d7a;
+      padding: 2.5mm 3mm;
+      text-align: center;
+    }
+    th {
+      color: #0d2f64;
+      font-size: 5.9mm;
+      font-weight: 800;
+      background: #f4f7fb;
+    }
+    td.type {
+      width: 34%;
+      text-align: left;
+      padding-left: 6mm;
+      font-size: 5.4mm;
+    }
+    td.qty {
+      width: 16%;
+      font-size: 8.5mm;
+      line-height: 1;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3mm;
+      margin-bottom: 6mm;
+    }
+    .sigBox {
+      border: 1px solid #123d7a;
+      min-height: 31mm;
+      padding: 3.8mm;
       box-sizing: border-box;
+      text-align: center;
     }
-    .signLeft  { left: 18mm; }
-    .signRight { left: 112mm; }
-
-    .signHint { font-size: 8.5pt; color:#6b7280; margin-bottom: 8mm; }
-
-    .signLine {
-      position:absolute;
-      left: 7px;
-      right: 7px;
-      bottom: 7px;
-      border-top: 1px solid #111827;
-      padding-top: 3px;
-      font-size: 8.5pt;
-      display:flex;
-      justify-content: space-between;
+    .sigTitle {
+      font-size: 7mm;
+      font-weight: 500;
+      margin: 0 0 10mm;
     }
+    .sigLine {
+      border-top: 1px dotted #888;
+      padding-top: 1.8mm;
+      font-size: 5.2mm;
+    }
+
+    .footerText {
+      text-align: center;
+      font-size: 6mm;
+      line-height: 1.35;
+    }
+    .footerText b { font-weight: 800; }
   </style>
 </head>
 <body>
@@ -145,84 +162,77 @@
 </div>
 
 <div class="sheet">
-  <img class="bg" src="/briefkopf.png" />
-
-  <div class="layer">
-    <div class="title">Palettenschein / Buchungsbeleg</div>
-
-    <div class="field f-receipt">
-      <label>Belegnummer</label>
-      <div class="val" id="receiptNo"></div>
+  <div class="header">
+    <div class="company">
+      <div class="name">ICS LOGISTIK &amp; TRANSPORT GMBH</div>
+      Breslauer Straße 49<br>
+      D-83395 Freilassing<br>
+      Tel.: 08654 / 4697 0
     </div>
+    <img class="logo" src="/briefkopf.png" alt="ICS Logo" />
+  </div>
 
-    <div class="field f-dt">
-      <label>Datum/Zeit</label>
-      <div class="val" id="dateTime"></div>
+  <div class="title">LADEMITTEL GEGENSCHEIN</div>
+
+  <div class="lineRow">
+    <div>Ort/Datum:</div>
+    <div class="line" id="placeDate"></div>
+    <div>Trailer Nr.:</div>
+    <div class="line" id="trailerNo"></div>
+  </div>
+
+  <div class="lineRow single">
+    <div>Belegnummer:</div>
+    <div class="line" id="receiptNoInline"></div>
+  </div>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th colspan="2">ICS übergibt an Sie</th>
+          <th colspan="2">ICS übernimmt von Ihnen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="qty" id="qtyOutEu"></td>
+          <td class="type">Euro-Paletten</td>
+          <td class="qty" id="qtyInEu"></td>
+          <td class="type">Euro-Paletten</td>
+        </tr>
+        <tr>
+          <td class="qty">0</td>
+          <td class="type">H1-Paletten</td>
+          <td class="qty">0</td>
+          <td class="type">H1-Paletten</td>
+        </tr>
+        <tr>
+          <td class="qty">0</td>
+          <td class="type">Gitterboxen</td>
+          <td class="qty">0</td>
+          <td class="type">Gitterboxen</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="signatures">
+    <div class="sigBox">
+      <div class="sigTitle">In Ordnung übernommen.</div>
+      <div class="sigLine">Unterschrift/Stempel</div>
     </div>
-
-    <div class="field f-loc">
-      <label>Standort / Lager</label>
-      <div class="val" id="location"></div>
+    <div class="sigBox">
+      <div class="sigTitle">In Ordnung übergeben.</div>
+      <div class="sigLine">Unterschrift/Stempel</div>
     </div>
+  </div>
 
-    <div class="field f-dept">
-      <label>Abteilung</label>
-      <div class="val" id="department"></div>
-    </div>
-
-    <!-- GETAUSCHT -->
-    <div class="field f-plate">
-      <label>Kennzeichen</label>
-      <div class="val" id="plate"></div>
-    </div>
-
-    <div class="field f-out">
-      <label>Ausgang (OUT)</label>
-      <div class="val" id="qtyOut"></div>
-    </div>
-
-    <div class="field f-in">
-      <label>Eingang (IN)</label>
-      <div class="val" id="qtyIn"></div>
-    </div>
-
-    <div class="field f-ent">
-      <label>Unternehmer</label>
-      <div class="val multiline" id="entrepreneur"></div>
-    </div>
-
-    <div class="field f-user">
-      <label>Benutzer/Mitarbeiterkürzel</label>
-      <div class="val" id="username"></div>
-    </div>
-
-    <div class="field f-note">
-      <label>Notiz</label>
-      <div class="val" id="note"></div>
-    </div>
-
-    <div class="field f-details">
-      <label>Details</label>
-      <div class="val" id="details"></div>
-    </div>
-
-    <div class="signTitle">Unterschriften</div>
-
-    <div class="signBox signLeft">
-      <div class="signHint">Ich bestätige die Richtigkeit der Buchung.</div>
-      <div class="signLine">
-        <span>Unterschrift Fahrer</span>
-        <span>Datum</span>
-      </div>
-    </div>
-
-    <div class="signBox signRight">
-      <div class="signHint">Geprüft / übernommen.</div>
-      <div class="signLine">
-        <span>Unterschrift Lagermitarbeiter</span>
-        <span>Datum</span>
-      </div>
-    </div>
+  <div class="footerText">
+    Ladehilfsmittel werden mit <b>22 €/Palette</b> verrechnet, zuzüglich <b>25 € Bearbeitungsgebühr</b>.<br>
+    Die Rückgabe ist <b>nur innerhalb von 8 Wochen</b> mit diesem Originalschein bei ICS-Logistik möglich.<br>
+    Die Gebühr wird <b>nicht gutgeschrieben</b>. Bei Nichttausch durch den Empfänger ist<br>
+    ICS sofort zu informieren. Spätere Reklamationen werden nicht akzeptiert.
   </div>
 </div>
 
