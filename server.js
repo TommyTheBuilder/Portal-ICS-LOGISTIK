@@ -1123,8 +1123,11 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
 
       await client.query("COMMIT");
 
+      await q(`DELETE FROM user_notifications WHERE case_id=$1`, [id]);
+
       io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
       io.to(`loc:${c.location_id}`).emit("stockUpdated", { location_id: c.location_id });
+      io.to(`loc:${c.location_id}`).emit("notificationsUpdated", { location_id: c.location_id, case_id: id });
 
       // ✅ NEU: Historie/Bookings live aktualisieren
       io.to(`loc:${c.location_id}`).emit("bookingsUpdated", {

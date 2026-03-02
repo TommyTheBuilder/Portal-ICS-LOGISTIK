@@ -441,6 +441,49 @@ function bindNotificationPanel() {
   panel.addEventListener("click", (event) => event.stopPropagation());
 }
 
+function showApproveConfirmModal() {
+  const back = $("approveConfirmModalBack");
+  const closeBtn = $("closeApproveConfirmModalBtn");
+  const cancelBtn = $("cancelApproveConfirmBtn");
+  const confirmBtn = $("confirmApproveConfirmBtn");
+  if (!back || !closeBtn || !cancelBtn || !confirmBtn) {
+    return Promise.resolve(window.confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich)."));
+  }
+
+  back.style.display = "flex";
+
+  return new Promise((resolve) => {
+    const cleanup = () => {
+      back.style.display = "none";
+      closeBtn.removeEventListener("click", onCancel);
+      cancelBtn.removeEventListener("click", onCancel);
+      confirmBtn.removeEventListener("click", onConfirm);
+      back.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+
+    const finish = (value) => {
+      cleanup();
+      resolve(value);
+    };
+
+    const onCancel = () => finish(false);
+    const onConfirm = () => finish(true);
+    const onBackdrop = (event) => {
+      if (event.target === back) finish(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") finish(false);
+    };
+
+    closeBtn.addEventListener("click", onCancel);
+    cancelBtn.addEventListener("click", onCancel);
+    confirmBtn.addEventListener("click", onConfirm);
+    back.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeyDown);
+  });
+}
+
 async function loadCases() {
 
   if (!CURRENT_LOCATION) return;
@@ -625,7 +668,8 @@ $("saveCaseBtn").addEventListener("click", async () => {
 
 $("approveCaseBtn").addEventListener("click", async () => {
   setMsg("caseModalMsg", "");
-  if (!confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich).")) return;
+  const confirmed = await showApproveConfirmModal();
+  if (!confirmed) return;
 
   const { ok, data } = await caseAction("approve");
   if (!ok) return;
@@ -1110,6 +1154,9 @@ socket.on("casesUpdated", async (payload) => {
   }
 });
 socket.on("notificationCreated", async () => {
+  await loadNotifications();
+});
+socket.on("notificationsUpdated", async () => {
   await loadNotifications();
 });
 

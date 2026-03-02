@@ -405,6 +405,20 @@
   </div>
 </div>
 
+<div class="modalBack" id="approveConfirmModalBack">
+  <div class="modal" style="max-width:560px; width:100%; box-shadow:0 18px 45px rgba(15,23,42,.3); border:1px solid #e5e7eb;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h3 style="margin:0;">Buchung abschließen</h3>
+      <button class="secondary" id="closeApproveConfirmModalBtn" type="button" style="width:auto;">✕</button>
+    </div>
+    <p style="margin:0; color:#374151;">Möchten Sie diesen Vorgang wirklich abschließen? Nach der Bestätigung wird die Buchung fix verbucht und der Bestand aktualisiert.</p>
+    <div class="row" style="justify-content:flex-end; margin-top:14px;">
+      <button class="secondary" id="cancelApproveConfirmBtn" type="button" style="min-width:140px;">Abbrechen</button>
+      <button class="primary" id="confirmApproveConfirmBtn" type="button" style="min-width:180px;">Ja, jetzt buchen</button>
+    </div>
+  </div>
+</div>
+
 <script src="/theme.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/app.js"></script>
