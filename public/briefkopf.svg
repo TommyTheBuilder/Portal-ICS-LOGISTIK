@@ -34,9 +34,9 @@
   <!-- Right side services -->
   <g transform="translate(1500,170)">
     <text class="blue" font-size="68" font-style="italic">• Spedition</text>
-    <text class="blue" y="90" font-size="68" font-style="italic">• Lagerung</text>
-    <text class="blue" y="180" font-size="68" font-style="italic">• Transport</text>
-    <text class="blue" y="270" font-size="68" font-style="italic">• LKW-Werkstatt</text>
+    <text class="blue" y="90" font-size="64" font-style="italic">• Lagerung</text>
+    <text class="blue" y="180" font-size="64" font-style="italic">• Transport</text>
+    <text class="blue" y="270" font-size="64" font-style="italic">• LKW-Werkstatt</text>
   </g>
 
   <!-- Contact lines -->
