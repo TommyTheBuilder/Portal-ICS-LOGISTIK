@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2100 2970" width="2100" height="2970">
+  <rect width="2100" height="2970" fill="#ffffff"/>
+
+  <g transform="translate(730,180)">
+    <text x="0" y="160" fill="#0e5fb3" font-family="Arial, Helvetica, sans-serif" font-size="340" font-weight="700" letter-spacing="-12">ICS</text>
+    <text x="14" y="226" fill="#111" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="8">LOGISTIK UND TRANSPORT GMBH</text>
+    <g transform="translate(760,40)" fill="#0e5fb3" font-family="Arial, Helvetica, sans-serif" font-size="54">
+      <text x="0" y="0">• Spedition</text>
+      <text x="0" y="72">• Lagerung</text>
+      <text x="0" y="144">• Transport</text>
+      <text x="0" y="216">• LKW-Werkstatt</text>
+    </g>
+  </g>
+
+  <text x="1050" y="490" text-anchor="middle" fill="#444" font-family="Arial, Helvetica, sans-serif" font-size="43">
+    D-83395 Freilassing, Breslauer Strasse 49, Tel. (0049)8654 / 4697-0, Fax (0049)8654 / 4697-19, E-Mail: office@ics-logistik.com
+  </text>
+  <text x="1050" y="560" text-anchor="middle" fill="#444" font-family="Arial, Helvetica, sans-serif" font-size="46">www.ics-logistik.com</text>
+
+  <g fill="#3d77b9" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="1050" y="2725" font-size="42">Bankverbindung BRD: Volksbank BLZ 71090000, Konto Nr. 2330, IBAN: DE72 7109 0000 0000 0023 30, BIC: GENODEF1BGL</text>
+    <text x="1050" y="2780" font-size="42">Bankverbindung Österreich: Raiffeisenkasse BLZ 35000, Konto Nr. 98632, IBAN: AT56 3500 0000 0009 8632, BIC: RVSAAT2S</text>
+    <text x="1050" y="2835" font-size="40">Sitz der Gesellschaft: Freilassing, Amtsgericht Traunstein, HRB-Nr. 14847, UID-Nr. DEB13616871</text>
+    <text x="1050" y="2890" font-size="48">Geschäftsführer: Hubert Pichler</text>
+  </g>
+</svg>
