@@ -32,6 +32,7 @@ async function migrate() {
       license_plate TEXT,
       qty_in INTEGER NOT NULL DEFAULT 0,
       qty_out INTEGER NOT NULL DEFAULT 0,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
@@ -55,6 +56,7 @@ async function migrate() {
       note TEXT,
       receipt_no TEXT,
       license_plate TEXT,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
@@ -78,7 +80,16 @@ async function migrate() {
   await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS license_plate TEXT;`);
   await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS qty_in INTEGER;`);
   await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS qty_out INTEGER;`);
+  await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE entrepreneur_history DROP CONSTRAINT IF EXISTS entrepreneur_history_product_type_check;`);
+  await pool.query(`ALTER TABLE entrepreneur_history ADD CONSTRAINT entrepreneur_history_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
   await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS employee_code TEXT;`);
+  await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE booking_cases DROP CONSTRAINT IF EXISTS booking_cases_product_type_check;`);
+  await pool.query(`ALTER TABLE booking_cases ADD CONSTRAINT booking_cases_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_product_type_check;`);
+  await pool.query(`ALTER TABLE bookings ADD CONSTRAINT bookings_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
 
   // FK-Constraints lockern (Benutzer/Abteilungen löschen -> SET NULL)
   await pool.query(`ALTER TABLE bookings ALTER COLUMN department_id DROP NOT NULL;`);
@@ -217,6 +228,7 @@ async function migrate() {
       note TEXT,
       qty_in INTEGER NOT NULL DEFAULT 0,
       qty_out INTEGER NOT NULL DEFAULT 0,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
       receipt_no TEXT,
       claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       claimed_at TIMESTAMPTZ,

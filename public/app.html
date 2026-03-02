@@ -96,13 +96,25 @@
           <button class="secondary toggle-btn" id="toggleStockBtn" type="button" aria-expanded="true">−</button>
           <h3 style="margin:0;">Bestände (Live)</h3>
         </div>
-        <div>
-          <label>Ansicht</label>
-          <select id="stockMode">
-            <option value="location">Standort-Bestand (je Abteilung)</option>
-            <option value="overall">Komplett-Bestand (je Abteilung)</option>
-            <option value="entrepreneur">Unternehmer-Bestand (gesamt)</option>
-          </select>
+        <div class="rollcard" style="padding:10px 12px; margin:0;">
+          <div class="rollcard-grid" style="grid-template-columns: repeat(2, minmax(190px, 1fr)); gap: 8px 12px;">
+            <div class="rollcard-item">
+              <label>Ansicht</label>
+              <select id="stockMode">
+                <option value="location">Standort-Bestand (je Abteilung)</option>
+                <option value="overall">Komplett-Bestand (je Abteilung)</option>
+                <option value="entrepreneur">Unternehmer-Bestand (gesamt)</option>
+              </select>
+            </div>
+            <div class="rollcard-item">
+              <label>Produkt</label>
+              <select id="stockProductType">
+                <option value="euro">Euro-Paletten</option>
+                <option value="h1">H1-Paletten</option>
+                <option value="gitterbox">Gitterboxen</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
       <div id="stockContent">
@@ -150,6 +162,14 @@
       </div>
 
       <div class="row" style="margin-top:10px;">
+        <div>
+          <label>Produkt</label>
+          <select id="avisoProductType">
+            <option value="euro">Euro-Paletten</option>
+            <option value="h1">H1-Paletten</option>
+            <option value="gitterbox">Gitterboxen</option>
+          </select>
+        </div>
         <div>
           <label>Eingang (IN)</label>
           <input id="avisoIn" type="number" min="0" value="0">
@@ -307,6 +327,14 @@
       <div>
         <label>Unternehmer</label>
         <input id="caseEntrepreneur">
+      </div>
+      <div>
+        <label>Produkt</label>
+        <select id="caseProductType">
+          <option value="euro">Euro-Paletten</option>
+          <option value="h1">H1-Paletten</option>
+          <option value="gitterbox">Gitterboxen</option>
+        </select>
       </div>
     </div>
 

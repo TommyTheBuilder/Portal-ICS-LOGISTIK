@@ -98,8 +98,17 @@
 
     const qtyIn = Number(data.qty_in ?? 0);
     const qtyOut = Number(data.qty_out ?? 0);
-    setText("qtyOutEu", String(qtyOut));
-    setText("qtyInEu", String(qtyIn));
+    const productType = String(data.product_type || "euro").toLowerCase();
+
+    const map = {
+      euro: ["qtyOutEu", "qtyInEu"],
+      h1: ["qtyOutH1", "qtyInH1"],
+      gitterbox: ["qtyOutGb", "qtyInGb"]
+    };
+
+    const [outId, inId] = map[productType] || map.euro;
+    setText(outId, String(qtyOut));
+    setText(inId, String(qtyIn));
   }
 
   window.addEventListener("keydown", (e) => {

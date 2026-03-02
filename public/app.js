@@ -69,6 +69,13 @@ let CURRENT_LOCATION = null;
 let CURRENT_DEPARTMENT = null;
 
 let STOCK_MODE = localStorage.getItem("stockMode") || "location";
+let STOCK_PRODUCT_TYPE = localStorage.getItem("stockProductType") || "euro";
+
+const PRODUCT_TYPE_LABELS = {
+  euro: "Euro-Paletten",
+  h1: "H1-Paletten",
+  gitterbox: "Gitterboxen"
+};
 
 const socket = io();
 function joinLocationRoom() {
@@ -283,6 +290,8 @@ function updateStockHint() {
   if (STOCK_MODE === "overall") hint.textContent = "Komplett-Bestand (über alle Standorte).";
   else if (STOCK_MODE === "entrepreneur") hint.textContent = "Unternehmer-Bestand (über alle Standorte).";
   else hint.textContent = "Standort-Bestand (nur ausgewählter Standort).";
+
+  hint.textContent += ` Produkt: ${PRODUCT_TYPE_LABELS[STOCK_PRODUCT_TYPE] || STOCK_PRODUCT_TYPE}`;
 }
 
 async function loadStock() {
@@ -293,11 +302,11 @@ async function loadStock() {
 
   let url = "";
   if (STOCK_MODE === "overall") {
-    url = `/api/stock?mode=overall`;
+    url = `/api/stock?mode=overall&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else if (STOCK_MODE === "entrepreneur") {
-    url = `/api/stock?mode=entrepreneur`;
+    url = `/api/stock?mode=entrepreneur&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else {
-    url = `/api/stock?mode=location&location_id=${encodeURIComponent(CURRENT_LOCATION)}`;
+    url = `/api/stock?mode=location&location_id=${encodeURIComponent(CURRENT_LOCATION)}&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   }
 
   const r = await api(url, { method: "GET", headers: {} });
@@ -348,6 +357,15 @@ if ($("stockMode")) {
   $("stockMode").addEventListener("change", async () => {
     STOCK_MODE = $("stockMode").value;
     localStorage.setItem("stockMode", STOCK_MODE);
+    await loadStock();
+  });
+}
+
+if ($("stockProductType")) {
+  $("stockProductType").value = STOCK_PRODUCT_TYPE;
+  $("stockProductType").addEventListener("change", async () => {
+    STOCK_PRODUCT_TYPE = $("stockProductType").value;
+    localStorage.setItem("stockProductType", STOCK_PRODUCT_TYPE);
     await loadStock();
   });
 }
@@ -416,7 +434,7 @@ function renderCasesDashboard() {
   const rows = CASES.slice(0, 10);
   const html = `
     <table>
-      <thead><tr><th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>IN/OUT</th><th>Aktion</th></tr></thead>
+      <thead><tr><th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Produkt</th><th>IN/OUT</th><th>Aktion</th></tr></thead>
       <tbody>
         ${rows.map(c => `
           <tr>
@@ -424,11 +442,12 @@ function renderCasesDashboard() {
             <td>${statusLabel(c.status)}</td>
             <td>${c.department}</td>
             <td><b>${c.license_plate}</b></td>
+            <td>${PRODUCT_TYPE_LABELS[c.product_type] || c.product_type || "-"}</td>
             <td>${c.qty_in}/${c.qty_out}</td>
             <td><button class="secondary" data-open-case="${c.id}">Öffnen</button></td>
           </tr>
         `).join("")}
-        ${(rows.length === 0) ? `<tr><td colspan="6" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
+        ${(rows.length === 0) ? `<tr><td colspan="7" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
       </tbody>
     </table>
   `;
@@ -441,7 +460,7 @@ function renderCasesTable() {
     <table>
       <thead>
         <tr>
-          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Unternehmer</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
+          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Unternehmer</th><th>Produkt</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
         </tr>
       </thead>
       <tbody>
@@ -452,6 +471,7 @@ function renderCasesTable() {
             <td>${c.department}</td>
             <td><b>${c.license_plate}</b></td>
             <td>${c.entrepreneur || "-"}</td>
+            <td>${PRODUCT_TYPE_LABELS[c.product_type] || c.product_type || "-"}</td>
             <td>${c.qty_in}/${c.qty_out}</td>
             <td>${new Date(c.created_at).toLocaleString("de-DE")}</td>
             <td>
@@ -461,7 +481,7 @@ function renderCasesTable() {
             </td>
           </tr>
         `).join("")}
-        ${(CASES.length === 0) ? `<tr><td colspan="8" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
+        ${(CASES.length === 0) ? `<tr><td colspan="9" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
       </tbody>
     </table>
   `;
@@ -541,6 +561,7 @@ async function openCaseModal(id) {
   $("caseNote").value = c.note || "";
   $("caseIn").value = c.qty_in ?? 0;
   $("caseOut").value = c.qty_out ?? 0;
+  $("caseProductType").value = c.product_type || "euro";
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
@@ -561,7 +582,8 @@ $("saveCaseBtn").addEventListener("click", async () => {
     entrepreneur: $("caseEntrepreneur").value,
     note: $("caseNote").value,
     qty_in: Number($("caseIn").value || 0),
-    qty_out: Number($("caseOut").value || 0)
+    qty_out: Number($("caseOut").value || 0),
+    product_type: $("caseProductType").value
   });
   if (!ok) return;
   setMsg("caseModalMsg", "Gespeichert", true);
@@ -636,6 +658,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   const note = $("avisoNote").value;
   const qty_in = Number($("avisoIn").value || 0);
   const qty_out = Number($("avisoOut").value || 0);
+  const product_type = $("avisoProductType").value;
   const employee_code_raw = ($("avisoEmployeeCode").value || "").trim();
   const employee_code = employee_code_raw ? employee_code_raw.toUpperCase() : "";
 
@@ -658,6 +681,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
       note,
       qty_in,
       qty_out,
+      product_type,
       employee_code: employee_code || null
     })
   });
@@ -672,6 +696,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   $("avisoNote").value = "";
   $("avisoIn").value = 0;
   $("avisoOut").value = 0;
+  $("avisoProductType").value = "euro";
   $("avisoEmployeeCode").value = "";
 
   await loadCases();

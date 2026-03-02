@@ -17,6 +17,7 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
 const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 15 * 60 * 1000);
 const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
+const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
 
 function corsOriginResolver(origin, callback) {
   if (CORS_ORIGIN === "*") return callback(null, true);
@@ -66,6 +67,14 @@ function tooManyLoginAttempts(ip) {
 
 function clearLoginAttempts(ip) {
   LOGIN_ATTEMPTS.delete(ip);
+}
+
+function normalizeProductType(value) {
+  const normalized = String(value || "euro").trim().toLowerCase();
+  if (!PRODUCT_TYPES.includes(normalized)) {
+    return { ok: false, msg: "product_type invalid" };
+  }
+  return { ok: true, productType: normalized };
 }
 
 // ---------- Helpers ----------
@@ -778,7 +787,7 @@ app.post("/api/cases", authRequired, async (req, res) => {
   const perms = await getMyPermissions(req.user);
   if (!perms?.cases?.create) return res.status(403).json({ error: "Keine Berechtigung" });
 
-  const { location_id, department_id, license_plate, entrepreneur, note, qty_in, qty_out, employee_code } = req.body || {};
+  const { location_id, department_id, license_plate, entrepreneur, note, qty_in, qty_out, employee_code, product_type } = req.body || {};
   const locId = Number(location_id);
   const depId = Number(department_id);
 
@@ -792,6 +801,9 @@ app.post("/api/cases", authRequired, async (req, res) => {
   if (!Number.isInteger(inQty) || inQty < 0) return res.status(400).json({ error: "qty_in invalid" });
   if (!Number.isInteger(outQty) || outQty < 0) return res.status(400).json({ error: "qty_out invalid" });
   if (inQty === 0 && outQty === 0) return res.status(400).json({ error: "qty_in oder qty_out muss > 0 sein" });
+
+  const productTypeCheck = normalizeProductType(product_type);
+  if (!productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
 
   const employeeCodeCheck = normalizeEmployeeCode(employee_code);
   if (employeeCodeCheck && employeeCodeCheck.ok === false) {
@@ -807,20 +819,20 @@ app.post("/api/cases", authRequired, async (req, res) => {
 
   const r = await q(
     `
-    INSERT INTO booking_cases (location_id, department_id, created_by, status, license_plate, entrepreneur, note, qty_in, qty_out, employee_code)
-    VALUES ($1,$2,$3,1,$4,$5,$6,$7,$8,$9)
+    INSERT INTO booking_cases (location_id, department_id, created_by, status, license_plate, entrepreneur, note, qty_in, qty_out, employee_code, product_type)
+    VALUES ($1,$2,$3,1,$4,$5,$6,$7,$8,$9,$10)
     RETURNING id
     `,
-    [locId, depId, req.user.id, plateCheck.plate, safeTrim(entrepreneur), safeTrim(note), inQty, outQty, employeeCodeCheck?.code || null]
+    [locId, depId, req.user.id, plateCheck.plate, safeTrim(entrepreneur), safeTrim(note), inQty, outQty, employeeCodeCheck?.code || null, productTypeCheck.productType]
   );
 
   if (safeTrim(entrepreneur)) {
     await q(
       `
-      INSERT INTO entrepreneur_history (location_id, department_id, created_by, entrepreneur, license_plate, qty_in, qty_out)
-      VALUES ($1,$2,$3,$4,$5,$6,$7)
+      INSERT INTO entrepreneur_history (location_id, department_id, created_by, entrepreneur, license_plate, qty_in, qty_out, product_type)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       `,
-      [locId, depId, req.user.id, safeTrim(entrepreneur), plateCheck.plate, inQty, outQty]
+      [locId, depId, req.user.id, safeTrim(entrepreneur), plateCheck.plate, inQty, outQty, productTypeCheck.productType]
     );
   }
 
@@ -841,7 +853,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
   }
 
   const perms = await getMyPermissions(req.user);
-  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out } = req.body || {};
+  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, product_type } = req.body || {};
 
   const inQty = qty_in !== undefined ? Number(qty_in) : null;
   const outQty = qty_out !== undefined ? Number(qty_out) : null;
@@ -860,6 +872,9 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
     if (inQty !== null && (!Number.isInteger(inQty) || inQty < 0)) return res.status(400).json({ error: "qty_in invalid" });
     if (outQty !== null && (!Number.isInteger(outQty) || outQty < 0)) return res.status(400).json({ error: "qty_out invalid" });
 
+    const productTypeCheck = product_type !== undefined ? normalizeProductType(product_type) : null;
+    if (productTypeCheck && !productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
+
     await q(
       `
       UPDATE booking_cases
@@ -869,8 +884,9 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
           note = COALESCE($4, note),
           qty_in = COALESCE($5, qty_in),
           qty_out = COALESCE($6, qty_out),
+          product_type = COALESCE($7, product_type),
           updated_at = now()
-      WHERE id=$7
+      WHERE id=$8
       `,
       [
         department_id ? Number(department_id) : null,
@@ -879,6 +895,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         safeTrim(note),
         inQty,
         outQty,
+        productTypeCheck?.productType || null,
         id
       ]
     );
@@ -937,10 +954,10 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       if (Number(c.qty_in) > 0) {
         await client.query(
           `
-          INSERT INTO bookings (location_id, department_id, user_id, type, quantity, note, receipt_no, license_plate, entrepreneur, booking_group_id, line_no)
-          VALUES ($1,$2,$3,'IN',$4,$5,$6,$7,$8,$9,$10)
+          INSERT INTO bookings (location_id, department_id, user_id, type, quantity, note, receipt_no, license_plate, entrepreneur, booking_group_id, line_no, product_type)
+          VALUES ($1,$2,$3,'IN',$4,$5,$6,$7,$8,$9,$10,$11)
           `,
-          [c.location_id, c.department_id, req.user.id, Number(c.qty_in), c.note, receipt_no, c.license_plate, c.entrepreneur, groupId, line]
+          [c.location_id, c.department_id, req.user.id, Number(c.qty_in), c.note, receipt_no, c.license_plate, c.entrepreneur, groupId, line, c.product_type || "euro"]
         );
         line++;
       }
@@ -948,10 +965,10 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       if (Number(c.qty_out) > 0) {
         await client.query(
           `
-          INSERT INTO bookings (location_id, department_id, user_id, type, quantity, note, receipt_no, license_plate, entrepreneur, booking_group_id, line_no)
-          VALUES ($1,$2,$3,'OUT',$4,$5,$6,$7,$8,$9,$10)
+          INSERT INTO bookings (location_id, department_id, user_id, type, quantity, note, receipt_no, license_plate, entrepreneur, booking_group_id, line_no, product_type)
+          VALUES ($1,$2,$3,'OUT',$4,$5,$6,$7,$8,$9,$10,$11)
           `,
-          [c.location_id, c.department_id, req.user.id, Number(c.qty_out), c.note, receipt_no, c.license_plate, c.entrepreneur, groupId, line]
+          [c.location_id, c.department_id, req.user.id, Number(c.qty_out), c.note, receipt_no, c.license_plate, c.entrepreneur, groupId, line, c.product_type || "euro"]
         );
       }
 
@@ -1021,7 +1038,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     `
     SELECT
       c.id, c.created_at, c.license_plate, c.entrepreneur, c.note,
-      c.qty_in, c.qty_out, c.employee_code,
+      c.qty_in, c.qty_out, c.employee_code, c.product_type,
       l.id AS location_id, l.name AS location,
       d.id AS department_id, COALESCE(d.name, '(gelöschte Abteilung)') AS department,
       COALESCE(u.username, '(gelöscht)') AS aviso_created_by,
@@ -1070,6 +1087,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     note: row.note,
     qty_in,
     qty_out,
+    product_type: row.product_type || "euro",
     lines
   });
 });
@@ -1077,6 +1095,9 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
 // ---------- STOCK ----------
 app.get("/api/stock", authRequired, requirePermission("stock.view"), async (req, res) => {
   const mode = (req.query.mode || "location").toLowerCase();
+  const productTypeCheck = normalizeProductType(req.query.product_type || "euro");
+  if (!productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
+  const productType = productTypeCheck.productType;
   const userLocationLock =
     (req.user.role !== "admin" && req.user.location_id) ? Number(req.user.location_id) : null;
 
@@ -1091,11 +1112,11 @@ app.get("/api/stock", authRequired, requirePermission("stock.view"), async (req,
         COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS saldo
       FROM bookings b
       JOIN entrepreneurs e ON e.name=b.entrepreneur
-      WHERE b.entrepreneur IS NOT NULL AND b.entrepreneur <> ''
+      WHERE b.entrepreneur IS NOT NULL AND b.entrepreneur <> '' AND COALESCE(b.product_type, 'euro')=$1
       GROUP BY COALESCE(b.entrepreneur, '')
       ORDER BY COALESCE(b.entrepreneur, '')
       `,
-      []
+      [productType]
     )).rows;
 
     return res.json(rows);
@@ -1113,7 +1134,7 @@ app.get("/api/stock", authRequired, requirePermission("stock.view"), async (req,
                COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0) -
                COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS saldo
         FROM departments d
-        LEFT JOIN bookings b ON b.department_id=d.id AND b.location_id=$1
+        LEFT JOIN bookings b ON b.department_id=d.id AND b.location_id=$1 AND COALESCE(b.product_type, 'euro')=$2
         GROUP BY d.id
         ORDER BY d.name
       `
@@ -1124,12 +1145,12 @@ app.get("/api/stock", authRequired, requirePermission("stock.view"), async (req,
                COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0) -
                COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS saldo
         FROM departments d
-        LEFT JOIN bookings b ON b.department_id=d.id
+        LEFT JOIN bookings b ON b.department_id=d.id AND COALESCE(b.product_type, 'euro')=$1
         GROUP BY d.id
         ORDER BY d.name
       `;
 
-    return res.json((await q(sql, userLocationLock ? [userLocationLock] : [])).rows);
+    return res.json((await q(sql, userLocationLock ? [userLocationLock, productType] : [productType])).rows);
   }
 
   const location_id = Number(req.query.location_id || 0);
@@ -1144,11 +1165,11 @@ app.get("/api/stock", authRequired, requirePermission("stock.view"), async (req,
            COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0) -
            COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS saldo
     FROM departments d
-    LEFT JOIN bookings b ON b.department_id=d.id AND b.location_id=$1
+    LEFT JOIN bookings b ON b.department_id=d.id AND b.location_id=$1 AND COALESCE(b.product_type, 'euro')=$2
     GROUP BY d.id
     ORDER BY d.name
     `,
-    [location_id]
+    [location_id, productType]
   )).rows;
 
   res.json(rows);
@@ -1353,6 +1374,7 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
     `
     SELECT
       b.id, b.receipt_no, b.license_plate, b.entrepreneur, b.type, b.quantity, b.note, b.created_at,
+      COALESCE(b.product_type, 'euro') AS product_type,
       b.booking_group_id, b.line_no,
       COALESCE(u.username, '(gelöscht)') AS username,
       l.id AS location_id, l.name AS location,
@@ -1405,6 +1427,7 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
     note: first.note,
     qty_in,
     qty_out,
+    product_type: first.product_type || "euro",
     lines
   });
 });
