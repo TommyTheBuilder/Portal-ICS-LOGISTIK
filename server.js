@@ -264,6 +264,30 @@ async function createStatus3Notifications(caseRow) {
   }
 }
 
+async function pruneNotificationsForUser(userId) {
+  await q(
+    `DELETE FROM user_notifications n
+     USING booking_cases c
+     WHERE n.case_id = c.id
+       AND n.user_id = $1
+       AND c.status <> 3`,
+    [userId]
+  );
+
+  await q(
+    `DELETE FROM user_notifications n
+     WHERE n.user_id = $1
+       AND NOT EXISTS (
+         SELECT 1 FROM booking_cases c WHERE c.id = n.case_id
+       )`,
+    [userId]
+  );
+}
+
+async function deleteNotificationsForCase(caseId) {
+  await q(`DELETE FROM user_notifications WHERE case_id=$1`, [caseId]);
+}
+
 async function getMyPermissions(user) {
   if (user.role === "admin") {
     return {
@@ -427,6 +451,8 @@ app.get("/api/my-permissions", authRequired, async (req, res) => {
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
+  await pruneNotificationsForUser(req.user.id);
+
   const rows = (await q(
     `SELECT id, user_id, case_id, title, message, is_read, created_at
      FROM user_notifications
@@ -1133,6 +1159,8 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         receipt_no
       });
 
+      await deleteNotificationsForCase(id);
+
       return res.json({ ok: true, receipt_no });
     } catch (e) {
       await client.query("ROLLBACK");
@@ -1151,6 +1179,8 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       `UPDATE booking_cases SET status=0, updated_at=now() WHERE id=$1`,
       [id]
     );
+
+    await deleteNotificationsForCase(id);
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
@@ -1174,6 +1204,7 @@ app.delete("/api/cases/:id", authRequired, async (req, res) => {
   const perms = await getMyPermissions(req.user);
   if (!perms?.cases?.cancel) return res.status(403).json({ error: "Keine Berechtigung" });
   await q(`DELETE FROM booking_cases WHERE id=$1`, [id]);
+  await deleteNotificationsForCase(id);
 
   io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
   res.json({ ok: true });
