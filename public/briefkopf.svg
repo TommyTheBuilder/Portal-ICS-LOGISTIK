@@ -1,26 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2100 2970" width="2100" height="2970">
-  <rect width="2100" height="2970" fill="#ffffff"/>
+  <defs>
+    <style>
+      .logo { fill:#0b5cad; font-family: Arial, Helvetica, sans-serif; font-weight:700; }
+      .dark { fill:#4f4f4f; font-family: Arial, Helvetica, sans-serif; }
+      .blue { fill:#2d6eb6; font-family: Arial, Helvetica, sans-serif; }
+    </style>
+  </defs>
 
-  <g transform="translate(730,180)">
-    <text x="0" y="160" fill="#0e5fb3" font-family="Arial, Helvetica, sans-serif" font-size="340" font-weight="700" letter-spacing="-12">ICS</text>
-    <text x="14" y="226" fill="#111" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="8">LOGISTIK UND TRANSPORT GMBH</text>
-    <g transform="translate(760,40)" fill="#0e5fb3" font-family="Arial, Helvetica, sans-serif" font-size="54">
-      <text x="0" y="0">• Spedition</text>
-      <text x="0" y="72">• Lagerung</text>
-      <text x="0" y="144">• Transport</text>
-      <text x="0" y="216">• LKW-Werkstatt</text>
+  <rect width="2100" height="2970" fill="#fff"/>
+
+  <!-- Header -->
+  <g transform="translate(730,145)">
+    <text class="logo" x="0" y="170" font-size="336" letter-spacing="-14">ICS</text>
+    <text class="dark" x="18" y="235" font-size="34" font-weight="700" letter-spacing="8">LOGISTIK UND TRANSPORT GMBH</text>
+
+    <g transform="translate(760,45)">
+      <text class="blue" x="0" y="0" font-size="51">• Spedition</text>
+      <text class="blue" x="0" y="68" font-size="51">• Lagerung</text>
+      <text class="blue" x="0" y="136" font-size="51">• Transport</text>
+      <text class="blue" x="0" y="204" font-size="51">• LKW-Werkstatt</text>
     </g>
   </g>
 
-  <text x="1050" y="490" text-anchor="middle" fill="#444" font-family="Arial, Helvetica, sans-serif" font-size="43">
+  <!-- Header meta lines -->
+  <text class="dark" x="1050" y="455" text-anchor="middle" font-size="39">
     D-83395 Freilassing, Breslauer Strasse 49, Tel. (0049)8654 / 4697-0, Fax (0049)8654 / 4697-19, E-Mail: office@ics-logistik.com
   </text>
-  <text x="1050" y="560" text-anchor="middle" fill="#444" font-family="Arial, Helvetica, sans-serif" font-size="46">www.ics-logistik.com</text>
+  <text class="dark" x="1050" y="523" text-anchor="middle" font-size="43">www.ics-logistik.com</text>
 
-  <g fill="#3d77b9" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
-    <text x="1050" y="2725" font-size="42">Bankverbindung BRD: Volksbank BLZ 71090000, Konto Nr. 2330, IBAN: DE72 7109 0000 0000 0023 30, BIC: GENODEF1BGL</text>
-    <text x="1050" y="2780" font-size="42">Bankverbindung Österreich: Raiffeisenkasse BLZ 35000, Konto Nr. 98632, IBAN: AT56 3500 0000 0009 8632, BIC: RVSAAT2S</text>
-    <text x="1050" y="2835" font-size="40">Sitz der Gesellschaft: Freilassing, Amtsgericht Traunstein, HRB-Nr. 14847, UID-Nr. DEB13616871</text>
-    <text x="1050" y="2890" font-size="48">Geschäftsführer: Hubert Pichler</text>
+  <!-- Footer -->
+  <g text-anchor="middle" transform="translate(1050,0)">
+    <text class="blue" x="0" y="2708" font-size="38">
+      Bankverbindung BRD: Volksbank BLZ 71090000, Konto Nr. 2330, IBAN: DE72 7109 0000 0000 0023 30, BIC: GENODEF1BGL
+    </text>
+    <text class="blue" x="0" y="2756" font-size="38">
+      Bankverbindung Österreich: Raiffeisenkasse BLZ 35000, Konto Nr. 98632, IBAN: AT56 3500 0000 0009 8632, BIC: RVSAAT2S
+    </text>
+    <text class="blue" x="0" y="2810" font-size="37">
+      Sitz der Gesellschaft: Freilassing, Amtsgericht Traunstein, HRB-Nr. 14847, UID-Nr. DEB13616871
+    </text>
+    <text class="blue" x="0" y="2864" font-size="45">Geschäftsführer: Hubert Pichler</text>
   </g>
 </svg>
