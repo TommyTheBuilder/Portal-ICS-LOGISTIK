@@ -813,6 +813,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!rr.ok) return setMsg("avisoMsg", data.error || "Aviso konnte nicht erstellt werden");
 
   setMsg("avisoMsg", `Aviso erstellt (#${data.id})`, true);
+  $("avisoLocation").value = "";
   $("avisoPlate").value = "";
   $("avisoEntrepreneur").value = "";
   $("avisoEntrepreneurFree").value = "";
