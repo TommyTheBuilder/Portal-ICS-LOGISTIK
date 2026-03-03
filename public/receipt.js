@@ -96,6 +96,11 @@
     setText("entrepreneur", data.entrepreneur || "-");
     setText("note", data.note || "-");
 
+    const nonExchangeable = Number(data.non_exchangeable_qty ?? 0);
+    const nonExchangeableRow = byId("nonExchangeableRow");
+    if (nonExchangeableRow) nonExchangeableRow.style.display = nonExchangeable > 0 ? "" : "none";
+    if (nonExchangeable > 0) setText("nonExchangeable", String(nonExchangeable));
+
     const qtyIn = Number(data.qty_in ?? 0);
     const qtyOut = Number(data.qty_out ?? 0);
     const productType = String(data.product_type || "euro").toLowerCase();
