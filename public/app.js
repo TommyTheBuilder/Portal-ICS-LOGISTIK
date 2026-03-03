@@ -439,6 +439,7 @@ if ($("stockProductType")) {
 // ---------- Cases ----------
 let CASES = [];
 let ACTIVE_CASE_ID = null;
+let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
 
 function renderNotifications() {
@@ -647,6 +648,7 @@ async function openCaseModal(id) {
   if (!c) return;
 
   ACTIVE_CASE_ID = id;
+  ACTIVE_CASE_STATUS = Number(c.status);
 
   if (Number(c.status) === 1 && PERMS?.cases?.claim) {
     const rr = await api(`/api/cases/${encodeURIComponent(id)}`, {
@@ -668,10 +670,12 @@ async function openCaseModal(id) {
   $("caseNote").value = c.note || "";
   $("caseIn").value = c.qty_in ?? 0;
   $("caseOut").value = c.qty_out ?? 0;
+  $("caseNonExchangeable").value = Number(c.non_exchangeable_qty ?? 0);
   $("caseProductType").value = c.product_type || "euro";
   $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
   $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
   $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
+  $("caseNonExchangeableWrap").style.display = Number(c.status) === 2 ? "" : "none";
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
@@ -694,6 +698,7 @@ $("saveCaseBtn").addEventListener("click", async () => {
     note: $("caseNote").value,
     qty_in: Number($("caseIn").value || 0),
     qty_out: Number($("caseOut").value || 0),
+    non_exchangeable_qty: ACTIVE_CASE_STATUS === 2 ? Number($("caseNonExchangeable").value || 0) : undefined,
     product_type: $("caseProductType").value
   });
   if (!ok) return;
