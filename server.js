@@ -1289,10 +1289,9 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const rawQtyIn = Number(row.qty_in ?? 0);
+  const qty_in = Number(row.qty_in ?? 0);
   const qty_out = Number(row.qty_out ?? 0);
   const nonExchangeableQty = Number(row.non_exchangeable_qty ?? 0);
-  const qty_in = Math.max(rawQtyIn - nonExchangeableQty, 0);
   const isBooked = Number(row.status) === 4 && !!row.receipt_no;
   const displayReceiptNo = isBooked ? row.receipt_no : await previewReceiptNo(row.location_id);
   const lines = [];
