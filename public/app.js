@@ -662,6 +662,8 @@ async function openCaseModal(id) {
     }
   }
 
+  ACTIVE_CASE_STATUS = Number(c.status);
+
   $("caseModalMeta").textContent = `#${c.id} • Status ${c.status} (${statusLabel(c.status)}) • ${c.location}`;
 
   $("caseDept").value = String(c.department_id);
@@ -676,7 +678,7 @@ async function openCaseModal(id) {
   $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
   $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
   $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
-  const showNonExchangeable = Number(c.status) === 2 || (Number(c.status) >= 3 && nonExchangeableQty > 0);
+  const showNonExchangeable = Number(c.status) >= 2;
   $("caseNonExchangeableWrap").style.display = showNonExchangeable ? "" : "none";
   $("caseNonExchangeable").disabled = Number(c.status) !== 2;
 
