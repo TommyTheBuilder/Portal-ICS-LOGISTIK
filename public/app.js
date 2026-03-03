@@ -670,12 +670,15 @@ async function openCaseModal(id) {
   $("caseNote").value = c.note || "";
   $("caseIn").value = c.qty_in ?? 0;
   $("caseOut").value = c.qty_out ?? 0;
-  $("caseNonExchangeable").value = Number(c.non_exchangeable_qty ?? 0);
+  const nonExchangeableQty = Number(c.non_exchangeable_qty ?? 0);
+  $("caseNonExchangeable").value = nonExchangeableQty;
   $("caseProductType").value = c.product_type || "euro";
   $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
   $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
   $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
-  $("caseNonExchangeableWrap").style.display = Number(c.status) === 2 ? "" : "none";
+  const showNonExchangeable = Number(c.status) === 2 || (Number(c.status) >= 3 && nonExchangeableQty > 0);
+  $("caseNonExchangeableWrap").style.display = showNonExchangeable ? "" : "none";
+  $("caseNonExchangeable").disabled = Number(c.status) !== 2;
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";

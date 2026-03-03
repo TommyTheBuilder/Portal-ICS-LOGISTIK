@@ -1292,10 +1292,11 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
   const qty_in = Number(row.qty_in ?? 0);
   const qty_out = Number(row.qty_out ?? 0);
   const nonExchangeableQty = Number(row.non_exchangeable_qty ?? 0);
+  const displayQtyIn = Math.max(qty_in - nonExchangeableQty, 0);
   const isBooked = Number(row.status) === 4 && !!row.receipt_no;
   const displayReceiptNo = isBooked ? row.receipt_no : await previewReceiptNo(row.location_id);
   const lines = [];
-  if (qty_in > 0) lines.push({ type: "IN", quantity: qty_in });
+  if (displayQtyIn > 0) lines.push({ type: "IN", quantity: displayQtyIn });
   if (qty_out > 0) lines.push({ type: "OUT", quantity: qty_out });
 
   res.json({
@@ -1313,7 +1314,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     entrepreneur_postal_code: row.entrepreneur_postal_code,
     entrepreneur_city: row.entrepreneur_city,
     note: row.note,
-    qty_in,
+    qty_in: displayQtyIn,
     qty_out,
     non_exchangeable_qty: nonExchangeableQty,
     product_type: row.product_type || "euro",
