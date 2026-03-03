@@ -26,7 +26,18 @@
     .pill { display:inline-block; padding: 2px 10px; border-radius: 999px; background:#e2e8f0; font-size: 12px; color:#334155; }
     .permGrid { display:grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
     .permBox { border:1px solid #e2e8f0; border-radius: 14px; padding: 12px; background:#f8fafc; }
-    .permBox b { display:block; margin-bottom:8px; color:#0f172a; }
+    .permBox b {
+      display:block;
+      margin-bottom:10px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: #e2e8f0;
+      color:#1e293b;
+    }
+    body.darkmode .permBox b {
+      background: #334155;
+      color: #f8fafc;
+    }
     .permBox label { display:flex; gap:8px; align-items:center; margin: 6px 0; font-size: 13px; color:#0f172a; }
     .permBox small.muted { display:block; margin-top: 6px; }
     .topbar { display:flex; justify-content:space-between; align-items:center; margin: 12px 0; gap:10px; flex-wrap:wrap; }
