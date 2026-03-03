@@ -185,6 +185,38 @@
       font-size: 4.8mm;
       font-weight: 800;
       background: #f2f4f8;
+      position: relative;
+    }
+    th.transferLeft {
+      padding-left: 13mm;
+    }
+    th.transferRight {
+      padding-right: 13mm;
+    }
+    .transferIcon {
+      position: absolute;
+      top: 50%;
+      width: 12.5mm;
+      height: 7.2mm;
+      transform: translateY(-50%);
+      display: block;
+      color: #1f2937;
+    }
+    .transferIcon .truck {
+      fill: currentColor;
+    }
+    .transferIcon .arrow {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .transferIcon.left {
+      left: 1.8mm;
+    }
+    .transferIcon.right {
+      right: 1.8mm;
     }
     td.type {
       width: 34%;
@@ -305,27 +337,59 @@
       <table>
         <thead>
           <tr>
-            <th colspan="2">ICS übergibt an Sie</th>
-            <th colspan="2">ICS übernimmt von Ihnen</th>
+            <th class="transferLeft" colspan="2">
+              <svg class="transferIcon left" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
+                <g class="truck">
+                  <rect x="48" y="18" width="56" height="28" rx="2"></rect>
+                  <path d="M30 24h18v22H22V32z"></path>
+                  <rect x="22" y="46" width="82" height="8" rx="2"></rect>
+                  <path d="M28 28h13v10H28z" fill="#f2f4f8"></path>
+                  <circle cx="46" cy="58" r="10"></circle>
+                  <circle cx="88" cy="58" r="10"></circle>
+                  <circle cx="46" cy="58" r="4" fill="#f2f4f8"></circle>
+                  <circle cx="88" cy="58" r="4" fill="#f2f4f8"></circle>
+                </g>
+                <path class="arrow" d="M8 32h20"></path>
+                <path class="arrow" d="M14 24l14 8-14 8"></path>
+              </svg>
+              ICS übernimmt von Ihnen
+            </th>
+            <th class="transferRight" colspan="2">
+              ICS übergibt an Sie
+              <svg class="transferIcon right" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
+                <g class="truck">
+                  <rect x="36" y="18" width="56" height="28" rx="2"></rect>
+                  <path d="M110 24H92v22h26V32z"></path>
+                  <rect x="36" y="46" width="82" height="8" rx="2"></rect>
+                  <path d="M99 28h13v10H99z" fill="#f2f4f8"></path>
+                  <circle cx="52" cy="58" r="10"></circle>
+                  <circle cx="94" cy="58" r="10"></circle>
+                  <circle cx="52" cy="58" r="4" fill="#f2f4f8"></circle>
+                  <circle cx="94" cy="58" r="4" fill="#f2f4f8"></circle>
+                </g>
+                <path class="arrow" d="M116 32h20"></path>
+                <path class="arrow" d="M130 24l-14 8 14 8"></path>
+              </svg>
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td class="qty" id="qtyOutEu"></td>
-            <td class="type">Euro-Paletten</td>
             <td class="qty" id="qtyInEu"></td>
             <td class="type">Euro-Paletten</td>
+            <td class="qty" id="qtyOutEu"></td>
+            <td class="type">Euro-Paletten</td>
           </tr>
           <tr>
-            <td class="qty" id="qtyOutH1">0</td>
-            <td class="type">H1-Paletten</td>
             <td class="qty" id="qtyInH1">0</td>
             <td class="type">H1-Paletten</td>
+            <td class="qty" id="qtyOutH1">0</td>
+            <td class="type">H1-Paletten</td>
           </tr>
           <tr>
-            <td class="qty" id="qtyOutGb">0</td>
-            <td class="type">Gitterboxen</td>
             <td class="qty" id="qtyInGb">0</td>
+            <td class="type">Gitterboxen</td>
+            <td class="qty" id="qtyOutGb">0</td>
             <td class="type">Gitterboxen</td>
           </tr>
         </tbody>
