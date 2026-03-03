@@ -3,7 +3,6 @@ const cors = require("cors");
 const helmet = require("helmet");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const { Parser } = require("json2csv");
 const ExcelJS = require("exceljs");
 const path = require("path");
@@ -168,68 +167,6 @@ function normalizeEmail(emailRaw) {
     return { ok: false, msg: "E-Mail-Adresse ungültig" };
   }
   return { ok: true, email: normalized };
-}
-
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_SECURE = process.env.SMTP_SECURE === "true";
-const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
-
-const mailer = SMTP_HOST
-  ? nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined
-    })
-  : null;
-
-async function notifyStatus3(caseRow) {
-  if (!mailer || !SMTP_FROM) return;
-  try {
-    const recipients = await q(
-      `SELECT email FROM users WHERE is_active=TRUE AND email IS NOT NULL AND fixed_department_id=$1`,
-      [caseRow.department_id]
-    );
-    if (recipients.rowCount === 0) return;
-
-    const info = await q(
-      `SELECT d.name AS department, l.name AS location
-       FROM departments d, locations l
-       WHERE d.id=$1 AND l.id=$2`,
-      [caseRow.department_id, caseRow.location_id]
-    );
-    const department = info.rowCount ? info.rows[0].department : `Abteilung ${caseRow.department_id}`;
-    const location = info.rowCount ? info.rows[0].location : `Standort ${caseRow.location_id}`;
-
-    const emails = recipients.rows.map((r) => r.email).filter(Boolean);
-    if (emails.length === 0) return;
-
-    const subject = `Neue Buchung in Prüfung (Status 3) – ${department}`;
-    const text = [
-      `Für die Abteilung "${department}" gibt es einen neuen Vorgang im Status 3 (In Prüfung).`,
-      `Standort: ${location}`,
-      `Vorgangs-ID: ${caseRow.id}`,
-      `Kennzeichen: ${caseRow.license_plate}`,
-      `Unternehmer: ${caseRow.entrepreneur || "-"}`,
-      `Menge Eingang: ${caseRow.qty_in}`,
-      `Menge Ausgang: ${caseRow.qty_out}`,
-      `Notiz: ${caseRow.note || "-"}`,
-      "",
-      "Bitte im System prüfen."
-    ].join("\n");
-
-    await mailer.sendMail({
-      from: SMTP_FROM,
-      to: emails.join(","),
-      subject,
-      text
-    });
-  } catch (err) {
-    console.error("Status-3-Mailversand fehlgeschlagen:", err);
-  }
 }
 
 async function createStatus3Notifications(caseRow) {
@@ -1175,7 +1112,6 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
     );
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
-    void notifyStatus3(c);
     void createStatus3Notifications(c);
     return res.json({ ok: true });
   }

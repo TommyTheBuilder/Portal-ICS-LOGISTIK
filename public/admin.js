@@ -309,7 +309,6 @@ async function loadUsers() {
     tr.innerHTML = `
       <td><b>${u.username}</b></td>
       <td>${u.role}</td>
-      <td>${u.email || "-"}</td>
       <td>${locName(u.location_id)}</td>
       <td>${roleName(u.role_id)}</td>
       <td>${depName(u.fixed_department_id)}</td>
@@ -372,7 +371,6 @@ function applyUserEditSelection() {
   if ($("editUserLocation")) {
     $("editUserLocation").value = user?.location_id ? String(user.location_id) : "";
   }
-  $("editUserEmail").value = user?.email || "";
   $("editUserDepartment").value = user?.fixed_department_id ? String(user.fixed_department_id) : "";
   applyEditRoleLocationHint();
 }
@@ -604,7 +602,6 @@ $("createUserBtn")?.addEventListener("click", async () => {
   const username = ($("uName").value || "").trim();
   const password = ($("uPass").value || "").trim();
   const role = $("uRole").value;
-  const email = ($("uEmail").value || "").trim();
   const location_id = $("uLocation").value || null;
   const role_id = $("uRoleId").value || null;
   const fixed_department_id = $("uFixedDepartment").value || null;
@@ -616,7 +613,7 @@ $("createUserBtn")?.addEventListener("click", async () => {
 
   const rr = await api("/api/admin/users", {
     method: "POST",
-    body: JSON.stringify({ username, password, role, location_id, role_id, email, fixed_department_id })
+    body: JSON.stringify({ username, password, role, location_id, role_id, fixed_department_id })
   });
   const data = await rr.json().catch(() => ({}));
   if (!rr.ok) return setMsg("userMsg", data.error || "User konnte nicht angelegt werden");
@@ -624,7 +621,6 @@ $("createUserBtn")?.addEventListener("click", async () => {
   setMsg("userMsg", "User angelegt", true);
   $("uName").value = "";
   $("uPass").value = "";
-  $("uEmail").value = "";
   $("uFixedDepartment").value = "";
   await loadUsers();
 });
@@ -642,7 +638,6 @@ $("saveUserBtn")?.addEventListener("click", async () => {
 
   const role = $("editUserRole").value;
   const location_id = $("editUserLocation").value || null;
-  const email = ($("editUserEmail").value || "").trim();
   const fixed_department_id = $("editUserDepartment").value || null;
   if (role === "lager" && !location_id) {
     return setMsg("userEditMsg", "Für die Rolle Lager ist ein Standort Pflicht");
@@ -650,7 +645,7 @@ $("saveUserBtn")?.addEventListener("click", async () => {
 
   const rr = await api(`/api/admin/users/${encodeURIComponent(id)}`, {
     method: "PUT",
-    body: JSON.stringify({ role, location_id, email: email || null, fixed_department_id })
+    body: JSON.stringify({ role, location_id, fixed_department_id })
   });
   const data = await rr.json().catch(() => ({}));
   if (!rr.ok) return setMsg("userEditMsg", data.error || "Speichern fehlgeschlagen");
