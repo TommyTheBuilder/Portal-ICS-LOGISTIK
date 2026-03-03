@@ -767,6 +767,19 @@ $("deleteCaseBtn").addEventListener("click", async () => {
 });
 
 // ---------- Aviso ----------
+function resetAvisoForm() {
+  $("avisoLocation").value = "";
+  $("avisoDept").value = "";
+  $("avisoPlate").value = "";
+  $("avisoEntrepreneur").value = "";
+  $("avisoEntrepreneurFree").value = "";
+  $("avisoNote").value = "";
+  $("avisoIn").value = 0;
+  $("avisoOut").value = 0;
+  $("avisoProductType").value = "euro";
+  $("avisoEmployeeCode").value = "";
+}
+
 $("createAvisoBtn").addEventListener("click", async () => {
   setMsg("avisoMsg", "");
   if (!PERMS?.cases?.create) return setMsg("avisoMsg", "Keine Berechtigung für Aviso");
@@ -813,16 +826,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!rr.ok) return setMsg("avisoMsg", data.error || "Aviso konnte nicht erstellt werden");
 
   setMsg("avisoMsg", `Aviso erstellt (#${data.id})`, true);
-  $("avisoLocation").value = "";
-  $("avisoDept").value = "";
-  $("avisoPlate").value = "";
-  $("avisoEntrepreneur").value = "";
-  $("avisoEntrepreneurFree").value = "";
-  $("avisoNote").value = "";
-  $("avisoIn").value = 0;
-  $("avisoOut").value = 0;
-  $("avisoProductType").value = "euro";
-  $("avisoEmployeeCode").value = "";
+  resetAvisoForm();
 
   await loadCases();
 });
