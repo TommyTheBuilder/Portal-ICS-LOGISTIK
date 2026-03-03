@@ -1038,10 +1038,11 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
   }
 
   const perms = await getMyPermissions(req.user);
-  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, product_type, translogica_transferred } = req.body || {};
+  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, non_exchangeable_qty, product_type, translogica_transferred } = req.body || {};
 
   const inQty = qty_in !== undefined ? Number(qty_in) : null;
   const outQty = qty_out !== undefined ? Number(qty_out) : null;
+  const nonExchangeableQty = non_exchangeable_qty !== undefined ? Number(non_exchangeable_qty) : null;
 
   if (action === "edit") {
     if (!perms?.cases?.edit) return res.status(403).json({ error: "Keine Berechtigung" });
@@ -1056,6 +1057,20 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
 
     if (inQty !== null && (!Number.isInteger(inQty) || inQty < 0)) return res.status(400).json({ error: "qty_in invalid" });
     if (outQty !== null && (!Number.isInteger(outQty) || outQty < 0)) return res.status(400).json({ error: "qty_out invalid" });
+    if (nonExchangeableQty !== null && (!Number.isInteger(nonExchangeableQty) || nonExchangeableQty < 0)) {
+      return res.status(400).json({ error: "non_exchangeable_qty invalid" });
+    }
+
+    const nextInQty = inQty !== null ? inQty : Number(c.qty_in || 0);
+    const nextOutQty = outQty !== null ? outQty : Number(c.qty_out || 0);
+    const positiveSoll = Math.max(nextInQty - nextOutQty, 0);
+
+    if (Number(c.status) !== 2 && nonExchangeableQty !== null) {
+      return res.status(400).json({ error: "non_exchangeable_qty nur in Status 2 editierbar" });
+    }
+    if (Number(c.status) === 2 && nonExchangeableQty !== null && nonExchangeableQty > positiveSoll) {
+      return res.status(400).json({ error: "non_exchangeable_qty darf positives Soll nicht übersteigen" });
+    }
 
     const productTypeCheck = product_type !== undefined ? normalizeProductType(product_type) : null;
     if (productTypeCheck && !productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
@@ -1070,8 +1085,9 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
           qty_in = COALESCE($5, qty_in),
           qty_out = COALESCE($6, qty_out),
           product_type = COALESCE($7, product_type),
+          non_exchangeable_qty = CASE WHEN status = 2 THEN COALESCE($8, non_exchangeable_qty) ELSE non_exchangeable_qty END,
           updated_at = now()
-      WHERE id=$8
+      WHERE id=$9
       `,
       [
         department_id ? Number(department_id) : null,
@@ -1081,6 +1097,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         inQty,
         outQty,
         productTypeCheck?.productType || null,
+        nonExchangeableQty,
         id
       ]
     );
@@ -1244,7 +1261,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     `
     SELECT
       c.id, c.created_at, c.license_plate, c.entrepreneur, c.note,
-      c.qty_in, c.qty_out, c.employee_code, c.product_type, c.status, c.receipt_no,
+      c.qty_in, c.qty_out, c.non_exchangeable_qty, c.employee_code, c.product_type, c.status, c.receipt_no,
       l.id AS location_id, l.name AS location,
       d.id AS department_id, COALESCE(d.name, '(gelöschte Abteilung)') AS department,
       COALESCE(u.username, '(gelöscht)') AS aviso_created_by,
@@ -1294,6 +1311,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     note: row.note,
     qty_in,
     qty_out,
+    non_exchangeable_qty: Number(row.non_exchangeable_qty || 0),
     product_type: row.product_type || "euro",
     lines
   });
@@ -1453,30 +1471,32 @@ app.get("/api/entrepreneur-history", authRequired, requirePermission("bookings.v
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const where = [`eh.location_id=$1`];
+  const where = [`c.location_id=$1`, `c.status <> 0`];
   const params = [location_id];
   let idx = 2;
 
-  if (department_id) { where.push(`eh.department_id=$${idx}`); params.push(department_id); idx++; }
-  if (entrepreneur) { where.push(`eh.entrepreneur ILIKE $${idx}`); params.push(`%${entrepreneur}%`); idx++; }
-  if (license_plate) { where.push(`eh.license_plate ILIKE $${idx}`); params.push(`%${license_plate}%`); idx++; }
+  if (department_id) { where.push(`c.department_id=$${idx}`); params.push(department_id); idx++; }
+  if (entrepreneur) { where.push(`c.entrepreneur ILIKE $${idx}`); params.push(`%${entrepreneur}%`); idx++; }
+  if (license_plate) { where.push(`c.license_plate ILIKE $${idx}`); params.push(`%${license_plate}%`); idx++; }
 
   const rows = (await q(
     `
     SELECT
-      MAX(eh.created_at) AS last_seen,
-      eh.entrepreneur,
-      eh.license_plate,
-      COALESCE(eh.product_type, 'euro') AS product_type,
+      MAX(c.created_at) AS last_seen,
+      c.entrepreneur,
+      c.license_plate,
+      COALESCE(c.product_type, 'euro') AS product_type,
       COALESCE(d.name, '(gelöschte Abteilung)') AS department,
-      COALESCE(SUM(eh.qty_in), 0) AS qty_in,
-      COALESCE(SUM(eh.qty_out), 0) AS qty_out,
-      COALESCE(SUM(eh.qty_in), 0) - COALESCE(SUM(eh.qty_out), 0) AS soll
-    FROM entrepreneur_history eh
-    LEFT JOIN departments d ON d.id=eh.department_id
+      COALESCE(SUM(c.qty_in), 0) AS qty_in,
+      COALESCE(SUM(c.qty_out), 0) AS qty_out,
+      COALESCE(SUM(c.qty_in), 0) - COALESCE(SUM(c.qty_out), 0)
+        - COALESCE(SUM(CASE WHEN (c.qty_in - c.qty_out) > 0 THEN c.non_exchangeable_qty ELSE 0 END), 0) AS soll
+    FROM booking_cases c
+    LEFT JOIN departments d ON d.id=c.department_id
     WHERE ${where.join(" AND ")}
-    GROUP BY eh.entrepreneur, eh.license_plate, COALESCE(eh.product_type, 'euro'), COALESCE(d.name, '(gelöschte Abteilung)')
-    ORDER BY MAX(eh.created_at) DESC
+      AND COALESCE(c.entrepreneur, '') <> ''
+    GROUP BY c.entrepreneur, c.license_plate, COALESCE(c.product_type, 'euro'), COALESCE(d.name, '(gelöschte Abteilung)')
+    ORDER BY MAX(c.created_at) DESC
     LIMIT 500
     `,
     params
@@ -1592,7 +1612,8 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
       e.postal_code AS entrepreneur_postal_code,
       e.city AS entrepreneur_city,
       COALESCE(uc.username, '(gelöscht)') AS aviso_created_by,
-      bc.employee_code
+      bc.employee_code,
+      bc.non_exchangeable_qty
     FROM bookings b
     LEFT JOIN users u ON u.id=b.user_id
     JOIN locations l ON l.id=b.location_id
@@ -1636,6 +1657,7 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
     note: first.note,
     qty_in,
     qty_out,
+    non_exchangeable_qty: Number(first.non_exchangeable_qty || 0),
     product_type: first.product_type || "euro",
     lines
   });
@@ -1739,6 +1761,8 @@ async function ensureRuntimeTables() {
     );
   `);
   await q(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC);`);
+
+  await q(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS non_exchangeable_qty INTEGER NOT NULL DEFAULT 0;`);
 }
 
 const PORT = process.env.PORT || 3000;
