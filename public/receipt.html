@@ -92,6 +92,22 @@
       pointer-events: none;
     }
 
+    .logoHomeBtn {
+      position: absolute;
+      top: 6.5mm;
+      left: 7.5mm;
+      width: 90mm;
+      height: 33mm;
+      z-index: 3;
+      opacity: 0;
+    }
+
+    @media print {
+      .logoHomeBtn {
+        display: none !important;
+      }
+    }
+
     .companyLogo {
       width: 78mm;
       height: auto;
@@ -226,6 +242,7 @@
   <div class="logoFrame">
     <img class="companyLogo" src="/logo.png" alt="ICS Firmenlogo" />
   </div>
+  <a href="/app.html" class="logoHomeBtn" aria-label="Zur App-Startseite"></a>
   <div class="content">
     <div class="title">LADEMITTEL GEGENSCHEIN</div>
 
