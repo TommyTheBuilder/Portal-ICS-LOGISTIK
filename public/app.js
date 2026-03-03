@@ -259,7 +259,7 @@ async function loadLocations() {
 
   const locked = ME && ME.role !== "admin" && ME.location_id ? String(ME.location_id) : null;
   if (locked) sel.value = locked;
-  if (avisoSel) avisoSel.value = locked || sel.value || "";
+  if (avisoSel) avisoSel.value = locked || "";
 
   CURRENT_LOCATION = Number(sel.value || 0);
   joinLocationRoom();
@@ -308,7 +308,7 @@ async function loadEntrepreneurs(selectedName = "") {
 
   const sel = $("avisoEntrepreneur");
   if (!sel) return;
-  const current = selectedName || sel.value;
+  const current = selectedName || "";
 
   sel.innerHTML = `<option value="">Bitte wählen…</option>`;
   ENTREPRENEURS.forEach((e) => {
@@ -813,6 +813,8 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!rr.ok) return setMsg("avisoMsg", data.error || "Aviso konnte nicht erstellt werden");
 
   setMsg("avisoMsg", `Aviso erstellt (#${data.id})`, true);
+  $("avisoLocation").value = "";
+  $("avisoDept").value = "";
   $("avisoPlate").value = "";
   $("avisoEntrepreneur").value = "";
   $("avisoEntrepreneurFree").value = "";
