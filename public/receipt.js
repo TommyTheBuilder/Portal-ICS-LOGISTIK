@@ -97,10 +97,7 @@
 
     const nonExchangeable = Number(data.non_exchangeable_qty ?? 0);
     const noteText = data.note || "";
-    const noteWithNonExchangeable = nonExchangeable > 0
-      ? (noteText ? `${noteText} • Nicht tauschfähig: ${nonExchangeable}` : `Nicht tauschfähig: ${nonExchangeable}`)
-      : (noteText || "-");
-    setText("note", noteWithNonExchangeable);
+    setText("note", noteText || "-");
 
     const nonExchangeableRow = byId("nonExchangeableRow");
     if (nonExchangeableRow) nonExchangeableRow.style.display = nonExchangeable > 0 ? "" : "none";
