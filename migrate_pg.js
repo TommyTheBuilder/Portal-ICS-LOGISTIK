@@ -85,6 +85,7 @@ async function migrate() {
   await pool.query(`ALTER TABLE entrepreneur_history ADD CONSTRAINT entrepreneur_history_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
   await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS employee_code TEXT;`);
   await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS translogica_transferred BOOLEAN NOT NULL DEFAULT FALSE;`);
   await pool.query(`ALTER TABLE booking_cases DROP CONSTRAINT IF EXISTS booking_cases_product_type_check;`);
   await pool.query(`ALTER TABLE booking_cases ADD CONSTRAINT booking_cases_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
   await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
@@ -251,6 +252,7 @@ async function migrate() {
       qty_in INTEGER NOT NULL DEFAULT 0,
       qty_out INTEGER NOT NULL DEFAULT 0,
       product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
+      translogica_transferred BOOLEAN NOT NULL DEFAULT FALSE,
       receipt_no TEXT,
       claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       claimed_at TIMESTAMPTZ,

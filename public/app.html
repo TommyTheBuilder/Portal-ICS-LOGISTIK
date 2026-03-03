@@ -266,6 +266,14 @@
           </select>
         </div>
         <div>
+          <label>Translogica übernommen</label>
+          <select id="caseTranslogicaFilter">
+            <option value="">Alle</option>
+            <option value="1">Ja</option>
+            <option value="0">Nein</option>
+          </select>
+        </div>
+        <div>
           <label>Suche (ID/Kennzeichen/Unternehmer/Notiz)</label>
           <input id="caseSearch" placeholder="z.B. W123AB oder 1042">
         </div>
@@ -401,6 +409,12 @@
       <div>
         <label>OUT</label>
         <input id="caseOut" type="number" min="0">
+      </div>
+      <div style="min-width:260px;">
+        <label>
+          <input id="caseTranslogicaTransferred" type="checkbox">
+          In Translogica übernommen
+        </label>
       </div>
       <div style="flex:1; min-width:260px;">
         <label>Notiz</label>
