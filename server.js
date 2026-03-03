@@ -991,6 +991,43 @@ app.get("/api/cases", authRequired, async (req, res) => {
   res.json(rows);
 });
 
+app.get("/api/cases/:id", authRequired, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: "invalid id" });
+
+  const result = await q(
+    `
+    SELECT
+      c.*,
+      COALESCE(d.name, '(gelöschte Abteilung)') AS department,
+      l.name AS location,
+      COALESCE(u.username, '(gelöscht)') AS created_by_name,
+      COALESCE(cu.username, '(gelöscht)') AS claimed_by_name,
+      COALESCE(su.username, '(gelöscht)') AS submitted_by_name,
+      COALESCE(au.username, '(gelöscht)') AS approved_by_name
+    FROM booking_cases c
+    LEFT JOIN departments d ON d.id=c.department_id
+    JOIN locations l ON l.id=c.location_id
+    LEFT JOIN users u ON u.id=c.created_by
+    LEFT JOIN users cu ON cu.id=c.claimed_by
+    LEFT JOIN users su ON su.id=c.submitted_by
+    LEFT JOIN users au ON au.id=c.approved_by
+    WHERE c.id=$1
+    LIMIT 1
+    `,
+    [id]
+  );
+
+  if (result.rowCount === 0) return res.status(404).json({ error: "Not found" });
+  const row = result.rows[0];
+
+  if (req.user.role !== "admin" && req.user.location_id && Number(req.user.location_id) !== Number(row.location_id)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  res.json(row);
+});
+
 app.post("/api/cases", authRequired, async (req, res) => {
   const perms = await getMyPermissions(req.user);
   if (!perms?.cases?.create) return res.status(403).json({ error: "Keine Berechtigung" });

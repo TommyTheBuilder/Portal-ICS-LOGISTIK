@@ -619,8 +619,18 @@ async function caseAction(action, payload = {}) {
   return { ok: true, data };
 }
 
+async function fetchCaseById(id) {
+  const rr = await api(`/api/cases/${encodeURIComponent(id)}`, {
+    method: "GET",
+    headers: {}
+  });
+  if (!rr.ok) return null;
+  return rr.json().catch(() => null);
+}
+
 async function openCaseModal(id) {
   let c = CASES.find(x => Number(x.id) === Number(id));
+  if (!c) c = await fetchCaseById(id);
   if (!c) return;
 
   ACTIVE_CASE_ID = id;
@@ -631,8 +641,9 @@ async function openCaseModal(id) {
       body: JSON.stringify({ action: "claim" })
     });
     if (rr.ok) {
+      const refreshed = await fetchCaseById(id);
+      c = refreshed || CASES.find(x => Number(x.id) === Number(id)) || c;
       await loadCases();
-      c = CASES.find(x => Number(x.id) === Number(id)) || c;
     }
   }
 
