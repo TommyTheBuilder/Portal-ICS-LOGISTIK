@@ -496,12 +496,14 @@ async function loadCases() {
   if (!CURRENT_LOCATION) return;
 
   const f = $("caseStatusFilter").value;
+  const translogicaTransferred = $("caseTranslogicaFilter").value;
   const search = ($("caseSearch").value || "").trim();
   const mine = canSeeAllCases() ? "0" : "1";
 
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
+    ...(translogicaTransferred !== "" ? { translogica_transferred: translogicaTransferred } : {}),
     ...(search ? { search } : {}),
     ...(mine === "1" ? { mine: "1" } : {})
   });
@@ -543,7 +545,7 @@ function renderCasesTable() {
     <table>
       <thead>
         <tr>
-          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Unternehmer</th><th>Produkt</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
+          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Unternehmer</th><th>Translogica</th><th>Produkt</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
         </tr>
       </thead>
       <tbody>
@@ -554,6 +556,7 @@ function renderCasesTable() {
             <td>${c.department}</td>
             <td><b>${c.license_plate}</b></td>
             <td>${c.entrepreneur || "-"}</td>
+            <td>${c.translogica_transferred ? "Ja" : "Nein"}</td>
             <td>${PRODUCT_TYPE_LABELS[c.product_type] || c.product_type || "-"}</td>
             <td>${c.qty_in}/${c.qty_out}</td>
             <td>${new Date(c.created_at).toLocaleString("de-DE")}</td>
@@ -564,7 +567,7 @@ function renderCasesTable() {
             </td>
           </tr>
         `).join("")}
-        ${(CASES.length === 0) ? `<tr><td colspan="9" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
+        ${(CASES.length === 0) ? `<tr><td colspan="10" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
       </tbody>
     </table>
   `;
@@ -656,6 +659,9 @@ async function openCaseModal(id) {
   $("caseIn").value = c.qty_in ?? 0;
   $("caseOut").value = c.qty_out ?? 0;
   $("caseProductType").value = c.product_type || "euro";
+  $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
+  $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
+  $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
@@ -697,6 +703,15 @@ $("approveCaseBtn").addEventListener("click", async () => {
   await loadCases();
   await loadStock();
   await loadHistory();
+});
+
+$("caseTranslogicaTransferred").addEventListener("change", async () => {
+  const { ok } = await caseAction("set_translogica", {
+    translogica_transferred: $("caseTranslogicaTransferred").checked
+  });
+  if (!ok) return;
+  setMsg("caseModalMsg", "Translogica-Status gespeichert", true);
+  await loadCases();
 });
 
 $("claimCaseBtn").addEventListener("click", async () => {
@@ -1124,6 +1139,7 @@ $("departmentSelect").addEventListener("change", async () => {
 
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
+$("caseTranslogicaFilter").addEventListener("change", loadCases);
 $("caseSearch").addEventListener("input", () => {
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);

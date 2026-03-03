@@ -933,6 +933,8 @@ app.post("/api/admin/users/:id/reset-password", authRequired, adminRequired, asy
 app.get("/api/cases", authRequired, async (req, res) => {
   const location_id = Number(req.query.location_id || 0);
   const status = req.query.status ? Number(req.query.status) : null;
+  const translogicaRaw = req.query.translogica_transferred;
+  const translogicaFilter = translogicaRaw === "1" ? true : translogicaRaw === "0" ? false : null;
   const mine = String(req.query.mine || "") === "1";
   const search = (req.query.search || "").trim();
 
@@ -947,6 +949,7 @@ app.get("/api/cases", authRequired, async (req, res) => {
   let idx = 2;
 
   if (status) { where.push(`c.status=$${idx}`); params.push(status); idx++; }
+  if (translogicaFilter !== null) { where.push(`c.translogica_transferred=$${idx}`); params.push(translogicaFilter); idx++; }
   if (mine) { where.push(`c.created_by=$${idx}`); params.push(req.user.id); idx++; }
 
   if (search) {
@@ -1098,7 +1101,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
   }
 
   const perms = await getMyPermissions(req.user);
-  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, product_type } = req.body || {};
+  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, product_type, translogica_transferred } = req.body || {};
 
   const inQty = qty_in !== undefined ? Number(qty_in) : null;
   const outQty = qty_out !== undefined ? Number(qty_out) : null;
@@ -1239,6 +1242,22 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
     } finally {
       client.release();
     }
+  }
+
+  if (action === "set_translogica") {
+    if (!perms?.cases?.approve) return res.status(403).json({ error: "Keine Berechtigung" });
+    if (Number(c.status) !== 4) return res.status(400).json({ error: "Nur für gebuchte Vorgänge möglich" });
+    if (typeof translogica_transferred !== "boolean") {
+      return res.status(400).json({ error: "translogica_transferred must be boolean" });
+    }
+
+    await q(
+      `UPDATE booking_cases SET translogica_transferred=$1, updated_at=now() WHERE id=$2`,
+      [translogica_transferred, id]
+    );
+
+    io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
+    return res.json({ ok: true });
   }
 
   if (action === "cancel") {
