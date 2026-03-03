@@ -187,19 +187,31 @@
       background: #f2f4f8;
       position: relative;
     }
-    th.transferLeft {
-      padding-left: 17mm;
-    }
+    th.transferLeft,
     th.transferRight {
-      padding-right: 17mm;
+      padding: 1.7mm 2.8mm;
+    }
+    .transferHeader {
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+      width: 100%;
+      min-height: 11mm;
+    }
+    .transferHeader.left {
+      justify-content: flex-start;
+    }
+    .transferHeader.right {
+      justify-content: flex-end;
+    }
+    .transferLabel {
+      line-height: 1.1;
     }
     .transferIcon {
-      position: absolute;
-      top: 47%;
-      width: 18.5mm;
+      width: 18mm;
       height: 10.4mm;
-      transform: translateY(-50%);
-      display: block;
+      flex: 0 0 auto;
+      display: inline-block;
       color: #1f2937;
     }
     .transferIcon .truck {
@@ -212,11 +224,9 @@
       stroke-linecap: round;
       stroke-linejoin: round;
     }
-    .transferIcon.left {
-      left: 1.8mm;
-    }
+    .transferIcon.left,
     .transferIcon.right {
-      right: 1.8mm;
+      transform-origin: center;
     }
     td.type {
       width: 34%;
@@ -338,37 +348,40 @@
         <thead>
           <tr>
             <th class="transferLeft" colspan="2">
-              <svg class="transferIcon left" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
-                <path class="arrow" d="M2 26h8v-10l12 16-12 16V38H2z"></path>
-
-                <g class="truck">
-                  <rect x="48" y="18" width="56" height="28" rx="2"></rect>
-                  <path d="M30 24h18v22H22V32z"></path>
-                  <rect x="22" y="46" width="82" height="8" rx="2"></rect>
-                  <path d="M28 28h13v10H28z" fill="#f2f4f8"></path>
-                  <circle cx="46" cy="58" r="10"></circle>
-                  <circle cx="88" cy="58" r="10"></circle>
-                  <circle cx="46" cy="58" r="4" fill="#f2f4f8"></circle>
-                  <circle cx="88" cy="58" r="4" fill="#f2f4f8"></circle>
-                </g>
-              </svg>
-              ICS übernimmt von Ihnen
+              <div class="transferHeader left">
+                <svg class="transferIcon left" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
+                  <g class="truck">
+                    <rect x="48" y="18" width="56" height="28" rx="2"></rect>
+                    <path d="M30 24h18v22H22V32z"></path>
+                    <rect x="22" y="46" width="82" height="8" rx="2"></rect>
+                    <path d="M28 28h13v10H28z" fill="#f2f4f8"></path>
+                    <circle cx="46" cy="58" r="10"></circle>
+                    <circle cx="88" cy="58" r="10"></circle>
+                    <circle cx="46" cy="58" r="4" fill="#f2f4f8"></circle>
+                    <circle cx="88" cy="58" r="4" fill="#f2f4f8"></circle>
+                  </g>
+                  <path class="arrow" d="M112 26h8v-10l12 16-12 16V38h-8z"></path>
+                </svg>
+                <span class="transferLabel">ICS übernimmt von Ihnen</span>
+              </div>
             </th>
             <th class="transferRight" colspan="2">
-              <svg class="transferIcon right" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
-                <g class="truck">
-                  <rect x="36" y="18" width="56" height="28" rx="2"></rect>
-                  <path d="M110 24H92v22h26V32z"></path>
-                  <rect x="36" y="46" width="82" height="8" rx="2"></rect>
-                  <path d="M99 28h13v10H99z" fill="#f2f4f8"></path>
-                  <circle cx="52" cy="58" r="10"></circle>
-                  <circle cx="94" cy="58" r="10"></circle>
-                  <circle cx="52" cy="58" r="4" fill="#f2f4f8"></circle>
-                  <circle cx="94" cy="58" r="4" fill="#f2f4f8"></circle>
-                </g>
-                <path class="arrow" d="M138 26h-8v-10l-12 16 12 16V38h8z"></path>
-              </svg>
-              ICS übergibt an Sie
+              <div class="transferHeader right">
+                <span class="transferLabel">ICS übergibt an Sie</span>
+                <svg class="transferIcon right" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
+                  <path class="arrow" d="M2 26h8v-10l12 16-12 16V38H2z"></path>
+                  <g class="truck">
+                    <rect x="36" y="18" width="56" height="28" rx="2"></rect>
+                    <path d="M110 24H92v22h26V32z"></path>
+                    <rect x="36" y="46" width="82" height="8" rx="2"></rect>
+                    <path d="M99 28h13v10H99z" fill="#f2f4f8"></path>
+                    <circle cx="52" cy="58" r="10"></circle>
+                    <circle cx="94" cy="58" r="10"></circle>
+                    <circle cx="52" cy="58" r="4" fill="#f2f4f8"></circle>
+                    <circle cx="94" cy="58" r="4" fill="#f2f4f8"></circle>
+                  </g>
+                </svg>
+              </div>
             </th>
           </tr>
         </thead>
