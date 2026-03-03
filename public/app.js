@@ -240,16 +240,26 @@ async function loadLocations() {
   LOCATIONS = r.ok ? await r.json() : [];
 
   const sel = $("locationSelect");
+  const avisoSel = $("avisoLocation");
   sel.innerHTML = "";
+  if (avisoSel) avisoSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   LOCATIONS.forEach(l => {
     const o = document.createElement("option");
     o.value = l.id;
     o.textContent = l.name;
     sel.appendChild(o);
+
+    if (avisoSel) {
+      const o2 = document.createElement("option");
+      o2.value = l.id;
+      o2.textContent = l.name;
+      avisoSel.appendChild(o2);
+    }
   });
 
   const locked = ME && ME.role !== "admin" && ME.location_id ? String(ME.location_id) : null;
   if (locked) sel.value = locked;
+  if (avisoSel) avisoSel.value = locked || sel.value || "";
 
   CURRENT_LOCATION = Number(sel.value || 0);
   joinLocationRoom();
@@ -762,6 +772,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!PERMS?.cases?.create) return setMsg("avisoMsg", "Keine Berechtigung für Aviso");
 
   const department_id = $("avisoDept").value;
+  const location_id = $("avisoLocation").value;
   const license_plate = ($("avisoPlate").value || "").trim();
   const entrepreneurFree = ($("avisoEntrepreneurFree").value || "").trim();
   const entrepreneurSelect = $("avisoEntrepreneur").value;
@@ -773,6 +784,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   const employee_code_raw = ($("avisoEmployeeCode").value || "").trim();
   const employee_code = employee_code_raw ? employee_code_raw.toUpperCase() : "";
 
+  if (!location_id) return setMsg("avisoMsg", "Bitte Lager auswählen");
   if (!department_id) return setMsg("avisoMsg", "Bitte Abteilung auswählen");
   if (!license_plate) return setMsg("avisoMsg", "Kennzeichen ist Pflicht");
   if (PERMS?.cases?.require_employee_code && !employee_code) {
@@ -785,7 +797,7 @@ $("createAvisoBtn").addEventListener("click", async () => {
   const rr = await api("/api/cases", {
     method: "POST",
     body: JSON.stringify({
-      location_id: CURRENT_LOCATION,
+      location_id: Number(location_id),
       department_id: Number(department_id),
       license_plate,
       entrepreneur,
@@ -1126,10 +1138,10 @@ $("xlsxBtn").addEventListener("click", async () => {
 $("locationSelect").addEventListener("change", async () => {
   CURRENT_LOCATION = Number($("locationSelect").value || 0);
   joinLocationRoom();
-  await loadStock();
   await loadCases();
-  await loadNotifications();
   await loadHistory();
+  await loadEntrepreneurHistoryPlates();
+  await loadEntrepreneurHistory();
 });
 
 $("departmentSelect").addEventListener("change", async () => {
