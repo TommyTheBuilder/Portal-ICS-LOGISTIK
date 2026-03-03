@@ -1123,9 +1123,25 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
     if (!perms?.cases?.submit) return res.status(403).json({ error: "Keine Berechtigung" });
     if (Number(c.status) !== 2) return res.status(400).json({ error: "Nur aus Status 2 möglich" });
 
+    if (nonExchangeableQty !== null) {
+      if (!Number.isInteger(nonExchangeableQty) || nonExchangeableQty < 0) {
+        return res.status(400).json({ error: "non_exchangeable_qty invalid" });
+      }
+      const positiveSoll = Math.max(Number(c.qty_in || 0) - Number(c.qty_out || 0), 0);
+      if (nonExchangeableQty > positiveSoll) {
+        return res.status(400).json({ error: "non_exchangeable_qty darf positives Soll nicht übersteigen" });
+      }
+    }
+
     await q(
-      `UPDATE booking_cases SET status=3, submitted_by=$1, submitted_at=now(), updated_at=now() WHERE id=$2`,
-      [req.user.id, id]
+      `UPDATE booking_cases
+       SET status=3,
+           submitted_by=$1,
+           submitted_at=now(),
+           non_exchangeable_qty=COALESCE($2, non_exchangeable_qty),
+           updated_at=now()
+       WHERE id=$3`,
+      [req.user.id, nonExchangeableQty, id]
     );
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
@@ -1292,10 +1308,11 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
   const qty_in = Number(row.qty_in ?? 0);
   const qty_out = Number(row.qty_out ?? 0);
   const nonExchangeableQty = Number(row.non_exchangeable_qty ?? 0);
+  const displayQtyIn = Math.max(qty_in - nonExchangeableQty, 0);
   const isBooked = Number(row.status) === 4 && !!row.receipt_no;
   const displayReceiptNo = isBooked ? row.receipt_no : await previewReceiptNo(row.location_id);
   const lines = [];
-  if (qty_in > 0) lines.push({ type: "IN", quantity: qty_in });
+  if (displayQtyIn > 0) lines.push({ type: "IN", quantity: displayQtyIn });
   if (qty_out > 0) lines.push({ type: "OUT", quantity: qty_out });
 
   res.json({
@@ -1313,7 +1330,7 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     entrepreneur_postal_code: row.entrepreneur_postal_code,
     entrepreneur_city: row.entrepreneur_city,
     note: row.note,
-    qty_in,
+    qty_in: displayQtyIn,
     qty_out,
     non_exchangeable_qty: nonExchangeableQty,
     product_type: row.product_type || "euro",
