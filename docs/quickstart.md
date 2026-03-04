@@ -34,3 +34,7 @@
 ## Dateien
 - Templates liegen lokal unter `/templates/*.json`.
 - Beispielvorlage: `templates/Palettenschein-ICS.json`.
+
+
+## Produktion (Render)
+- Siehe `docs/render-production-checklist.md` für die saubere Option-A-Produktionscheckliste.
