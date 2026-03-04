@@ -158,6 +158,28 @@
       padding-bottom: 1mm;
       min-height: 6mm;
     }
+    .metaField.carrierField {
+      grid-template-columns: 1fr;
+      border-bottom: 0;
+      padding-bottom: 0;
+      min-height: 22mm;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+    }
+    .metaField.carrierField .metaLabel {
+      margin-bottom: 1.2mm;
+      text-align: center;
+    }
+    .metaValue.carrierValue {
+      font-size: 4.7mm;
+      font-weight: 600;
+      text-align: center;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      line-height: 1.2;
+    }
     .metaLabel {
       font-size: 4.0mm;
       font-weight: 700;
@@ -330,9 +352,9 @@
     <div class="metaCard">
       <div class="metaLayout">
         <div class="metaColumn">
-          <div class="metaField">
+          <div class="metaField carrierField">
             <div class="metaLabel">Frachtführer:</div>
-            <div class="metaValue address" id="entrepreneurAddress"></div>
+            <div class="metaValue carrierValue" id="entrepreneurAddress"></div>
           </div>
         </div>
         <div class="metaColumn">
