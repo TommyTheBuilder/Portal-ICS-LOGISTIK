@@ -169,20 +169,27 @@ export function App() {
 
   const renderedText = (e: TemplateElement) => (e.fieldId ? (previewData[e.fieldId] ?? `{{${e.fieldId}}}`) : e.text || '');
 
-  return <div className="h-screen bg-neutral-200 flex flex-col overflow-hidden">
-    <header className="bg-white border-b px-4 py-2 flex items-center gap-3 text-sm">
-      <label className="flex items-center gap-2">Lang
-        <select className="border rounded px-2 py-1">
-          <option>Deutsch</option>
-          <option>English</option>
-        </select>
-      </label>
-      <label className="flex items-center gap-2">Template Name
-        <input className="border rounded px-2 py-1" value={template.templateName} onChange={(e) => setTemplate({ ...template, templateName: e.target.value })}/>
-      </label>
-      <button className="border rounded px-3 py-1" onClick={loadPortalTemplate}>Start editing</button>
-      <button className="border rounded px-3 py-1" onClick={save}>Save Local</button>
-      <button className="border rounded px-3 py-1" onClick={async () => {
+  return <div className="p-4 grid grid-cols-[220px_1fr_320px] gap-4 h-screen overflow-hidden">
+    <aside className="bg-white p-3 rounded shadow space-y-2 overflow-auto">
+      <h2 className="font-semibold">Werkzeuge</h2>
+      {(['text','multiline','line','rect','image','barcode','checkbox','table'] as const).map((t) => <button key={t} className="w-full border p-1 rounded" onClick={() => addElement(t)}>{t}</button>)}
+      <hr/>
+      <label>Template Name<input className="w-full border" value={template.templateName} onChange={(e) => setTemplate({ ...template, templateName: e.target.value })}/></label>
+      <button className="w-full border p-1" onClick={save}>Auf Server speichern</button>
+      <button className="w-full border p-1" onClick={async () => {
+        const list = await (await fetch(withApi('/templates'))).json();
+        const pick = prompt(`Vorlagen: ${list.join(', ')}`);
+        if (pick) load(pick);
+      }}>Laden</button>
+      <button className="w-full border p-1" onClick={() => navigator.clipboard.writeText(JSON.stringify(template, null, 2))}>JSON kopieren</button>
+
+      <button className="w-full border p-1" onClick={async () => {
+        const res = await fetch('/api/receipt-template', { headers: authHeaders() });
+        if (!res.ok) return alert('Kein aktives Portal-Belegtemplate gefunden');
+        const doc = await res.json();
+        setTemplate(doc);
+      }}>Portal-Beleg laden</button>
+      <button className="w-full border p-1" onClick={async () => {
         const res = await fetch('/api/receipt-template', {
           method: 'PUT',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -190,106 +197,105 @@ export function App() {
         });
         if (!res.ok) return alert('Speichern im Portal fehlgeschlagen');
         alert('Portal-Belegtemplate aktualisiert');
-      }}>Save Portal</button>
-      <button className="border rounded px-3 py-1" onClick={() => exportDoc('pdf')}>Generate PDF</button>
-      <div className="ml-auto text-xs">Zoom {Math.round(zoom * 100)}%</div>
-    </header>
+      }}>Als Portal-Beleg speichern</button>
+      <button className="w-full border p-1" onClick={() => {
+        const txt = prompt('Template JSON einfügen');
+        if (txt) setTemplate(JSON.parse(txt));
+      }}>JSON import</button>
+      <hr/>
+      <label>Zoom {Math.round(zoom * 100)}%
+        <input type="range" min={0.5} max={2} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+      </label>
+      <label className="block"><input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)}/> Grid</label>
+      <label className="block"><input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)}/> Snap</label>
+      <p className={`${collisions.length ? 'text-red-600' : 'text-green-700'}`}>Collision Check: {collisions.length ? `${collisions.length} Überlappungen` : 'Keine Überlappung'}</p>
+      <button className="w-full border p-1" onClick={() => exportDoc('pdf')}>PDF Export</button>
+      <button className="w-full border p-1" onClick={() => exportDoc('png')}>PNG Export</button>
+      <hr/>
+      <h3 className="font-medium">Preview-Daten</h3>
+      {['belegnummer','datum','frachtfuehrer','kennzeichen'].map((f) => <label key={f} className="block">{f}<input className="w-full border" value={previewData[f] || ''} onChange={(e) => setPreviewData({ ...previewData, [f]: e.target.value })}/></label>)}
+      <small className={belegnummerRegex.test(previewData.belegnummer || '') ? 'text-green-700' : 'text-red-600'}>Format Belegnummer: ICSL1-YYYYMMDD-000001</small>
+    </aside>
 
-    <div className="flex-1 grid grid-cols-[52px_1fr_360px] overflow-hidden">
-      <aside className="bg-white border-r p-1 flex flex-col gap-1 items-stretch">
-        {([
-          ['T','text'], ['M','multiline'], ['L','line'], ['R','rect'], ['I','image'], ['B','barcode'], ['C','checkbox'], ['Tbl','table']
-        ] as const).map(([label, t]) => (
-          <button key={t} className="border rounded py-2 text-xs" onClick={() => addElement(t)}>{label}</button>
-        ))}
-        <hr className="my-1"/>
-        <button className="border rounded py-2 text-xs" onClick={() => setShowGrid((v) => !v)}>{showGrid ? 'Grid on' : 'Grid off'}</button>
-        <button className="border rounded py-2 text-xs" onClick={() => setSnap((v) => !v)}>{snap ? 'Snap on' : 'Snap off'}</button>
-      </aside>
+    <main className="bg-slate-200 rounded p-4 overflow-auto" onClick={() => setSelectedId(null)}>
+      <div style={{ width: mm2px(A4.w) * zoom, height: mm2px(A4.h) * zoom }} className="bg-white shadow mx-auto">
+        <Stage width={mm2px(A4.w) * zoom} height={mm2px(A4.h) * zoom} scale={{ x: zoom, y: zoom }}>
+          <Layer>
+            {showGrid && Array.from({ length: A4.w + 1 }).map((_, i) => <Line key={`v${i}`} points={[mm2px(i), 0, mm2px(i), mm2px(A4.h)]} stroke={i % 10 === 0 ? '#d1d5db' : '#e5e7eb'} strokeWidth={0.2} />)}
+            {showGrid && Array.from({ length: A4.h + 1 }).map((_, i) => <Line key={`h${i}`} points={[0, mm2px(i), mm2px(A4.w), mm2px(i)]} stroke={i % 10 === 0 ? '#d1d5db' : '#e5e7eb'} strokeWidth={0.2} />)}
+            <Line points={[mm2px(A4.w/2),0,mm2px(A4.w/2),mm2px(A4.h)]} stroke="#bfdbfe" dash={[4,4]} />
+            <Line points={[0,mm2px(A4.h/2),mm2px(A4.w),mm2px(A4.h/2)]} stroke="#bfdbfe" dash={[4,4]} />
+          </Layer>
+          <Layer>
+            {template.elements.map((e) => <Group key={e.id} x={mm2px(e.x)} y={mm2px(e.y)} draggable onClick={(evt) => { evt.cancelBubble = true; setSelectedId(e.id); }} onDragEnd={(evt) => {
+              const nx = px2mm(evt.target.x());
+              const ny = px2mm(evt.target.y());
+              const snapX = snap ? Math.round(nx) : nx;
+              const snapY = snap ? Math.round(ny) : ny;
+              setTemplate((t) => ({ ...t, elements: t.elements.map((it) => it.id === e.id ? { ...it, x: snapX, y: snapY } : it) }));
+            }}>
+              {e.type === 'rect' && <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke={e.stroke} strokeWidth={1} />}
+              {e.type === 'line' && <Line points={[0,0,mm2px(e.w),0]} stroke={e.stroke} strokeWidth={1} />}
+              {(e.type === 'text' || e.type === 'multiline' || e.type === 'barcode') && <Text text={e.type === 'barcode' ? `||| ${renderedText(e)} |||` : renderedText(e)} width={mm2px(e.w)} height={mm2px(e.h)} fontSize={(e.fontSize || 10) * MM_TO_PX * 0.25} fontStyle={e.bold ? 'bold' : 'normal'} align={e.align} />}
+              {e.translationText && <Text y={mm2px(4)} text={e.translationText} fontSize={8} fill="#6b7280" />}
+              {e.type === 'checkbox' && <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke="black" />}
+              {e.type === 'table' && <>
+                <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke="black" />
+                {Array.from({ length: e.cols || 3 }).map((_, idx) => <Line key={idx} points={[mm2px(((idx + 1) * e.w) / (e.cols || 3)),0,mm2px(((idx + 1) * e.w) / (e.cols || 3)),mm2px(e.h)]} stroke="black" />)}
+              </>}
+              {selectedId === e.id && <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke="#2563eb" dash={[4,4]} />}
+            </Group>)}
+          </Layer>
+        </Stage>
+      </div>
+    </main>
 
-      <main className="bg-neutral-700 p-3 overflow-auto" onClick={() => setSelectedId(null)}>
-        <div style={{ width: mm2px(A4.w) * zoom, height: mm2px(A4.h) * zoom }} className="bg-white shadow mx-auto relative">
-          <Stage width={mm2px(A4.w) * zoom} height={mm2px(A4.h) * zoom} scale={{ x: zoom, y: zoom }}>
-            <Layer>
-              {showGrid && Array.from({ length: A4.w + 1 }).map((_, i) => <Line key={`v${i}`} points={[mm2px(i), 0, mm2px(i), mm2px(A4.h)]} stroke={i % 10 === 0 ? '#d1d5db' : '#e5e7eb'} strokeWidth={0.2} />)}
-              {showGrid && Array.from({ length: A4.h + 1 }).map((_, i) => <Line key={`h${i}`} points={[0, mm2px(i), mm2px(A4.w), mm2px(i)]} stroke={i % 10 === 0 ? '#d1d5db' : '#e5e7eb'} strokeWidth={0.2} />)}
-              <Line points={[mm2px(A4.w/2),0,mm2px(A4.w/2),mm2px(A4.h)]} stroke="#bfdbfe" dash={[4,4]} />
-              <Line points={[0,mm2px(A4.h/2),mm2px(A4.w),mm2px(A4.h/2)]} stroke="#bfdbfe" dash={[4,4]} />
-            </Layer>
-            <Layer>
-              {template.elements.map((e) => <Group key={e.id} x={mm2px(e.x)} y={mm2px(e.y)} draggable onClick={(evt) => { evt.cancelBubble = true; setSelectedId(e.id); }} onDragEnd={(evt) => {
-                const nx = px2mm(evt.target.x());
-                const ny = px2mm(evt.target.y());
-                const snapX = snap ? Math.round(nx) : nx;
-                const snapY = snap ? Math.round(ny) : ny;
-                setTemplate((t) => ({ ...t, elements: t.elements.map((it) => it.id === e.id ? { ...it, x: snapX, y: snapY } : it) }));
-              }}>
-                {e.type === 'rect' && <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke={e.stroke} strokeWidth={1} />}
-                {e.type === 'line' && <Line points={[0,0,mm2px(e.w),0]} stroke={e.stroke} strokeWidth={1} />}
-                {(e.type === 'text' || e.type === 'multiline' || e.type === 'barcode') && <Text text={e.type === 'barcode' ? `||| ${renderedText(e)} |||` : renderedText(e)} width={mm2px(e.w)} height={mm2px(e.h)} fontSize={(e.fontSize || 10) * MM_TO_PX * 0.25} fontStyle={e.bold ? 'bold' : 'normal'} align={e.align} />}
-                {e.translationText && <Text y={mm2px(4)} text={e.translationText} fontSize={8} fill="#6b7280" />}
-                {e.type === 'checkbox' && <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke="black" />}
-                {e.type === 'table' && <>
-                  <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke="black" />
-                  {Array.from({ length: e.cols || 3 }).map((_, idx) => <Line key={idx} points={[mm2px(((idx + 1) * e.w) / (e.cols || 3)),0,mm2px(((idx + 1) * e.w) / (e.cols || 3)),mm2px(e.h)]} stroke="black" />)}
-                </>}
-                {selectedId === e.id && <Rect width={mm2px(e.w)} height={mm2px(e.h)} stroke="#14b8a6" dash={[4,4]} />}
-              </Group>)}
-            </Layer>
-          </Stage>
+    <aside className="bg-white p-3 rounded shadow space-y-2 overflow-auto">
+      <h2 className="font-semibold">Properties</h2>
+      {selected ? <>
+        {(['x','y','w','h'] as const).map((k) => <label key={k} className="block">{k} (mm)<input className="w-full border" type="number" value={selected[k]} onChange={(e) => updateElement({ [k]: Number(e.target.value) })}/></label>)}
+        <label className="block">Text<input className="w-full border" value={selected.text || ''} onChange={(e) => updateElement({ text: e.target.value })}/></label>
+        <label className="block">Field ID<input className="w-full border" value={selected.fieldId || ''} onChange={(e) => {
+          const fieldId = e.target.value;
+          updateElement({ fieldId });
+          if (fieldId && !template.fields.find((f) => f.id === fieldId)) setTemplate((t) => ({ ...t, fields: [...t.fields, { id: fieldId, type: selected.fieldType || 'string' }] }));
+        }}/></label>
+        <label className="block">Field Type<select className="w-full border" value={selected.fieldType || 'string'} onChange={(e) => updateElement({ fieldType: e.target.value as TemplateElement['fieldType'] })}><option>string</option><option>date</option><option>number</option></select></label>
+        <label className="block">Font size<input className="w-full border" type="number" value={selected.fontSize || 10} onChange={(e) => updateElement({ fontSize: Number(e.target.value) })}/></label>
+        <label className="block"><input type="checkbox" checked={!!selected.bold} onChange={(e) => updateElement({ bold: e.target.checked })}/> Bold</label>
+        <label className="block">Align<select className="w-full border" value={selected.align || 'left'} onChange={(e) => updateElement({ align: e.target.value as TemplateElement['align'] })}><option>left</option><option>center</option><option>right</option></select></label>
+        <label className="block">Stroke<input className="w-full border" value={selected.stroke || '#111827'} onChange={(e) => updateElement({ stroke: e.target.value })}/></label>
+        <label className="block">Padding<input className="w-full border" type="number" value={selected.padding || 0} onChange={(e) => updateElement({ padding: Number(e.target.value) })}/></label>
+        <label className="block">Line Height<input className="w-full border" type="number" step="0.1" value={selected.lineHeight || 1.2} onChange={(e) => updateElement({ lineHeight: Number(e.target.value) })}/></label>
+        <label className="block">Translation Label<input className="w-full border" value={selected.translationText || ''} onChange={(e) => updateElement({ translationText: e.target.value })}/></label>
+        <div className="grid grid-cols-3 gap-1">
+          {['left','center','right','top','middle','bottom'].map((a) => <button key={a} className="border p-1" onClick={() => aligned(a)}>{a}</button>)}
         </div>
-      </main>
-
-      <aside className="bg-white border-l p-3 space-y-2 overflow-auto text-sm">
-        <h2 className="font-semibold">Edit Field</h2>
-        {selected ? <>
-          <label className="block">Type<select className="w-full border rounded" value={selected.fieldType || 'string'} onChange={(e) => updateElement({ fieldType: e.target.value as TemplateElement['fieldType'] })}><option>string</option><option>date</option><option>number</option></select></label>
-          <label className="block">Name<input className="w-full border rounded" value={selected.fieldId || ''} onChange={(e) => {
-            const fieldId = e.target.value;
-            updateElement({ fieldId });
-            if (fieldId && !template.fields.find((f) => f.id === fieldId)) setTemplate((t) => ({ ...t, fields: [...t.fields, { id: fieldId, type: selected.fieldType || 'string' }] }));
-          }}/></label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['x','y','w','h'] as const).map((k) => <label key={k} className="block">{k.toUpperCase()}<input className="w-full border rounded" type="number" value={selected[k]} onChange={(e) => updateElement({ [k]: Number(e.target.value) })}/></label>)}
-          </div>
-          <label className="block">Text<input className="w-full border rounded" value={selected.text || ''} onChange={(e) => updateElement({ text: e.target.value })}/></label>
-          <label className="block">Font size<input className="w-full border rounded" type="number" value={selected.fontSize || 10} onChange={(e) => updateElement({ fontSize: Number(e.target.value) })}/></label>
-          <label className="block">Align<select className="w-full border rounded" value={selected.align || 'left'} onChange={(e) => updateElement({ align: e.target.value as TemplateElement['align'] })}><option>left</option><option>center</option><option>right</option></select></label>
-          <label className="block">Text Color<input className="w-full border rounded" value={selected.stroke || '#111827'} onChange={(e) => updateElement({ stroke: e.target.value })}/></label>
-          <label className="block"><input type="checkbox" checked={!!selected.bold} onChange={(e) => updateElement({ bold: e.target.checked })}/> Bold</label>
-          <div className="grid grid-cols-3 gap-1">
-            {['left','center','right','top','middle','bottom'].map((a) => <button key={a} className="border p-1 rounded" onClick={() => aligned(a)}>{a}</button>)}
-          </div>
-          <button className="border rounded p-1 w-full" onClick={() => reorder(true)}>Bring to front</button>
-          <button className="border rounded p-1 w-full" onClick={() => reorder(false)}>Send to back</button>
-          <button className="border rounded p-1 w-full text-red-700" onClick={() => setTemplate((t) => ({ ...t, elements: t.elements.filter((e) => e.id !== selected.id) }))}>Delete selected</button>
-        </> : <p>Element wählen…</p>}
-
-        <hr/>
-        <h3 className="font-medium">Felder</h3>
-        <div className="grid grid-cols-[1fr_auto_auto] gap-1">
-          <input className="border p-1 text-xs rounded" placeholder="z.B. unternehmer" value={newFieldId} onChange={(e) => setNewFieldId(e.target.value)} />
-          <select className="border p-1 text-xs rounded" value={newFieldType} onChange={(e) => setNewFieldType(e.target.value as NonNullable<TemplateElement['fieldType']>)}><option>string</option><option>date</option><option>number</option></select>
-          <button className="border p-1 text-xs rounded" onClick={() => { addField(newFieldId, newFieldType); setNewFieldId(''); }}>+ Feld</button>
-        </div>
-        {template.fields.map((f) => <div key={f.id} className="text-xs border p-1 rounded flex items-center justify-between gap-2">
-          <button className="text-left underline" onClick={() => {
-            const existing = template.elements.find((e) => e.fieldId === f.id);
-            if (existing) return setSelectedId(existing.id);
-            setTemplate((t) => ({
-              ...t,
-              elements: [...t.elements, { ...newElement('text'), id: id(), fieldId: f.id, fieldType: f.type, text: f.id, translationText: f.id }]
-            }));
-          }}>{f.id} ({f.type})</button>
-          <button className="text-red-700" onClick={() => removeField(f.id)}>löschen</button>
-        </div>)}
-
-        <hr/>
-        <h3 className="font-medium">Preview-Daten</h3>
-        {['belegnummer','datum','frachtfuehrer','kennzeichen'].map((f) => <label key={f} className="block text-xs">{f}<input className="w-full border rounded" value={previewData[f] || ''} onChange={(e) => setPreviewData({ ...previewData, [f]: e.target.value })}/></label>)}
-        <small className={belegnummerRegex.test(previewData.belegnummer || '') ? 'text-green-700' : 'text-red-600'}>Format Belegnummer: ICSL1-YYYYMMDD-000001</small>
-        <p className={`${collisions.length ? 'text-red-600' : 'text-green-700'} text-xs`}>Collision Check: {collisions.length ? `${collisions.length} Überlappungen` : 'Keine Überlappung'}</p>
-      </aside>
-    </div>
+        <button className="border p-1 w-full" onClick={() => reorder(true)}>Bring to front</button>
+        <button className="border p-1 w-full" onClick={() => reorder(false)}>Send to back</button>
+        <button className="border p-1 w-full text-red-700" onClick={() => setTemplate((t) => ({ ...t, elements: t.elements.filter((e) => e.id !== selected.id) }))}>Delete</button>
+      </> : <p>Element wählen…</p>}
+      <hr/>
+      <h3 className="font-medium">Felder</h3>
+      <div className="grid grid-cols-[1fr_auto_auto] gap-1">
+        <input className="border p-1 text-xs" placeholder="z.B. unternehmer" value={newFieldId} onChange={(e) => setNewFieldId(e.target.value)} />
+        <select className="border p-1 text-xs" value={newFieldType} onChange={(e) => setNewFieldType(e.target.value as NonNullable<TemplateElement['fieldType']>)}><option>string</option><option>date</option><option>number</option></select>
+        <button className="border p-1 text-xs" onClick={() => {
+          addField(newFieldId, newFieldType);
+          setNewFieldId('');
+        }}>+ Feld</button>
+      </div>
+      {template.fields.map((f) => <div key={f.id} className="text-xs border p-1 flex items-center justify-between gap-2">
+        <button className="text-left underline" onClick={() => {
+          const existing = template.elements.find((e) => e.fieldId === f.id);
+          if (existing) return setSelectedId(existing.id);
+          setTemplate((t) => ({
+            ...t,
+            elements: [...t.elements, { ...newElement('text'), id: id(), fieldId: f.id, fieldType: f.type, text: f.id, translationText: f.id }]
+          }));
+        }}>{f.id} ({f.type})</button>
+        <button className="text-red-700" onClick={() => removeField(f.id)}>löschen</button>
+      </div>)}
+    </aside>
   </div>;
 }
