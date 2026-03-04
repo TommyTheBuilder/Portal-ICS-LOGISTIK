@@ -713,6 +713,17 @@ async function openCaseModal(id) {
     }
   }
   $("caseProductType").disabled = status === 4;
+  const showNonExchangeable = Number(c.status) >= 2;
+  const showStatus2Fields = Number(c.status) === 2;
+  const showStatus4EmployeeField = Number(c.status) === 4;
+  $("caseNonExchangeableWrap").style.display = showNonExchangeable ? "" : "none";
+  $("caseNonExchangeable").disabled = !showStatus2Fields;
+  $("caseEmployeeCodeWrap").style.display = showStatus2Fields ? "" : "none";
+  $("caseEmployeeCode").disabled = !showStatus2Fields;
+  $("caseEmployeeCode").value = c.employee_code || "";
+  $("caseEmployeeCodeStatus4Wrap").style.display = showStatus4EmployeeField ? "" : "none";
+  $("caseEmployeeCodeStatus4").value = c.employee_code || "";
+  $("caseProductType").disabled = Number(c.status) === 4;
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
