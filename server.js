@@ -46,21 +46,7 @@ if (fs.existsSync(templateDesignerIndex)) {
     if (externalTemplateDesignerUrl) {
       return res.redirect(302, externalTemplateDesignerUrl);
     }
-    return res.status(503).send(`<!doctype html>
-<html lang="de">
-<head><meta charset="utf-8" /><title>Template-Designer nicht verfügbar</title></head>
-<body style="font-family:Arial,sans-serif;padding:24px;line-height:1.5;">
-  <h1>Template-Designer ist aktuell nicht verfügbar</h1>
-  <p>Der Designer läuft standardmäßig unter <code>npm run dev</code> auf Port <code>5173</code> oder als Build unter <code>apps/web/dist</code>.</p>
-  <p>Optionen:</p>
-  <ul>
-    <li><code>npm run dev</code> starten und danach <a href="http://localhost:5173">http://localhost:5173</a> öffnen.</li>
-    <li>Oder den Build bereitstellen: <code>npm run build --workspace @ics/template-web</code>.</li>
-    <li>Oder Server-Variable <code>TEMPLATE_DESIGNER_URL</code> setzen.</li>
-  </ul>
-  <p><a href="/admin.html">Zurück zur Admin-Seite</a></p>
-</body>
-</html>`);
+    return res.sendFile(path.join(__dirname, "public", "template-designer-fallback.html"));
   });
 }
 
