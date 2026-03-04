@@ -657,25 +657,6 @@ $("saveUserBtn")?.addEventListener("click", async () => {
 });
 
 
-function openReceiptPrint(compact = false) {
-  setMsg("printReceiptMsg", "");
-  const ref = ($("printRefId")?.value || "").trim();
-  if (!ref) return setMsg("printReceiptMsg", "Bitte Vorgangs-ID oder Buchungs-ID eingeben");
-
-  const isNumeric = /^\d+$/.test(ref);
-  if (!isNumeric) return setMsg("printReceiptMsg", "Die ID muss numerisch sein");
-
-  const refType = $("printRefType")?.value === "id" ? "id" : "caseId";
-  const query = compact
-    ? `/receipt.html?${refType}=${encodeURIComponent(ref)}&compact=1`
-    : `/receipt.html?${refType}=${encodeURIComponent(ref)}`;
-
-  window.open(query, "_blank", "noopener,noreferrer");
-  setMsg("printReceiptMsg", compact ? "Kompakter Beleg geöffnet" : "Beleg geöffnet", true);
-}
-
-$("printReceiptStandardBtn")?.addEventListener("click", () => openReceiptPrint(false));
-$("printReceiptCompactBtn")?.addEventListener("click", () => openReceiptPrint(true));
 
 // ---------------- Init ----------------
 (async function init() {
