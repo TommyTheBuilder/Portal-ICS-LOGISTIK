@@ -994,9 +994,6 @@ app.post("/api/cases", authRequired, async (req, res) => {
   if (employeeCodeCheck && employeeCodeCheck.ok === false) {
     return res.status(400).json({ error: employeeCodeCheck.msg });
   }
-  if (perms?.cases?.require_employee_code && !employeeCodeCheck?.code) {
-    return res.status(400).json({ error: "Lagermitarbeiter (2-stellig) ist Pflicht" });
-  }
 
   if (req.user.role !== "admin" && req.user.location_id && locId !== Number(req.user.location_id)) {
     return res.status(403).json({ error: "Forbidden" });
@@ -1038,7 +1035,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
   }
 
   const perms = await getMyPermissions(req.user);
-  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, non_exchangeable_qty, product_type, translogica_transferred } = req.body || {};
+  const { action, department_id, license_plate, entrepreneur, note, qty_in, qty_out, non_exchangeable_qty, employee_code, product_type, translogica_transferred } = req.body || {};
 
   const inQty = qty_in !== undefined ? Number(qty_in) : null;
   const outQty = qty_out !== undefined ? Number(qty_out) : null;
@@ -1075,6 +1072,19 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
     const productTypeCheck = product_type !== undefined ? normalizeProductType(product_type) : null;
     if (productTypeCheck && !productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
 
+    let employeeCode = undefined;
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "employee_code")) {
+      if (Number(c.status) !== 2) {
+        return res.status(400).json({ error: "employee_code nur in Status 2 editierbar" });
+      }
+      const employeeCodeCheck = normalizeEmployeeCode(employee_code);
+      if (employeeCodeCheck && !employeeCodeCheck.ok) return res.status(400).json({ error: employeeCodeCheck.msg });
+      employeeCode = employeeCodeCheck?.code || null;
+      if (perms?.cases?.require_employee_code && !employeeCode) {
+        return res.status(400).json({ error: "Lagermitarbeiter (2-stellig) ist bei Status 2 Pflicht" });
+      }
+    }
+
     await q(
       `
       UPDATE booking_cases
@@ -1086,8 +1096,12 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
           qty_out = COALESCE($6, qty_out),
           product_type = COALESCE($7, product_type),
           non_exchangeable_qty = CASE WHEN status = 2 THEN COALESCE($8, non_exchangeable_qty) ELSE non_exchangeable_qty END,
+          employee_code = CASE
+            WHEN status = 2 AND $9::boolean THEN $10
+            ELSE employee_code
+          END,
           updated_at = now()
-      WHERE id=$9
+      WHERE id=$11
       `,
       [
         department_id ? Number(department_id) : null,
@@ -1098,6 +1112,8 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         outQty,
         productTypeCheck?.productType || null,
         nonExchangeableQty,
+        employeeCode !== undefined,
+        employeeCode ?? null,
         id
       ]
     );
@@ -1133,15 +1149,27 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       }
     }
 
+    let employeeCode = c.employee_code || null;
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "employee_code")) {
+      const employeeCodeCheck = normalizeEmployeeCode(employee_code);
+      if (employeeCodeCheck && !employeeCodeCheck.ok) return res.status(400).json({ error: employeeCodeCheck.msg });
+      employeeCode = employeeCodeCheck?.code || null;
+    }
+
+    if (perms?.cases?.require_employee_code && !employeeCode) {
+      return res.status(400).json({ error: "Lagermitarbeiter (2-stellig) ist bei Status 2 Pflicht" });
+    }
+
     await q(
       `UPDATE booking_cases
        SET status=3,
            submitted_by=$1,
            submitted_at=now(),
            non_exchangeable_qty=COALESCE($2, non_exchangeable_qty),
+           employee_code=$3,
            updated_at=now()
-       WHERE id=$3`,
-      [req.user.id, nonExchangeableQty, id]
+       WHERE id=$4`,
+      [req.user.id, nonExchangeableQty, employeeCode, id]
     );
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });

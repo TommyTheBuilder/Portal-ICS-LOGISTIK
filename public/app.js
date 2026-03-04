@@ -223,14 +223,21 @@ function applyPermsToUI() {
   const employeeLabel = $("avisoEmployeeCodeLabel");
   const employeeInput = $("avisoEmployeeCode");
   if (employeeLabel && employeeInput) {
-    const required = !!PERMS?.cases?.require_employee_code;
-    employeeLabel.textContent = required
-    ? "Lagermitarbeiter (2-stellig, Pflicht)"
+    employeeLabel.textContent = "Lagermitarbeiter (2-stellig, optional)";
+    employeeInput.removeAttribute("required");
+  }
+
+  const caseEmployeeLabel = $("caseEmployeeCodeLabel");
+  const caseEmployeeInput = $("caseEmployeeCode");
+  if (caseEmployeeLabel && caseEmployeeInput) {
+    const requiredInStatus2 = !!PERMS?.cases?.require_employee_code;
+    caseEmployeeLabel.textContent = requiredInStatus2
+      ? "Lagermitarbeiter (2-stellig, Pflicht bei Status 2)"
       : "Lagermitarbeiter (2-stellig, optional)";
-    if (required) {
-      employeeInput.setAttribute("required", "required");
+    if (requiredInStatus2) {
+      caseEmployeeInput.setAttribute("required", "required");
     } else {
-      employeeInput.removeAttribute("required");
+      caseEmployeeInput.removeAttribute("required");
     }
   }
 }
@@ -679,8 +686,12 @@ async function openCaseModal(id) {
   $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
   $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
   const showNonExchangeable = Number(c.status) >= 2;
+  const showStatus2Fields = Number(c.status) === 2;
   $("caseNonExchangeableWrap").style.display = showNonExchangeable ? "" : "none";
-  $("caseNonExchangeable").disabled = Number(c.status) !== 2;
+  $("caseNonExchangeable").disabled = !showStatus2Fields;
+  $("caseEmployeeCodeWrap").style.display = showStatus2Fields ? "" : "none";
+  $("caseEmployeeCode").disabled = !showStatus2Fields;
+  $("caseEmployeeCode").value = c.employee_code || "";
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
@@ -704,6 +715,7 @@ $("saveCaseBtn").addEventListener("click", async () => {
     qty_in: Number($("caseIn").value || 0),
     qty_out: Number($("caseOut").value || 0),
     non_exchangeable_qty: ACTIVE_CASE_STATUS === 2 ? Number($("caseNonExchangeable").value || 0) : undefined,
+    employee_code: ACTIVE_CASE_STATUS === 2 ? (($("caseEmployeeCode").value || "").trim().toUpperCase() || null) : undefined,
     product_type: $("caseProductType").value
   });
   if (!ok) return;
@@ -740,8 +752,19 @@ $("claimCaseBtn").addEventListener("click", async () => {
 });
 
 $("submitCaseBtn").addEventListener("click", async () => {
+  const employee_code = (($("caseEmployeeCode").value || "").trim().toUpperCase() || "");
+  if (ACTIVE_CASE_STATUS === 2 && PERMS?.cases?.require_employee_code && !employee_code) {
+    return setMsg("caseModalMsg", "Lagermitarbeiter (2-stellig) ist bei Status 2 Pflicht");
+  }
+  if (employee_code && !/^[A-Z0-9]{2}$/.test(employee_code)) {
+    return setMsg("caseModalMsg", "Lagermitarbeiter muss genau 2 Zeichen haben");
+  }
+
   const payload = ACTIVE_CASE_STATUS === 2
-    ? { non_exchangeable_qty: Number($("caseNonExchangeable").value || 0) }
+    ? {
+      non_exchangeable_qty: Number($("caseNonExchangeable").value || 0),
+      employee_code: employee_code || null
+    }
     : {};
   const { ok } = await caseAction("submit", payload);
   if (ok) { await loadCases(); }
@@ -813,9 +836,6 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!location_id) return setMsg("avisoMsg", "Bitte Lager auswählen");
   if (!department_id) return setMsg("avisoMsg", "Bitte Abteilung auswählen");
   if (!license_plate) return setMsg("avisoMsg", "Kennzeichen ist Pflicht");
-  if (PERMS?.cases?.require_employee_code && !employee_code) {
-    return setMsg("avisoMsg", "Lagermitarbeiter (2-stellig) ist Pflicht");
-  }
   if (employee_code && !/^[A-Z0-9]{2}$/.test(employee_code)) {
     return setMsg("avisoMsg", "Lagermitarbeiter muss genau 2 Zeichen haben");
   }
