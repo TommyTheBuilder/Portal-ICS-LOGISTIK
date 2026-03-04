@@ -100,8 +100,9 @@
     const bookingId = qs("id");
     const caseId = qs("caseId");
     const compactPrint = hasTruthyQuery("compact");
+    const driverSlip = hasTruthyQuery("driverSlip");
     const warehouseSlip = hasTruthyQuery("warehouseSlip");
-    const allowBlankPrint = compactPrint || warehouseSlip;
+    const allowBlankPrint = compactPrint || driverSlip || warehouseSlip;
 
     document.body.classList.toggle("compactMode", compactPrint);
     applyCompactTruckSwap(compactPrint);

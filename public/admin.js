@@ -633,7 +633,7 @@ $("editUserSelect")?.addEventListener("change", applyUserEditSelection);
 
 $("printReceiptDriverBtn")?.addEventListener("click", () => {
   setMsg("printReceiptMsg", "");
-  window.open("/receipt.html?compact=1", "_blank", "noopener,noreferrer");
+  window.open("/receipt.html?driverSlip=1", "_blank", "noopener,noreferrer");
   setMsg("printReceiptMsg", "Fahrer Palettenschein geöffnet", true);
 });
 
