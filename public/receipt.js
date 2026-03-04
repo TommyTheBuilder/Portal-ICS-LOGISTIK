@@ -47,6 +47,23 @@
       delete document.body.dataset.compactTruckSwapped;
     }
   }
+  function clearReceiptForBlankPrint() {
+    [
+      "receiptDate",
+      "trailerNo",
+      "department",
+      "note",
+      "receiptNoInline",
+      "nonExchangeable",
+      "entrepreneurAddress",
+      "qtyInEu", "qtyOutEu",
+      "qtyInH1", "qtyOutH1",
+      "qtyInGb", "qtyOutGb"
+    ].forEach((id) => setText(id, ""));
+
+    const nonExchangeableRow = byId("nonExchangeableRow");
+    if (nonExchangeableRow) nonExchangeableRow.style.display = "none";
+  }
   function closeTabSafe() {
     try { window.close(); } catch (_) {}
     setTimeout(() => {
@@ -83,6 +100,9 @@
     const bookingId = qs("id");
     const caseId = qs("caseId");
     const compactPrint = hasTruthyQuery("compact");
+    const warehouseSlip = hasTruthyQuery("warehouseSlip");
+    const allowBlankPrint = compactPrint || warehouseSlip;
+
     document.body.classList.toggle("compactMode", compactPrint);
     applyCompactTruckSwap(compactPrint);
 
@@ -91,21 +111,12 @@
     if (receiptNoRow) receiptNoRow.style.display = compactPrint ? "none" : "";
     if (departmentRow) departmentRow.style.display = compactPrint ? "none" : "";
 
+    const metaCard = document.querySelector(".metaCard");
+    if (metaCard) metaCard.style.display = warehouseSlip ? "none" : "";
+
     if (!bookingId && !caseId) {
-      if (!compactPrint) return showError("Keine Beleg-ID übergeben");
-      [
-        "receiptDate",
-        "trailerNo",
-        "department",
-        "note",
-        "receiptNoInline",
-        "nonExchangeable",
-        "qtyInEu", "qtyOutEu",
-        "qtyInH1", "qtyOutH1",
-        "qtyInGb", "qtyOutGb"
-      ].forEach((id) => setText(id, ""));
-      const nonExchangeableRow = byId("nonExchangeableRow");
-      if (nonExchangeableRow) nonExchangeableRow.style.display = "none";
+      if (!allowBlankPrint) return showError("Keine Beleg-ID übergeben");
+      clearReceiptForBlankPrint();
       return;
     }
 

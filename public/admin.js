@@ -631,10 +631,16 @@ $("editUserRole")?.addEventListener("change", applyEditRoleLocationHint);
 
 $("editUserSelect")?.addEventListener("change", applyUserEditSelection);
 
-$("printReceiptCompactBtn")?.addEventListener("click", () => {
+$("printReceiptDriverBtn")?.addEventListener("click", () => {
   setMsg("printReceiptMsg", "");
   window.open("/receipt.html?compact=1", "_blank", "noopener,noreferrer");
-  setMsg("printReceiptMsg", "Kompakter Beleg geöffnet", true);
+  setMsg("printReceiptMsg", "Fahrer Palettenschein geöffnet", true);
+});
+
+$("printReceiptWarehouseBtn")?.addEventListener("click", () => {
+  setMsg("printReceiptMsg", "");
+  window.open("/receipt.html?warehouseSlip=1", "_blank", "noopener,noreferrer");
+  setMsg("printReceiptMsg", "Lager Palettenschein geöffnet", true);
 });
 
 $("saveUserBtn")?.addEventListener("click", async () => {
