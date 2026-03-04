@@ -14,6 +14,14 @@ function api(path, opts = {}) {
 
 function $(id) { return document.getElementById(id); }
 
+function getCaseEmployeeEls() {
+  return {
+    wrap: $("caseEmployeeInlineWrap") || $("caseEmployeeCodeWrap") || $("caseEmployeeCodeStatus4Wrap"),
+    input: $("caseEmployeeInline") || $("caseEmployeeCode") || $("caseEmployeeCodeStatus4"),
+    label: $("caseEmployeeInlineLabel") || $("caseEmployeeCodeLabel")
+  };
+}
+
 function setMsg(elId, text, ok = false) {
   const el = $(elId);
   if (!el) return;
@@ -227,18 +235,10 @@ function applyPermsToUI() {
     employeeInput.removeAttribute("required");
   }
 
-  const caseEmployeeLabel = $("caseEmployeeCodeLabel");
-  const caseEmployeeInput = $("caseEmployeeCode");
-  if (caseEmployeeLabel && caseEmployeeInput) {
-    const requiredInStatus2 = !!PERMS?.cases?.require_employee_code;
-    caseEmployeeLabel.textContent = requiredInStatus2
-      ? "Lagermitarbeiter (2-stellig, Pflicht bei Status 2)"
-      : "Lagermitarbeiter (2-stellig, optional)";
-    if (requiredInStatus2) {
-      caseEmployeeInput.setAttribute("required", "required");
-    } else {
-      caseEmployeeInput.removeAttribute("required");
-    }
+  const caseEmployee = getCaseEmployeeEls();
+  if (caseEmployee.label && caseEmployee.input) {
+    caseEmployee.label.textContent = "Lagermitarbeiter";
+    caseEmployee.input.removeAttribute("required");
   }
 }
 
@@ -685,13 +685,34 @@ async function openCaseModal(id) {
   $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
   $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
   $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
-  const showNonExchangeable = Number(c.status) >= 2;
-  const showStatus2Fields = Number(c.status) === 2;
+  const status = Number(c.status);
+  const showNonExchangeable = status >= 2;
+  const showStatus2Fields = status === 2;
+  const showInlineEmployeeField = [2, 3, 4].includes(status);
+  const caseEmployee = getCaseEmployeeEls();
   $("caseNonExchangeableWrap").style.display = showNonExchangeable ? "" : "none";
   $("caseNonExchangeable").disabled = !showStatus2Fields;
-  $("caseEmployeeCodeWrap").style.display = showStatus2Fields ? "" : "none";
-  $("caseEmployeeCode").disabled = !showStatus2Fields;
-  $("caseEmployeeCode").value = c.employee_code || "";
+  if (caseEmployee.wrap) caseEmployee.wrap.style.display = showInlineEmployeeField ? "" : "none";
+  if (caseEmployee.input) {
+    caseEmployee.input.value = c.employee_code || "";
+    caseEmployee.input.disabled = !showStatus2Fields;
+  }
+  const requiredInStatus2 = !!PERMS?.cases?.require_employee_code;
+  if (caseEmployee.label) {
+    caseEmployee.label.textContent = showStatus2Fields
+      ? (requiredInStatus2
+        ? "Lagermitarbeiter (2-stellig, Pflicht bei Status 2)"
+        : "Lagermitarbeiter (2-stellig, optional)")
+      : "Lagermitarbeiter";
+  }
+  if (caseEmployee.input) {
+    if (showStatus2Fields && requiredInStatus2) {
+      caseEmployee.input.setAttribute("required", "required");
+    } else {
+      caseEmployee.input.removeAttribute("required");
+    }
+  }
+  $("caseProductType").disabled = status === 4;
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
@@ -715,7 +736,7 @@ $("saveCaseBtn").addEventListener("click", async () => {
     qty_in: Number($("caseIn").value || 0),
     qty_out: Number($("caseOut").value || 0),
     non_exchangeable_qty: ACTIVE_CASE_STATUS === 2 ? Number($("caseNonExchangeable").value || 0) : undefined,
-    employee_code: ACTIVE_CASE_STATUS === 2 ? (($("caseEmployeeCode").value || "").trim().toUpperCase() || null) : undefined,
+    employee_code: ACTIVE_CASE_STATUS === 2 ? (((getCaseEmployeeEls().input?.value) || "").trim().toUpperCase() || null) : undefined,
     product_type: $("caseProductType").value
   });
   if (!ok) return;
@@ -752,7 +773,7 @@ $("claimCaseBtn").addEventListener("click", async () => {
 });
 
 $("submitCaseBtn").addEventListener("click", async () => {
-  const employee_code = (($("caseEmployeeCode").value || "").trim().toUpperCase() || "");
+  const employee_code = (((getCaseEmployeeEls().input?.value) || "").trim().toUpperCase() || "");
   if (ACTIVE_CASE_STATUS === 2 && PERMS?.cases?.require_employee_code && !employee_code) {
     return setMsg("caseModalMsg", "Lagermitarbeiter (2-stellig) ist bei Status 2 Pflicht");
   }
