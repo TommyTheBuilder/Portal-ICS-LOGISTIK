@@ -4,27 +4,31 @@
     window.location.href = "/login.html";
     return;
   }
-
   function qs(name) {
     return new URL(window.location.href).searchParams.get(name);
   }
-
   function byId(id) {
     return document.getElementById(id);
   }
-
   function setText(id, value) {
     const el = byId(id);
     if (el) el.textContent = value;
   }
-
   function showError(msg) {
     alert(msg || "Unbekannter Fehler");
   }
-
+  function hasTruthyQuery(name) {
+    const v = String(qs(name) || "").toLowerCase();
+    return ["1", "true", "yes", "ja"].includes(v);
+  }
+  function buildEntrepreneurAddress(data) {
+    const line1 = data.entrepreneur || "-";
+    const line2 = data.entrepreneur_street || "";
+    const line3 = [data.entrepreneur_postal_code, data.entrepreneur_city].filter(Boolean).join(" ");
+    return [line1, line2, line3].filter(Boolean).join("\n");
+  }
   function closeTabSafe() {
     try { window.close(); } catch (_) {}
-
     setTimeout(() => {
       if (!document.hidden) {
         if (window.history.length > 1) {
@@ -38,11 +42,9 @@
       }
     }, 120);
   }
-
   function wireButtons() {
     const btnPrint = byId("btnPrint");
     const btnClose = byId("btnClose");
-
     if (btnPrint) {
       btnPrint.addEventListener("click", () => {
         try {
@@ -53,17 +55,14 @@
         }
       });
     }
-
     if (btnClose) {
       btnClose.addEventListener("click", closeTabSafe);
     }
   }
-
   async function loadReceipt() {
     const bookingId = qs("id");
     const caseId = qs("caseId");
     if (!bookingId && !caseId) return showError("Keine Beleg-ID übergeben");
-
     let res;
     let data;
     try {
@@ -77,47 +76,42 @@
     } catch (_) {
       return showError("Netzwerkfehler beim Laden des Belegs");
     }
-
     if (!res.ok) return showError(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
-
     let receiptLabel = data.receipt_no || "-";
     if (data.provisional) {
       receiptLabel = data.receipt_no ? `Vorläufig ${data.receipt_no}` : "Vorläufig";
     }
-
     const formattedDate = data.created_at
       ? new Date(data.created_at).toLocaleDateString("de-DE")
       : "-";
-
-    setText("placeDate", `${data.location || "-"} / ${formattedDate}`);
+    const compactPrint = hasTruthyQuery("compact");
+    const receiptNoRow = byId("receiptNoRow");
+    const departmentRow = byId("departmentRow");
+    if (receiptNoRow) receiptNoRow.style.display = compactPrint ? "none" : "";
+    if (departmentRow) departmentRow.style.display = compactPrint ? "none" : "";
+    setText("receiptDate", formattedDate);
     setText("trailerNo", data.license_plate || "-");
     setText("receiptNoInline", receiptLabel);
     setText("department", data.department || "-");
-    setText("entrepreneur", data.entrepreneur || "-");
-
+    setText("entrepreneurAddress", buildEntrepreneurAddress(data));
     const nonExchangeable = Number(data.non_exchangeable_qty ?? 0);
     const noteText = data.note || "";
     setText("note", noteText || "-");
-
     const nonExchangeableRow = byId("nonExchangeableRow");
     if (nonExchangeableRow) nonExchangeableRow.style.display = nonExchangeable > 0 ? "" : "none";
     if (nonExchangeable > 0) setText("nonExchangeable", String(nonExchangeable));
-
     const qtyIn = Number(data.qty_in ?? 0);
     const qtyOut = Number(data.qty_out ?? 0);
     const productType = String(data.product_type || "euro").toLowerCase();
-
     const map = {
       euro: ["qtyOutEu", "qtyInEu"],
       h1: ["qtyOutH1", "qtyInH1"],
       gitterbox: ["qtyOutGb", "qtyInGb"]
     };
-
     const [outId, inId] = map[productType] || map.euro;
     setText(outId, String(qtyOut));
     setText(inId, String(qtyIn));
   }
-
   window.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
       e.preventDefault();
@@ -127,7 +121,6 @@
       closeTabSafe();
     }
   });
-
   document.addEventListener("DOMContentLoaded", () => {
     wireButtons();
     loadReceipt();
