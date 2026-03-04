@@ -631,6 +631,12 @@ $("editUserRole")?.addEventListener("change", applyEditRoleLocationHint);
 
 $("editUserSelect")?.addEventListener("change", applyUserEditSelection);
 
+$("printReceiptCompactBtn")?.addEventListener("click", () => {
+  setMsg("printReceiptMsg", "");
+  window.open("/receipt.html?compact=1", "_blank", "noopener,noreferrer");
+  setMsg("printReceiptMsg", "Kompakter Beleg geöffnet", true);
+});
+
 $("saveUserBtn")?.addEventListener("click", async () => {
   setMsg("userEditMsg", "");
   const id = $("editUserSelect").value;
