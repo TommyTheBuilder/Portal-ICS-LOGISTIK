@@ -62,9 +62,12 @@
   async function fetchReceiptData() {
     const bookingId = qs("id");
     const caseId = qs("caseId");
-    if (!bookingId && !caseId) throw new Error("Keine Beleg-ID übergeben");
+    const receiptNo = qs("receiptNo");
+    if (!bookingId && !caseId && !receiptNo) throw new Error("Keine Beleg-ID übergeben");
 
-    const path = bookingId
+    const path = receiptNo
+      ? `/api/receipt-by-no/${encodeURIComponent(receiptNo)}`
+      : bookingId
       ? `/api/receipt/${encodeURIComponent(bookingId)}`
       : `/api/cases/${encodeURIComponent(caseId)}/receipt`;
 

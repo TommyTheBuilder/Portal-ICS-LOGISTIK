@@ -54,6 +54,25 @@ const generateBelegnummer = () => {
   return `ICSL1-${ymd}-000001`;
 };
 
+const mapReceiptToPreviewData = (data: Record<string, unknown>): Record<string, string> => {
+  const formattedDate = data.created_at
+    ? new Date(String(data.created_at)).toLocaleDateString('de-DE')
+    : '-';
+  return {
+    belegnummer: String(data.receipt_no || '-'),
+    datum: formattedDate,
+    ortdatum: `${String(data.location || '-')} / ${formattedDate}`,
+    kennzeichen: String(data.license_plate || '-'),
+    abteilung: String(data.department || '-'),
+    frachtfuehrer: String(data.entrepreneur || '-'),
+    notiz: String(data.note || '-'),
+    qty_in: String(Number(data.qty_in ?? 0)),
+    qty_out: String(Number(data.qty_out ?? 0)),
+    product_type: String(data.product_type || 'euro'),
+    non_exchangeable_qty: String(Number(data.non_exchangeable_qty || 0))
+  };
+};
+
 export function App() {
   const [template, setTemplate] = useState<TemplateDocument>(blankTemplate());
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -72,6 +91,27 @@ export function App() {
 
   useEffect(() => {
     loadPortalTemplate().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const receiptNo = params.get('receiptNo');
+    const bookingId = params.get('id');
+    const caseId = params.get('caseId');
+
+    let url = '';
+    if (receiptNo) url = `/api/receipt-by-no/${encodeURIComponent(receiptNo)}`;
+    else if (bookingId) url = `/api/receipt/${encodeURIComponent(bookingId)}`;
+    else if (caseId) url = `/api/cases/${encodeURIComponent(caseId)}/receipt`;
+    if (!url) return;
+
+    fetch(url, { headers: authHeaders() })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data || typeof data !== 'object') return;
+        setPreviewData((prev) => ({ ...prev, ...mapReceiptToPreviewData(data as Record<string, unknown>) }));
+      })
+      .catch(() => undefined);
   }, []);
 
   const addField = (fieldId: string, type: TemplateElement['fieldType'] = 'string') => {

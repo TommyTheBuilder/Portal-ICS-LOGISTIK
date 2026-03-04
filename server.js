@@ -1701,6 +1701,74 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
   });
 });
 
+app.get("/api/receipt-by-no/:receiptNo", authRequired, requirePermission("bookings.receipt"), async (req, res) => {
+  const receiptNo = String(req.params.receiptNo || "").trim();
+  if (!receiptNo) return res.status(400).json({ error: "invalid receiptNo" });
+
+  const r = await q(
+    `
+    SELECT
+      b.id, b.receipt_no, b.license_plate, b.entrepreneur, b.type, b.quantity, b.note, b.created_at,
+      COALESCE(b.product_type, 'euro') AS product_type,
+      b.booking_group_id, b.line_no,
+      COALESCE(u.username, '(gelöscht)') AS username,
+      l.id AS location_id, l.name AS location,
+      d.id AS department_id, COALESCE(d.name, '(gelöschte Abteilung)') AS department,
+      e.street AS entrepreneur_street,
+      e.postal_code AS entrepreneur_postal_code,
+      e.city AS entrepreneur_city,
+      COALESCE(uc.username, '(gelöscht)') AS aviso_created_by,
+      bc.employee_code,
+      bc.non_exchangeable_qty
+    FROM bookings b
+    LEFT JOIN users u ON u.id=b.user_id
+    JOIN locations l ON l.id=b.location_id
+    LEFT JOIN departments d ON d.id=b.department_id
+    LEFT JOIN entrepreneurs e ON e.name=b.entrepreneur
+    LEFT JOIN booking_cases bc ON bc.receipt_no=b.receipt_no
+    LEFT JOIN users uc ON uc.id=bc.created_by
+    WHERE b.receipt_no = $1
+    ORDER BY COALESCE(b.line_no, 999999) ASC, b.id ASC
+    `,
+    [receiptNo]
+  );
+
+  const rows = r.rows;
+  if (rows.length === 0) return res.status(404).json({ error: "Not found" });
+
+  const locationId = Number(rows[0].location_id);
+  if (req.user.role !== "admin" && req.user.location_id && locationId !== Number(req.user.location_id)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const first = rows[0];
+  const lines = rows.map(x => ({ type: x.type, quantity: Number(x.quantity) }));
+
+  const qty_in = lines.reduce((s, x) => s + (x.type === "IN" ? x.quantity : 0), 0);
+  const qty_out = lines.reduce((s, x) => s + (x.type === "OUT" ? x.quantity : 0), 0);
+
+  res.json({
+    receipt_no: first.receipt_no,
+    created_at: first.created_at,
+    location: first.location,
+    department: first.department,
+    username: first.username,
+    license_plate: first.license_plate,
+    entrepreneur: first.entrepreneur,
+    entrepreneur_street: first.entrepreneur_street,
+    entrepreneur_postal_code: first.entrepreneur_postal_code,
+    entrepreneur_city: first.entrepreneur_city,
+    aviso_created_by: first.aviso_created_by,
+    employee_code: first.employee_code,
+    note: first.note,
+    qty_in,
+    qty_out,
+    non_exchangeable_qty: Number(first.non_exchangeable_qty || 0),
+    product_type: first.product_type || "euro",
+    lines
+  });
+});
+
 const TEMPLATE_DIR = path.join(__dirname, "templates");
 const ACTIVE_RECEIPT_TEMPLATE_FILE = path.join(TEMPLATE_DIR, "receipt-active.json");
 
