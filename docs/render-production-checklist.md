@@ -13,6 +13,13 @@ Relevante Implementierung:
 
 ---
 
+## 0) Empfohlen: Blueprint nutzen (`render.yaml`)
+Im Repo liegt eine fertige `render.yaml`, die den korrekten Build-Flow für den integrierten Designer setzt.
+
+Wenn du den Service neu aufsetzt, nutze in Render **Blueprint / IaC** statt manueller Commands.
+
+---
+
 ## 1) Render Service anlegen
 1. **New + Web Service** auswählen.
 2. Repository verbinden.
@@ -128,3 +135,12 @@ Lösung:
 - Nach jedem Release:
   - `/template-designer` und PDF-Export einmal manuell testen
 
+
+
+### D) Fallback-Seite erscheint trotz erfolgreichem Deploy
+Ursache: Service läuft noch auf alten Commands/alten Deploy-Settings.
+
+Lösung:
+- Prüfen, ob Build Command wirklich den Web-Build ausführt.
+- Sicherstellen, dass kein alter Cache/alte Branch deployed ist.
+- Bei Bedarf Service neu über `render.yaml` (Blueprint) erstellen.

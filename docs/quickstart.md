@@ -38,3 +38,4 @@
 
 ## Produktion (Render)
 - Siehe `docs/render-production-checklist.md` für die saubere Option-A-Produktionscheckliste.
+- Für neue Render-Setups bevorzugt `render.yaml` (Blueprint), damit der Designer-Build automatisch ausgeführt wird.
