@@ -4,7 +4,12 @@ import type { TemplateDocument, TemplateElement } from './types';
 
 const MM_TO_PX = 4;
 const A4 = { w: 210, h: 297 };
-const API = 'http://localhost:3001';
+const API = (import.meta.env.VITE_TEMPLATE_API_URL as string | undefined) || '';
+const withApi = (path: string) => `${API}${path}`;
+const authHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const blankTemplate = (): TemplateDocument => ({
   templateName: 'Neues-Template',
@@ -96,17 +101,17 @@ export function App() {
   };
 
   const save = async () => {
-    await fetch(`${API}/templates/${template.templateName}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(template) });
+    await fetch(withApi(`/templates/${template.templateName}`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(template) });
     alert('Gespeichert');
   };
 
   const load = async (name: string) => {
-    const res = await fetch(`${API}/templates/${name}`);
+    const res = await fetch(withApi(`/templates/${name}`));
     if (res.ok) setTemplate(await res.json());
   };
 
   const exportDoc = async (type: 'pdf' | 'png') => {
-    const res = await fetch(`${API}/export/${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template, data: previewData }) });
+    const res = await fetch(withApi(`/export/${type}`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template, data: previewData }) });
     const blob = await res.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -124,11 +129,27 @@ export function App() {
       <label>Template Name<input className="w-full border" value={template.templateName} onChange={(e) => setTemplate({ ...template, templateName: e.target.value })}/></label>
       <button className="w-full border p-1" onClick={save}>Auf Server speichern</button>
       <button className="w-full border p-1" onClick={async () => {
-        const list = await (await fetch(`${API}/templates`)).json();
+        const list = await (await fetch(withApi('/templates'))).json();
         const pick = prompt(`Vorlagen: ${list.join(', ')}`);
         if (pick) load(pick);
       }}>Laden</button>
       <button className="w-full border p-1" onClick={() => navigator.clipboard.writeText(JSON.stringify(template, null, 2))}>JSON kopieren</button>
+
+      <button className="w-full border p-1" onClick={async () => {
+        const res = await fetch('/api/receipt-template', { headers: { ...authHeaders() } });
+        if (!res.ok) return alert('Kein aktives Portal-Belegtemplate gefunden');
+        const doc = await res.json();
+        setTemplate(doc);
+      }}>Portal-Beleg laden</button>
+      <button className="w-full border p-1" onClick={async () => {
+        const res = await fetch('/api/receipt-template', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify(template)
+        });
+        if (!res.ok) return alert('Speichern im Portal fehlgeschlagen');
+        alert('Portal-Belegtemplate aktualisiert');
+      }}>Als Portal-Beleg speichern</button>
       <button className="w-full border p-1" onClick={() => {
         const txt = prompt('Template JSON einfügen');
         if (txt) setTemplate(JSON.parse(txt));

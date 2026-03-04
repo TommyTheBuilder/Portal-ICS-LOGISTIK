@@ -1701,6 +1701,49 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
   });
 });
 
+const TEMPLATE_DIR = path.join(__dirname, "templates");
+const ACTIVE_RECEIPT_TEMPLATE_FILE = path.join(TEMPLATE_DIR, "receipt-active.json");
+
+function stableObject(value) {
+  if (Array.isArray(value)) return value.map(stableObject);
+  if (value && typeof value === "object") {
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = stableObject(value[key]);
+      return acc;
+    }, {});
+  }
+  return value;
+}
+
+app.get("/api/receipt-template", authRequired, requirePermission("bookings.receipt"), async (_req, res) => {
+  try {
+    const raw = await fs.promises.readFile(ACTIVE_RECEIPT_TEMPLATE_FILE, "utf8");
+    return res.type("application/json").send(raw);
+  } catch (err) {
+    if (err && err.code !== "ENOENT") {
+      return res.status(500).json({ error: "Template konnte nicht geladen werden" });
+    }
+    return res.status(404).json({ error: "Kein aktives Beleg-Template konfiguriert" });
+  }
+});
+
+app.put("/api/receipt-template", authRequired, adminRequired, async (req, res) => {
+  const payload = req.body;
+  if (!payload || typeof payload !== "object" || !Array.isArray(payload.elements)) {
+    return res.status(400).json({ error: "Ungültiges Template-Format" });
+  }
+
+  try {
+    await fs.promises.mkdir(TEMPLATE_DIR, { recursive: true });
+    const stable = stableObject(payload);
+    await fs.promises.writeFile(ACTIVE_RECEIPT_TEMPLATE_FILE, `${JSON.stringify(stable, null, 2)}
+`, "utf8");
+    return res.json({ ok: true });
+  } catch (_err) {
+    return res.status(500).json({ error: "Template konnte nicht gespeichert werden" });
+  }
+});
+
 // ---------- EXPORTS ----------
 app.get("/api/export/csv", authRequired, requirePermission("bookings.export"), async (req, res) => {
   const location_id = Number(req.query.location_id || 0);

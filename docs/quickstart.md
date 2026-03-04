@@ -39,3 +39,9 @@
 ## Produktion (Render)
 - Siehe `docs/render-production-checklist.md` für die saubere Option-A-Produktionscheckliste.
 - Für neue Render-Setups bevorzugt `render.yaml` (Blueprint), damit der Designer-Build automatisch ausgeführt wird.
+
+## Integration ins Palettenportal
+- Im Designer stehen die Buttons **Portal-Beleg laden** und **Als Portal-Beleg speichern** zur Verfügung.
+- `Als Portal-Beleg speichern` schreibt das aktive Drucktemplate nach `templates/receipt-active.json`.
+- Beim Belegdruck (`/receipt.html`) lädt das Portal dieses Template und füllt Feld-IDs automatisiert (z. B. `belegnummer`, `kennzeichen`, `frachtfuehrer`, `qty_in`, `qty_out`).
+- Wenn kein aktives Template vorhanden ist, nutzt das Portal automatisch das bisherige Legacy-Layout als Fallback.

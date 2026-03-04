@@ -277,6 +277,20 @@
       margin-top: 1.1mm;
     }
     .footerText b { font-weight: 800; }
+    .templateLayer {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+    .templateContentHidden { display: none !important; }
+    .tplEl {
+      position: absolute;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      overflow: hidden;
+      color: #111;
+    }
   </style>
 </head>
 <body>
@@ -292,7 +306,8 @@
     <img class="companyLogo" src="/logo.png" alt="ICS Firmenlogo" />
   </div>
   <a href="/app.html" class="logoHomeBtn" aria-label="Zur App-Startseite"></a>
-  <div class="content">
+  <div id="templateLayer" class="templateLayer"></div>
+  <div class="content" id="legacyReceiptContent">
     <div class="title">LADEMITTEL GEGENSCHEIN</div>
 
     <div class="metaCard">
