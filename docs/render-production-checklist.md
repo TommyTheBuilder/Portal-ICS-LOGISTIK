@@ -144,3 +144,12 @@ Lösung:
 - Prüfen, ob Build Command wirklich den Web-Build ausführt.
 - Sicherstellen, dass kein alter Cache/alte Branch deployed ist.
 - Bei Bedarf Service neu über `render.yaml` (Blueprint) erstellen.
+
+
+### E) `/template-designer` zeigt nur weiße Seite
+Ursache: Build wurde mit falschem Asset-Basispfad erzeugt (Assets werden von `/assets/...` statt `/template-designer/assets/...` geladen) oder ein alter Build liegt noch im Cache.
+
+Lösung:
+- Sicherstellen, dass der aktuelle Stand mit Vite-Base für `/template-designer/` deployed ist.
+- In Render **Clear build cache & deploy** ausführen.
+- Browser-Cache hart leeren (Ctrl+F5) und Seite neu laden.
