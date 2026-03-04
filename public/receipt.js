@@ -14,6 +14,9 @@
     const el = byId(id);
     if (el) el.textContent = value;
   }
+  function setReceiptTitle(isProvisional) {
+    setText("receiptTitle", isProvisional ? "VORLÄUFIGER LADEMITTEL GEGENSCHEIN" : "LADEMITTEL GEGENSCHEIN");
+  }
   function showError(msg) {
     alert(msg || "Unbekannter Fehler");
   }
@@ -135,10 +138,8 @@
       return showError("Netzwerkfehler beim Laden des Belegs");
     }
     if (!res.ok) return showError(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
-    let receiptLabel = data.receipt_no || "-";
-    if (data.provisional) {
-      receiptLabel = data.receipt_no ? `Vorläufig ${data.receipt_no}` : "Vorläufig";
-    }
+    const receiptLabel = data.receipt_no || "-";
+    setReceiptTitle(Boolean(data.provisional));
     const formattedDate = data.created_at
       ? new Date(data.created_at).toLocaleDateString("de-DE")
       : "-";
