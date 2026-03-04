@@ -4,7 +4,7 @@ import type { TemplateDocument, TemplateElement } from './types';
 
 const MM_TO_PX = 4;
 const A4 = { w: 210, h: 297 };
-const API = ((import.meta as unknown as { env?: { VITE_TEMPLATE_API_URL?: string } }).env?.VITE_TEMPLATE_API_URL) || '';
+const API = (globalThis as { __TEMPLATE_API_URL__?: string }).__TEMPLATE_API_URL__ || '';
 const withApi = (path: string) => `${API}${path}`;
 const authHeaders = (base: Record<string, string> = {}): Headers => {
   const token = localStorage.getItem('token');
