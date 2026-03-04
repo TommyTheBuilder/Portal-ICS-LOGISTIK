@@ -21,6 +21,12 @@
     const v = String(qs(name) || "").toLowerCase();
     return ["1", "true", "yes", "ja"].includes(v);
   }
+  function buildCarrierAddress(data) {
+    const line1 = data.entrepreneur || "-";
+    const line2 = data.entrepreneur_street || "";
+    const line3 = [data.entrepreneur_postal_code, data.entrepreneur_city].filter(Boolean).join(" ");
+    return [line1, line2, line3].filter(Boolean).join("\n");
+  }
   function applyCompactTruckSwap(compactPrint) {
     const leftIcon = document.querySelector(".transferIcon.left");
     const rightIcon = document.querySelector(".transferIcon.right");
@@ -109,7 +115,7 @@
     setText("trailerNo", data.license_plate || "-");
     setText("receiptNoInline", receiptLabel);
     setText("department", data.department || "-");
-    setText("entrepreneurAddress", data.entrepreneur || "-");
+    setText("entrepreneurAddress", buildCarrierAddress(data));
     const nonExchangeable = Number(data.non_exchangeable_qty ?? 0);
     const noteText = data.note || "";
     setText("note", noteText || "-");
@@ -133,7 +139,6 @@
         "receiptDate",
         "trailerNo",
         "department",
-        "entrepreneurAddress",
         "note",
         "receiptNoInline",
         "nonExchangeable"
