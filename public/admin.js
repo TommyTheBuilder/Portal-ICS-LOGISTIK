@@ -49,6 +49,14 @@ $("logoutBtn")?.addEventListener("click", () => {
   window.location.href = "/login.html";
 });
 $("backBtn")?.addEventListener("click", () => window.location.href = "/app.html");
+$("templateDesignerBtn")?.addEventListener("click", () => {
+  const configuredUrl = localStorage.getItem("templateDesignerUrl");
+  if (configuredUrl) {
+    window.location.href = configuredUrl;
+    return;
+  }
+  window.location.href = "http://localhost:5173";
+});
 
 // ---------------- Loaders ----------------
 async function loadMe() {
