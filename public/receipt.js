@@ -111,6 +111,7 @@
     document.body.classList.toggle("compactMode", compactPrint);
     document.body.classList.toggle("slipMode", slipMode);
     document.body.classList.toggle("warehouseSlipMode", warehouseSlip);
+    document.body.classList.toggle("driverSlipMode", driverSlip);
     applyCompactTruckSwap(compactPrint);
 
     const receiptNoRow = byId("receiptNoRow");
