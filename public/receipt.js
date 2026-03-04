@@ -113,7 +113,7 @@
     if (departmentRow) departmentRow.style.display = "";
 
     const metaCard = document.querySelector(".metaCard");
-    if (metaCard) metaCard.style.display = warehouseSlip ? "none" : "";
+    if (metaCard) metaCard.style.display = "";
 
     if (!bookingId && !caseId) {
       if (!allowBlankPrint) return showError("Keine Beleg-ID übergeben");
