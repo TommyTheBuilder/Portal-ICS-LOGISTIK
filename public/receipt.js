@@ -59,123 +59,27 @@
     }
   }
 
-  async function fetchReceiptData() {
+  async function loadReceipt() {
     const bookingId = qs("id");
     const caseId = qs("caseId");
-    const receiptNo = qs("receiptNo");
-    if (!bookingId && !caseId && !receiptNo) throw new Error("Keine Beleg-ID übergeben");
+    if (!bookingId && !caseId) return showError("Keine Beleg-ID übergeben");
 
-    const path = receiptNo
-      ? `/api/receipt-by-no/${encodeURIComponent(receiptNo)}`
-      : bookingId
-      ? `/api/receipt/${encodeURIComponent(bookingId)}`
-      : `/api/cases/${encodeURIComponent(caseId)}/receipt`;
-
-    const res = await fetch(path, {
-      headers: { Authorization: "Bearer " + token }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
-    return data;
-  }
-
-  async function fetchActiveTemplate() {
-    const res = await fetch("/api/receipt-template", {
-      headers: { Authorization: "Bearer " + token }
-    });
-    if (!res.ok) return null;
-    return res.json();
-  }
-
-  function mapTemplateData(data) {
-    const formattedDate = data.created_at
-      ? new Date(data.created_at).toLocaleDateString("de-DE")
-      : "-";
-    const qtyIn = Number(data.qty_in ?? 0);
-    const qtyOut = Number(data.qty_out ?? 0);
-    const productType = String(data.product_type || "euro").toLowerCase();
-
-    return {
-      belegnummer: data.receipt_no || "-",
-      datum: formattedDate,
-      ortdatum: `${data.location || "-"} / ${formattedDate}`,
-      kennzeichen: data.license_plate || "-",
-      abteilung: data.department || "-",
-      frachtfuehrer: data.entrepreneur || "-",
-      notiz: data.note || "-",
-      qty_in: String(qtyIn),
-      qty_out: String(qtyOut),
-      product_type: productType,
-      non_exchangeable_qty: String(Number(data.non_exchangeable_qty || 0))
-    };
-  }
-
-  function mm(v) {
-    return `${Number(v || 0)}mm`;
-  }
-
-  function renderTemplate(template, values) {
-    const layer = byId("templateLayer");
-    if (!layer || !Array.isArray(template?.elements) || template.elements.length === 0) return false;
-
-    layer.innerHTML = "";
-
-    for (const el of template.elements) {
-      const node = document.createElement("div");
-      node.className = "tplEl";
-      node.style.left = mm(el.x);
-      node.style.top = mm(el.y);
-      node.style.width = mm(el.w);
-      node.style.height = mm(el.h);
-
-      if (el.type === "rect" || el.type === "checkbox" || el.type === "table") {
-        node.style.border = `0.3mm solid ${el.stroke || "#111"}`;
-      }
-      if (el.type === "line") {
-        node.style.height = "0";
-        node.style.borderTop = `0.3mm solid ${el.stroke || "#111"}`;
-      }
-      if (el.type === "table") {
-        const cols = Number(el.cols || 3);
-        for (let i = 1; i < cols; i++) {
-          const ln = document.createElement("div");
-          ln.style.position = "absolute";
-          ln.style.left = `${(i * 100) / cols}%`;
-          ln.style.top = "0";
-          ln.style.width = "0";
-          ln.style.height = "100%";
-          ln.style.borderLeft = `0.3mm solid ${el.stroke || "#111"}`;
-          node.appendChild(ln);
-        }
-      }
-
-      const txt = el.fieldId ? (values[el.fieldId] ?? `{{${el.fieldId}}}`) : (el.text || "");
-      if (["text", "multiline", "barcode"].includes(el.type)) {
-        node.textContent = el.type === "barcode" ? `||| ${txt} |||` : txt;
-        node.style.fontSize = `${Number(el.fontSize || 10)}pt`;
-        node.style.fontWeight = el.bold ? "700" : "400";
-        node.style.textAlign = el.align || "left";
-        node.style.padding = mm(el.padding || 0);
-        node.style.lineHeight = String(el.lineHeight || 1.2);
-      }
-
-      if (el.translationText) {
-        const sub = document.createElement("div");
-        sub.textContent = el.translationText;
-        sub.style.fontSize = "7pt";
-        sub.style.color = "#6b7280";
-        node.appendChild(sub);
-      }
-
-      layer.appendChild(node);
+    let res;
+    let data;
+    try {
+      const path = bookingId
+        ? `/api/receipt/${encodeURIComponent(bookingId)}`
+        : `/api/cases/${encodeURIComponent(caseId)}/receipt`;
+      res = await fetch(path, {
+        headers: { Authorization: "Bearer " + token }
+      });
+      data = await res.json();
+    } catch (_) {
+      return showError("Netzwerkfehler beim Laden des Belegs");
     }
 
-    const legacy = byId("legacyReceiptContent");
-    if (legacy) legacy.classList.add("templateContentHidden");
-    return true;
-  }
+    if (!res.ok) return showError(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
 
-  function renderLegacy(data) {
     let receiptLabel = data.receipt_no || "-";
     if (data.provisional) {
       receiptLabel = data.receipt_no ? `Vorläufig ${data.receipt_no}` : "Vorläufig";
@@ -212,19 +116,6 @@
     const [outId, inId] = map[productType] || map.euro;
     setText(outId, String(qtyOut));
     setText(inId, String(qtyIn));
-  }
-
-  async function loadReceipt() {
-    let data;
-    try {
-      data = await fetchReceiptData();
-    } catch (err) {
-      return showError(err?.message || "Netzwerkfehler beim Laden des Belegs");
-    }
-
-    const template = await fetchActiveTemplate().catch(() => null);
-    const rendered = template ? renderTemplate(template, mapTemplateData(data)) : false;
-    if (!rendered) renderLegacy(data);
   }
 
   window.addEventListener("keydown", (e) => {
