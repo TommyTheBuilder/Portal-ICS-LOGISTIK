@@ -395,13 +395,17 @@
         <label>Unternehmer</label>
         <input id="caseEntrepreneur">
       </div>
-      <div>
+      <div id="caseProductWrap" style="flex:0 0 calc(50% - 6px); min-width:220px;">
         <label>Produkt</label>
         <select id="caseProductType">
           <option value="euro">Euro-Paletten</option>
           <option value="h1">H1-Paletten</option>
           <option value="gitterbox">Gitterboxen</option>
         </select>
+      </div>
+      <div id="caseEmployeeInlineWrap" style="display:none; flex:0 0 calc(50% - 6px); min-width:220px;">
+        <label id="caseEmployeeInlineLabel">Lagermitarbeiter</label>
+        <input id="caseEmployeeInline" maxlength="2" placeholder="z.B. AB">
       </div>
     </div>
 
@@ -417,10 +421,6 @@
       <div id="caseNonExchangeableWrap" style="display:none;">
         <label>Nicht tauschfähig</label>
         <input id="caseNonExchangeable" type="number" min="0" value="0">
-      </div>
-      <div id="caseEmployeeCodeWrap" style="display:none;">
-        <label id="caseEmployeeCodeLabel">Lagermitarbeiter (2-stellig, optional)</label>
-        <input id="caseEmployeeCode" maxlength="2" placeholder="z.B. AB">
       </div>
       <div style="min-width:260px;">
         <label>
