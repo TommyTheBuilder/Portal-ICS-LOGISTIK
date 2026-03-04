@@ -218,13 +218,15 @@
     body.compactMode .metaField.carrierField .metaLabel {
       margin-bottom: 0;
     }
-    body.compactMode .carrierLabelSub {
+    body.compactMode .carrierLabelSub,
+    body.slipMode .carrierLabelSub {
       display: block;
     }
     body.compactMode .metaValue.carrierValue {
       display: none;
     }
-    body.compactMode .metaLabelSub {
+    body.compactMode .metaLabelSub,
+    body.slipMode .metaLabelSub {
       display: block;
     }
     .metaValue {
@@ -382,7 +384,7 @@
         </div>
         <div class="metaColumn">
           <div class="metaField rightAligned">
-            <div class="metaLabel">Datum:</div>
+            <div class="metaLabel">Datum:<span class="metaLabelSub">date, datum, date</span></div>
             <div class="metaValue" id="receiptDate"></div>
           </div>
 
@@ -402,7 +404,7 @@
           </div>
 
           <div class="metaField rightAligned">
-            <div class="metaLabel">Notiz:</div>
+            <div class="metaLabel">Notiz:<span class="metaLabelSub">note, bilješka, remarque</span></div>
             <div class="metaValue" id="note"></div>
           </div>
 

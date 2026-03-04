@@ -107,13 +107,15 @@
     const warehouseSlip = hasTruthyQuery("warehouseSlip");
     const allowBlankPrint = compactPrint || driverSlip || warehouseSlip;
 
+    const slipMode = driverSlip || warehouseSlip;
     document.body.classList.toggle("compactMode", compactPrint);
+    document.body.classList.toggle("slipMode", slipMode);
     applyCompactTruckSwap(compactPrint);
 
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");
-    if (receiptNoRow) receiptNoRow.style.display = "";
-    if (departmentRow) departmentRow.style.display = "";
+    if (receiptNoRow) receiptNoRow.style.display = slipMode ? "none" : "";
+    if (departmentRow) departmentRow.style.display = slipMode ? "none" : "";
 
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = "";
