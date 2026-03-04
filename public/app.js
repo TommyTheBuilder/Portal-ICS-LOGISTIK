@@ -1044,7 +1044,7 @@ function renderHistory() {
             <div class="rollcard-item">
               <label>Aktion</label>
               <div>
-                ${(PERMS?.bookings?.receipt && h.receipt_no) ? `<button class="secondary" data-print="${h.id}" data-receipt-no="${h.receipt_no}">Druck</button>` : "-"}
+                ${(PERMS?.bookings?.receipt && h.receipt_no) ? `<button class="secondary" data-print="${h.id}">Druck</button>` : "-"}
               </div>
             </div>
           </div>
@@ -1058,9 +1058,7 @@ function renderHistory() {
   document.querySelectorAll("[data-print]").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-print");
-      const receiptNo = btn.getAttribute("data-receipt-no");
-      const receiptParam = receiptNo ? `receiptNo=${encodeURIComponent(receiptNo)}` : `id=${encodeURIComponent(id)}`;
-      window.open(`/receipt.html?${receiptParam}`, "_blank", "noopener,noreferrer");
+      window.open(`/receipt.html?id=${encodeURIComponent(id)}`, "_blank", "noopener,noreferrer");
     });
   });
 }
