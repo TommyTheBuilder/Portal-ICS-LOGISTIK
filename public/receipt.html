@@ -195,6 +195,15 @@
       margin-top: 0.6mm;
       letter-spacing: 0.1px;
     }
+    .carrierLabelSub {
+      display: none;
+      font-size: 2.5mm;
+      line-height: 1.1;
+      font-weight: 400;
+      color: #4b5563;
+      margin-top: 0.7mm;
+      letter-spacing: 0.1px;
+    }
     body.compactMode .metaCard {
       padding: 3.4mm 3.2mm 2.9mm;
     }
@@ -203,6 +212,17 @@
     }
     body.compactMode .metaField.carrierField {
       min-height: 26mm;
+      align-content: start;
+      padding-top: 0.8mm;
+    }
+    body.compactMode .metaField.carrierField .metaLabel {
+      margin-bottom: 0;
+    }
+    body.compactMode .carrierLabelSub {
+      display: block;
+    }
+    body.compactMode .metaValue.carrierValue {
+      display: none;
     }
     body.compactMode .metaLabelSub {
       display: block;
@@ -356,7 +376,7 @@
       <div class="metaLayout">
         <div class="metaColumn">
           <div class="metaField carrierField">
-            <div class="metaLabel">Frachtführer:</div>
+            <div class="metaLabel">Frachtführer:<span class="carrierLabelSub">carrier, prijevoznik, transportator</span></div>
             <div class="metaValue carrierValue" id="entrepreneurAddress"></div>
           </div>
         </div>
