@@ -108,8 +108,8 @@
 
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");
-    if (receiptNoRow) receiptNoRow.style.display = compactPrint ? "none" : "";
-    if (departmentRow) departmentRow.style.display = compactPrint ? "none" : "";
+    if (receiptNoRow) receiptNoRow.style.display = "";
+    if (departmentRow) departmentRow.style.display = "";
 
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = warehouseSlip ? "none" : "";
