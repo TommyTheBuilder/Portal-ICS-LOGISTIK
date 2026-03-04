@@ -4,12 +4,12 @@ import type { TemplateDocument, TemplateElement } from './types';
 
 const MM_TO_PX = 4;
 const A4 = { w: 210, h: 297 };
-const API = (import.meta.env.VITE_TEMPLATE_API_URL as string | undefined) || '';
+const API = ((import.meta as unknown as { env?: { VITE_TEMPLATE_API_URL?: string } }).env?.VITE_TEMPLATE_API_URL) || '';
 const withApi = (path: string) => `${API}${path}`;
-const authHeaders = (base: Record<string, string> = {}): HeadersInit => {
+const authHeaders = (base: Record<string, string> = {}): Headers => {
   const token = localStorage.getItem('token');
-  const headers: Record<string, string> = { ...base };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = new Headers(base);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
   return headers;
 };
 
