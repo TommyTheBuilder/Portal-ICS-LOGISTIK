@@ -27,6 +27,27 @@
     const line3 = [data.entrepreneur_postal_code, data.entrepreneur_city].filter(Boolean).join(" ");
     return [line1, line2, line3].filter(Boolean).join("\n");
   }
+
+  function applyCompactTruckSwap(compactPrint) {
+    const leftIcon = document.querySelector(".transferIcon.left");
+    const rightIcon = document.querySelector(".transferIcon.right");
+    if (!leftIcon || !rightIcon) return;
+
+    const alreadySwapped = document.body.dataset.compactTruckSwapped === "1";
+    if (compactPrint && !alreadySwapped) {
+      const leftMarkup = leftIcon.innerHTML;
+      leftIcon.innerHTML = rightIcon.innerHTML;
+      rightIcon.innerHTML = leftMarkup;
+      document.body.dataset.compactTruckSwapped = "1";
+    }
+
+    if (!compactPrint && alreadySwapped) {
+      const leftMarkup = leftIcon.innerHTML;
+      leftIcon.innerHTML = rightIcon.innerHTML;
+      rightIcon.innerHTML = leftMarkup;
+      delete document.body.dataset.compactTruckSwapped;
+    }
+  }
   function closeTabSafe() {
     try { window.close(); } catch (_) {}
     setTimeout(() => {
@@ -85,7 +106,7 @@
       ? new Date(data.created_at).toLocaleDateString("de-DE")
       : "-";
     const compactPrint = hasTruthyQuery("compact");
-    document.body.classList.toggle("compactArrows", compactPrint);
+    applyCompactTruckSwap(compactPrint);
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");
     if (receiptNoRow) receiptNoRow.style.display = compactPrint ? "none" : "";
