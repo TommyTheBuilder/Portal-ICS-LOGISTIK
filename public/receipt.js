@@ -47,6 +47,23 @@
       delete document.body.dataset.compactTruckSwapped;
     }
   }
+  function clearReceiptForBlankPrint() {
+    [
+      "receiptDate",
+      "trailerNo",
+      "department",
+      "note",
+      "receiptNoInline",
+      "nonExchangeable",
+      "entrepreneurAddress",
+      "qtyInEu", "qtyOutEu",
+      "qtyInH1", "qtyOutH1",
+      "qtyInGb", "qtyOutGb"
+    ].forEach((id) => setText(id, ""));
+
+    const nonExchangeableRow = byId("nonExchangeableRow");
+    if (nonExchangeableRow) nonExchangeableRow.style.display = "none";
+  }
   function closeTabSafe() {
     try { window.close(); } catch (_) {}
     setTimeout(() => {
@@ -82,7 +99,28 @@
   async function loadReceipt() {
     const bookingId = qs("id");
     const caseId = qs("caseId");
-    if (!bookingId && !caseId) return showError("Keine Beleg-ID übergeben");
+    const compactPrint = hasTruthyQuery("compact");
+    const driverSlip = hasTruthyQuery("driverSlip");
+    const warehouseSlip = hasTruthyQuery("warehouseSlip");
+    const allowBlankPrint = compactPrint || driverSlip || warehouseSlip;
+
+    document.body.classList.toggle("compactMode", compactPrint);
+    applyCompactTruckSwap(compactPrint);
+
+    const receiptNoRow = byId("receiptNoRow");
+    const departmentRow = byId("departmentRow");
+    if (receiptNoRow) receiptNoRow.style.display = "";
+    if (departmentRow) departmentRow.style.display = "";
+
+    const metaCard = document.querySelector(".metaCard");
+    if (metaCard) metaCard.style.display = "";
+
+    if (!bookingId && !caseId) {
+      if (!allowBlankPrint) return showError("Keine Beleg-ID übergeben");
+      clearReceiptForBlankPrint();
+      return;
+    }
+
     let res;
     let data;
     try {
@@ -104,13 +142,6 @@
     const formattedDate = data.created_at
       ? new Date(data.created_at).toLocaleDateString("de-DE")
       : "-";
-    const compactPrint = hasTruthyQuery("compact");
-    document.body.classList.toggle("compactMode", compactPrint);
-    applyCompactTruckSwap(compactPrint);
-    const receiptNoRow = byId("receiptNoRow");
-    const departmentRow = byId("departmentRow");
-    if (receiptNoRow) receiptNoRow.style.display = compactPrint ? "none" : "";
-    if (departmentRow) departmentRow.style.display = compactPrint ? "none" : "";
     setText("receiptDate", formattedDate);
     setText("trailerNo", data.license_plate || "-");
     setText("receiptNoInline", receiptLabel);
