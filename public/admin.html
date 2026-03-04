@@ -63,6 +63,32 @@
     <button data-tab="users">Benutzer</button>
   </div>
 
+  <div class="card">
+    <h3 style="margin-top:0;">Belegdruck</h3>
+    <div class="row">
+      <div>
+        <label>Referenztyp</label>
+        <select id="printRefType">
+          <option value="caseId">Vorgangs-ID</option>
+          <option value="id">Buchungs-ID</option>
+        </select>
+      </div>
+      <div>
+        <label>ID</label>
+        <input id="printRefId" placeholder="z.B. 12345">
+      </div>
+      <div>
+        <button class="secondary" id="printReceiptStandardBtn">Standard drucken</button>
+      </div>
+      <div>
+        <button class="primary" id="printReceiptCompactBtn">Ohne Belegnummer/Abteilung drucken</button>
+      </div>
+    </div>
+    <small class="muted">Öffnet den Beleg in einem neuen Tab. Für die kompakte Version werden Belegnummer und Abteilung ausgeblendet.</small>
+    <p id="printReceiptMsg"></p>
+  </div>
+
+
   <!-- ROLES -->
   <section id="tab-roles">
     <div class="card">

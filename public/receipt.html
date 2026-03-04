@@ -132,14 +132,22 @@
       margin-bottom: 2.2mm;
       box-shadow: 0 0 0.6mm rgba(17, 24, 39, 0.12);
     }
-    .metaRow {
+    .metaLayout {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 4mm;
-      margin-bottom: 1.5mm;
+      align-items: stretch;
     }
-    .metaRow.single {
-      grid-template-columns: 1fr;
+    .metaColumn {
+      display: grid;
+      gap: 1.5mm;
+      align-content: start;
+    }
+    .metaField.rightAligned {
+      grid-template-columns: auto 1fr;
+    }
+    .metaField.rightAligned .metaValue {
+      text-align: right;
     }
     .metaField {
       display: grid;
@@ -163,6 +171,12 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .metaValue.address {
+      white-space: pre-line;
+      line-height: 1.3;
+      overflow: visible;
+      text-overflow: clip;
     }
 
     .tableWrap {
@@ -227,6 +241,10 @@
     .transferIcon.left,
     .transferIcon.right {
       transform-origin: center;
+    }
+    body.compactArrows .transferIcon.left,
+    body.compactArrows .transferIcon.right {
+      transform: scaleX(-1);
     }
     td.type {
       width: 34%;
@@ -296,49 +314,43 @@
     <div class="title">LADEMITTEL GEGENSCHEIN</div>
 
     <div class="metaCard">
-      <div class="metaRow">
-        <div class="metaField">
-          <div class="metaLabel">Ort/Datum:</div>
-          <div class="metaValue" id="placeDate"></div>
+      <div class="metaLayout">
+        <div class="metaColumn">
+          <div class="metaField">
+            <div class="metaLabel">Unternehmer:</div>
+            <div class="metaValue address" id="entrepreneurAddress"></div>
+          </div>
         </div>
-        <div class="metaField">
-          <div class="metaLabel">Kennzeichen:</div>
-          <div class="metaValue" id="trailerNo"></div>
-        </div>
-      </div>
+        <div class="metaColumn">
+          <div class="metaField rightAligned">
+            <div class="metaLabel">Datum:</div>
+            <div class="metaValue" id="receiptDate"></div>
+          </div>
 
-      <div class="metaRow single">
-        <div class="metaField">
-          <div class="metaLabel">Belegnummer:</div>
-          <div class="metaValue" id="receiptNoInline"></div>
-        </div>
-      </div>
+          <div class="metaField rightAligned">
+            <div class="metaLabel">Kennzeichen:</div>
+            <div class="metaValue" id="trailerNo"></div>
+          </div>
 
-      <div class="metaRow single">
-        <div class="metaField">
-          <div class="metaLabel">Abteilung:</div>
-          <div class="metaValue" id="department"></div>
-        </div>
-      </div>
+          <div class="metaField rightAligned" id="receiptNoRow">
+            <div class="metaLabel">Belegnummer:</div>
+            <div class="metaValue" id="receiptNoInline"></div>
+          </div>
 
-      <div class="metaRow single">
-        <div class="metaField">
-          <div class="metaLabel">Unternehmer:</div>
-          <div class="metaValue" id="entrepreneur"></div>
-        </div>
-      </div>
+          <div class="metaField rightAligned" id="departmentRow">
+            <div class="metaLabel">Abteilung:</div>
+            <div class="metaValue" id="department"></div>
+          </div>
 
-      <div class="metaRow single" style="margin-bottom:0;">
-        <div class="metaField">
-          <div class="metaLabel">Notiz:</div>
-          <div class="metaValue" id="note"></div>
-        </div>
-      </div>
+          <div class="metaField rightAligned">
+            <div class="metaLabel">Notiz:</div>
+            <div class="metaValue" id="note"></div>
+          </div>
 
-      <div class="metaRow single" id="nonExchangeableRow" style="display:none;">
-        <div class="metaField">
-          <div class="metaLabel">Nicht tauschfähig:</div>
-          <div class="metaValue" id="nonExchangeable"></div>
+          <div class="metaField rightAligned" id="nonExchangeableRow" style="display:none;">
+            <div class="metaLabel">Nicht tauschfähig:</div>
+            <div class="metaValue" id="nonExchangeable"></div>
+          </div>
         </div>
       </div>
     </div>
