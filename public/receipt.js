@@ -106,6 +106,7 @@
       ? new Date(data.created_at).toLocaleDateString("de-DE")
       : "-";
     const compactPrint = hasTruthyQuery("compact");
+    document.body.classList.toggle("compactMode", compactPrint);
     applyCompactTruckSwap(compactPrint);
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");

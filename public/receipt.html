@@ -128,7 +128,7 @@
       border: 1px solid #d9dee7;
       border-radius: 5mm;
       background: #f7f8fb;
-      padding: 3.4mm 3.2mm 2.9mm;
+      padding: 2.8mm 3.2mm 2.1mm;
       margin-bottom: 2.2mm;
       box-shadow: 0 0 0.6mm rgba(17, 24, 39, 0.12);
     }
@@ -156,7 +156,7 @@
       align-items: center;
       border-bottom: 0.35mm solid #7c838d;
       padding-bottom: 1mm;
-      min-height: 7.2mm;
+      min-height: 6mm;
     }
     .metaLabel {
       font-size: 4.0mm;
@@ -165,13 +165,22 @@
       white-space: nowrap;
     }
     .metaLabelSub {
-      display: block;
+      display: none;
       font-size: 2.6mm;
       line-height: 1.1;
       font-weight: 400;
       color: #4b5563;
       margin-top: 0.6mm;
       letter-spacing: 0.1px;
+    }
+    body.compactMode .metaCard {
+      padding: 3.4mm 3.2mm 2.9mm;
+    }
+    body.compactMode .metaField {
+      min-height: 7.2mm;
+    }
+    body.compactMode .metaLabelSub {
+      display: block;
     }
     .metaValue {
       font-size: 3.95mm;
