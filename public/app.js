@@ -225,8 +225,8 @@ function applyPermsToUI() {
   if (employeeLabel && employeeInput) {
     const required = !!PERMS?.cases?.require_employee_code;
     employeeLabel.textContent = required
-      ? "Mitarbeiterkürzel (2-stellig, Pflicht)"
-      : "Mitarbeiterkürzel (2-stellig, optional)";
+    ? "Lagermitarbeiter (2-stellig, Pflicht)"
+      : "Lagermitarbeiter (2-stellig, optional)";
     if (required) {
       employeeInput.setAttribute("required", "required");
     } else {
@@ -814,10 +814,10 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!department_id) return setMsg("avisoMsg", "Bitte Abteilung auswählen");
   if (!license_plate) return setMsg("avisoMsg", "Kennzeichen ist Pflicht");
   if (PERMS?.cases?.require_employee_code && !employee_code) {
-    return setMsg("avisoMsg", "Mitarbeiterkürzel (2-stellig) ist Pflicht");
+    return setMsg("avisoMsg", "Lagermitarbeiter (2-stellig) ist Pflicht");
   }
   if (employee_code && !/^[A-Z0-9]{2}$/.test(employee_code)) {
-    return setMsg("avisoMsg", "Mitarbeiterkürzel muss genau 2 Zeichen haben");
+    return setMsg("avisoMsg", "Lagermitarbeiter muss genau 2 Zeichen haben");
   }
 
   const rr = await api("/api/cases", {
@@ -908,9 +908,13 @@ $("saveEntrepreneurModalBtn")?.addEventListener("click", async () => {
 // ---------- Historie ----------
 let HISTORY = [];
 let ENTREPRENEUR_HISTORY = [];
+const HISTORY_PAGE_SIZE = 20;
+let HISTORY_PAGE = 0;
+let HISTORY_HAS_MORE = false;
 
-async function loadHistory() {
+async function loadHistory({ resetPage = false } = {}) {
   if (!CURRENT_LOCATION) return;
+  if (resetPage) HISTORY_PAGE = 0;
 
   // ✅ falls CURRENT_DEPARTMENT nicht gesetzt ist: aus Select holen
   if (!CURRENT_DEPARTMENT) {
@@ -929,6 +933,8 @@ async function loadHistory() {
   const qs = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     department_id: String(CURRENT_DEPARTMENT),
+    limit: String(HISTORY_PAGE_SIZE),
+    offset: String(HISTORY_PAGE * HISTORY_PAGE_SIZE),
     ...(from ? { date_from: from } : {}),
     ...(to ? { date_to: to } : {}),
     ...(entrepreneur ? { entrepreneur } : {}),
@@ -942,7 +948,9 @@ async function loadHistory() {
     return showWrapError("historyWrap", data?.error || `Historie konnte nicht geladen werden (HTTP ${r.status})`);
   }
 
-  HISTORY = await r.json();
+  const data = await r.json();
+  HISTORY = Array.isArray(data?.items) ? data.items : [];
+  HISTORY_HAS_MORE = Boolean(data?.has_more);
   renderHistory();
 }
 
@@ -1034,7 +1042,7 @@ function renderHistory() {
               <div>${h.aviso_created_by || "-"}</div>
             </div>
             <div class="rollcard-item">
-              <label>Mitarbeiterkürzel</label>
+              <label>Lagermitarbeiter</label>
               <div>${h.employee_code || "-"}</div>
             </div>
             <div class="rollcard-item">
@@ -1052,6 +1060,11 @@ function renderHistory() {
       `).join("")}
       ${(HISTORY.length === 0) ? `<div class="rollcard" style="color:#6b7280;">Keine Buchungen gefunden</div>` : ""}
     </div>
+    <div class="row" style="margin-top:10px; align-items:center; gap:10px;">
+      <button class="secondary" id="historyPrevBtn" ${HISTORY_PAGE === 0 ? "disabled" : ""}>Zurück</button>
+      <button class="secondary" id="historyNextBtn" ${!HISTORY_HAS_MORE ? "disabled" : ""}>Weiter</button>
+      <span class="muted">Seite ${HISTORY_PAGE + 1} · max. ${HISTORY_PAGE_SIZE} Buchungen pro Seite</span>
+    </div>
   `;
   $("historyWrap").innerHTML = html;
 
@@ -1060,6 +1073,18 @@ function renderHistory() {
       const id = btn.getAttribute("data-print");
       window.open(`/receipt.html?id=${encodeURIComponent(id)}`, "_blank", "noopener,noreferrer");
     });
+  });
+
+  $("historyPrevBtn")?.addEventListener("click", async () => {
+    if (HISTORY_PAGE === 0) return;
+    HISTORY_PAGE -= 1;
+    await loadHistory();
+  });
+
+  $("historyNextBtn")?.addEventListener("click", async () => {
+    if (!HISTORY_HAS_MORE) return;
+    HISTORY_PAGE += 1;
+    await loadHistory();
   });
 }
 
@@ -1158,14 +1183,14 @@ $("locationSelect").addEventListener("change", async () => {
   CURRENT_LOCATION = Number($("locationSelect").value || 0);
   joinLocationRoom();
   await loadCases();
-  await loadHistory();
+  await loadHistory({ resetPage: true });
   await loadEntrepreneurHistoryPlates();
   await loadEntrepreneurHistory();
 });
 
 $("departmentSelect").addEventListener("change", async () => {
   CURRENT_DEPARTMENT = Number($("departmentSelect").value || 0);
-  await loadHistory();
+  await loadHistory({ resetPage: true });
 });
 
 $("reloadCasesBtn").addEventListener("click", loadCases);
@@ -1175,23 +1200,23 @@ $("caseSearch").addEventListener("input", () => {
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);
 });
-$("reloadHistoryBtn").addEventListener("click", loadHistory);
+$("reloadHistoryBtn").addEventListener("click", () => loadHistory({ resetPage: true }));
 if ($("histEntrepreneur")) {
   $("histEntrepreneur").addEventListener("input", () => {
     clearTimeout(window.__histEntrepreneurT);
-    window.__histEntrepreneurT = setTimeout(loadHistory, 250);
+    window.__histEntrepreneurT = setTimeout(() => loadHistory({ resetPage: true }), 250);
   });
 }
 if ($("histPlate")) {
   $("histPlate").addEventListener("input", () => {
     clearTimeout(window.__histPlateT);
-    window.__histPlateT = setTimeout(loadHistory, 250);
+    window.__histPlateT = setTimeout(() => loadHistory({ resetPage: true }), 250);
   });
 }
 if ($("histReceipt")) {
   $("histReceipt").addEventListener("input", () => {
     clearTimeout(window.__histReceiptT);
-    window.__histReceiptT = setTimeout(loadHistory, 250);
+    window.__histReceiptT = setTimeout(() => loadHistory({ resetPage: true }), 250);
   });
 }
 $("entHistReloadBtn").addEventListener("click", loadEntrepreneurHistory);
@@ -1243,7 +1268,7 @@ socket.on("bookingsUpdated", async (payload) => {
   if (Number(payload.location_id) !== Number(CURRENT_LOCATION)) return;
   // Wenn Department gefiltert ist, nur dann auto-reload, wenn es passt
   if (payload.department_id && CURRENT_DEPARTMENT && Number(payload.department_id) !== Number(CURRENT_DEPARTMENT)) return;
-  await loadHistory();
+  await loadHistory({ resetPage: true });
   await loadStock();
 });
 
@@ -1269,7 +1294,7 @@ socket.on("bookingsUpdated", async (payload) => {
   await loadStock();
   await loadCases();
   await loadNotifications();
-  await loadHistory();
+  await loadHistory({ resetPage: true });
   await loadEntrepreneurHistoryPlates();
   await loadEntrepreneurHistory();
 })();

@@ -148,7 +148,7 @@ function normalizeEmployeeCode(codeRaw) {
   if (!code) return null;
   const normalized = code.toUpperCase();
   if (!/^[A-Z0-9]{2}$/.test(normalized)) {
-    return { ok: false, msg: "Mitarbeiterkürzel muss genau 2 Zeichen haben (Buchstaben/Zahlen)" };
+    return { ok: false, msg: "Lagermitarbeiter muss genau 2 Zeichen haben (Buchstaben/Zahlen)" };
   }
   return { ok: true, code: normalized };
 }
@@ -995,7 +995,7 @@ app.post("/api/cases", authRequired, async (req, res) => {
     return res.status(400).json({ error: employeeCodeCheck.msg });
   }
   if (perms?.cases?.require_employee_code && !employeeCodeCheck?.code) {
-    return res.status(400).json({ error: "Mitarbeiterkürzel (2-stellig) ist Pflicht" });
+    return res.status(400).json({ error: "Lagermitarbeiter (2-stellig) ist Pflicht" });
   }
 
   if (req.user.role !== "admin" && req.user.location_id && locId !== Number(req.user.location_id)) {
@@ -1430,6 +1430,10 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
   const entrepreneur = (req.query.entrepreneur || "").trim();
   const license_plate = (req.query.license_plate || "").trim();
   const receipt_no = (req.query.receipt_no || "").trim();
+  const limitRaw = Number(req.query.limit || 20);
+  const offsetRaw = Number(req.query.offset || 0);
+  const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20;
+  const offset = Number.isInteger(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
 
   if (!location_id || !department_id) return res.status(400).json({ error: "location_id + department_id required" });
 
@@ -1446,6 +1450,8 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
   if (entrepreneur) { where.push(`COALESCE(b.entrepreneur,'') ILIKE $${idx}`); params.push(`%${entrepreneur}%`); idx++; }
   if (license_plate) { where.push(`COALESCE(b.license_plate,'') ILIKE $${idx}`); params.push(`%${license_plate}%`); idx++; }
   if (receipt_no) { where.push(`b.receipt_no ILIKE $${idx}`); params.push(`%${receipt_no}%`); idx++; }
+
+  params.push(limit + 1, offset);
 
   const rows = (await q(
     `
@@ -1471,12 +1477,19 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
     WHERE ${where.join(" AND ")}
     GROUP BY b.receipt_no
     ORDER BY MIN(b.id) DESC
-    LIMIT 500
+    LIMIT $${idx}
+    OFFSET $${idx + 1}
     `,
     params
   )).rows;
 
-  res.json(rows);
+  const has_more = rows.length > limit;
+  res.json({
+    items: has_more ? rows.slice(0, limit) : rows,
+    has_more,
+    limit,
+    offset
+  });
 });
 
 // ---------- ENTREPRENEUR HISTORY ----------
