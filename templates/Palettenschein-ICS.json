@@ -1,0 +1,35 @@
+{
+  "templateName": "Palettenschein-ICS",
+  "version": "1.0.0",
+  "page": {
+    "format": "A4",
+    "orientation": "portrait",
+    "widthMm": 210,
+    "heightMm": 297
+  },
+  "styles": {
+    "defaultFont": "Helvetica"
+  },
+  "fields": [
+    { "id": "belegnummer", "type": "string" },
+    { "id": "datum", "type": "date" },
+    { "id": "frachtfuehrer", "type": "string" },
+    { "id": "kennzeichen", "type": "string" }
+  ],
+  "elements": [
+    { "id": "header", "type": "text", "x": 15, "y": 12, "w": 120, "h": 10, "text": "Palettenschein", "fontSize": 18, "bold": true, "align": "left" },
+    { "id": "docNoLabel", "type": "text", "x": 15, "y": 28, "w": 45, "h": 8, "text": "Belegnummer:", "fontSize": 10, "bold": true },
+    { "id": "docNoValue", "type": "rect", "x": 62, "y": 26, "w": 70, "h": 10 },
+    { "id": "docNoText", "type": "text", "x": 64, "y": 28, "w": 66, "h": 8, "fieldId": "belegnummer", "fieldType": "string", "fontSize": 10 },
+    { "id": "dateLabel", "type": "text", "x": 140, "y": 28, "w": 25, "h": 8, "text": "Datum:", "fontSize": 10, "bold": true },
+    { "id": "dateRect", "type": "rect", "x": 165, "y": 26, "w": 30, "h": 10 },
+    { "id": "dateText", "type": "text", "x": 167, "y": 28, "w": 26, "h": 8, "fieldId": "datum", "fieldType": "date", "fontSize": 10 },
+    { "id": "carrierLabel", "type": "text", "x": 15, "y": 44, "w": 50, "h": 8, "text": "Frachtführer:", "fontSize": 10, "bold": true },
+    { "id": "carrierRect", "type": "rect", "x": 15, "y": 54, "w": 180, "h": 40 },
+    { "id": "carrierText", "type": "multiline", "x": 18, "y": 58, "w": 172, "h": 32, "fieldId": "frachtfuehrer", "fieldType": "string", "fontSize": 12 },
+    { "id": "plateLabel", "type": "text", "x": 15, "y": 102, "w": 50, "h": 8, "text": "Kennzeichen", "translationText": "License plate / Reg. number (HR) / Număr (RO)", "fontSize": 10, "bold": true },
+    { "id": "plateRect", "type": "rect", "x": 68, "y": 100, "w": 60, "h": 12 },
+    { "id": "plateText", "type": "text", "x": 70, "y": 103, "w": 55, "h": 8, "fieldId": "kennzeichen", "fieldType": "string", "fontSize": 11 },
+    { "id": "positions", "type": "table", "x": 15, "y": 122, "w": 180, "h": 120, "cols": 4, "rows": 12 }
+  ]
+}
