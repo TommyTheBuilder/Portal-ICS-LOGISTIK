@@ -33,7 +33,7 @@ Verwende diese Kommandos im Render-Dashboard:
 
 ### Build Command
 ```bash
-npm install && npm run build --workspace @ics/template-web
+npm install --include=dev && npm run build --workspace @ics/template-web
 ```
 
 Warum: Dadurch entsteht `apps/web/dist`, das vom Hauptserver ausgeliefert wird.
@@ -97,6 +97,7 @@ Ursache: `apps/web/dist` fehlt im Deploy-Artefakt.
 
 Lösung:
 - Prüfen, ob Build Command wirklich `npm run build --workspace @ics/template-web` ausführt.
+- Achte auf den Workspace-Namen **mit `@`**: `@ics/template-web` (nicht `ics/...` oder `aics/...`).
 - Neu deployen.
 
 ### B) `Cannot find module ...`

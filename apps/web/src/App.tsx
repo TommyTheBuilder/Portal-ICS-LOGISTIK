@@ -6,10 +6,10 @@ const MM_TO_PX = 4;
 const A4 = { w: 210, h: 297 };
 const API = (import.meta.env.VITE_TEMPLATE_API_URL as string | undefined) || '';
 const withApi = (path: string) => `${API}${path}`;
-const authHeaders = (): Headers => {
+const authHeaders = (base: Record<string, string> = {}): HeadersInit => {
   const token = localStorage.getItem('token');
-  const headers = new Headers();
-  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const headers: Record<string, string> = { ...base };
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 };
 
@@ -144,11 +144,9 @@ export function App() {
         setTemplate(doc);
       }}>Portal-Beleg laden</button>
       <button className="w-full border p-1" onClick={async () => {
-        const headers = authHeaders();
-        headers.set('Content-Type', 'application/json');
         const res = await fetch('/api/receipt-template', {
           method: 'PUT',
-          headers,
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(template)
         });
         if (!res.ok) return alert('Speichern im Portal fehlgeschlagen');
