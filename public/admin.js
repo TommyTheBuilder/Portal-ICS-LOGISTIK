@@ -55,7 +55,7 @@ $("templateDesignerBtn")?.addEventListener("click", () => {
     window.location.href = configuredUrl;
     return;
   }
-  window.location.href = "http://localhost:5173";
+  window.location.href = "/template-designer";
 });
 
 // ---------------- Loaders ----------------

@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const { Parser } = require("json2csv");
 const ExcelJS = require("exceljs");
 const path = require("path");
+const fs = require("fs");
 const { randomUUID } = require("crypto");
 
 const { pool } = require("./db_pg");
@@ -32,6 +33,36 @@ app.use(helmet());
 app.use(cors({ origin: corsOriginResolver }));
 app.use(express.json({ limit: MAX_BODY_SIZE }));
 app.use(express.static(path.join(__dirname, "public")));
+
+const templateDesignerDist = path.join(__dirname, "apps", "web", "dist");
+const templateDesignerIndex = path.join(templateDesignerDist, "index.html");
+const externalTemplateDesignerUrl = process.env.TEMPLATE_DESIGNER_URL;
+
+if (fs.existsSync(templateDesignerIndex)) {
+  app.use("/template-designer", express.static(templateDesignerDist));
+  app.get("/template-designer/*", (_req, res) => res.sendFile(templateDesignerIndex));
+} else {
+  app.get("/template-designer", (_req, res) => {
+    if (externalTemplateDesignerUrl) {
+      return res.redirect(302, externalTemplateDesignerUrl);
+    }
+    return res.status(503).send(`<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8" /><title>Template-Designer nicht verfügbar</title></head>
+<body style="font-family:Arial,sans-serif;padding:24px;line-height:1.5;">
+  <h1>Template-Designer ist aktuell nicht verfügbar</h1>
+  <p>Der Designer läuft standardmäßig unter <code>npm run dev</code> auf Port <code>5173</code> oder als Build unter <code>apps/web/dist</code>.</p>
+  <p>Optionen:</p>
+  <ul>
+    <li><code>npm run dev</code> starten und danach <a href="http://localhost:5173">http://localhost:5173</a> öffnen.</li>
+    <li>Oder den Build bereitstellen: <code>npm run build --workspace @ics/template-web</code>.</li>
+    <li>Oder Server-Variable <code>TEMPLATE_DESIGNER_URL</code> setzen.</li>
+  </ul>
+  <p><a href="/admin.html">Zurück zur Admin-Seite</a></p>
+</body>
+</html>`);
+  });
+}
 
 const httpServer = require("http").createServer(app);
 const io = require("socket.io")(httpServer, {
