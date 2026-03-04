@@ -99,6 +99,8 @@ Lösung:
 - Prüfen, ob Build Command wirklich `npm run build --workspace @ics/template-web` ausführt.
 - Achte auf den Workspace-Namen **mit `@`**: `@ics/template-web` (nicht `ics/...` oder `aics/...`).
 - Neu deployen.
+- In Render sicherstellen, dass wirklich der **neueste Commit**/Branch gebaut wird (bei manuellen Deploys häufige Ursache).
+- Danach einmal **Clear build cache & deploy** ausführen, damit kein alter TypeScript-Cache verwendet wird.
 
 ### B) `Cannot find module ...`
 Ursache: Abhängigkeiten nicht im Root-Install enthalten.

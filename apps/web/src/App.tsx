@@ -6,9 +6,10 @@ const MM_TO_PX = 4;
 const A4 = { w: 210, h: 297 };
 const API = (globalThis as { __TEMPLATE_API_URL__?: string }).__TEMPLATE_API_URL__ || '';
 const withApi = (path: string) => `${API}${path}`;
-const authHeaders = (base: Record<string, string> = {}): Headers => {
+const authHeaders = (contentType?: string): Headers => {
   const token = localStorage.getItem('token');
-  const headers = new Headers(base);
+  const headers = new Headers();
+  if (contentType) headers.set('Content-Type', contentType);
   if (token) headers.set('Authorization', `Bearer ${token}`);
   return headers;
 };
@@ -192,7 +193,7 @@ export function App() {
       <button className="w-full border p-1" onClick={async () => {
         const res = await fetch('/api/receipt-template', {
           method: 'PUT',
-          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          headers: authHeaders('application/json'),
           body: JSON.stringify(template)
         });
         if (!res.ok) return alert('Speichern im Portal fehlgeschlagen');
