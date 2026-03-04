@@ -104,13 +104,20 @@
     const warehouseSlip = hasTruthyQuery("warehouseSlip");
     const allowBlankPrint = compactPrint || driverSlip || warehouseSlip;
 
+    document.body.classList.toggle("driverSlipMode", driverSlip);
+    document.body.classList.toggle("warehouseSlipMode", warehouseSlip);
+    document.body.classList.toggle("caseSlipMode", !driverSlip && !warehouseSlip);
+
     document.body.classList.toggle("compactMode", compactPrint);
     applyCompactTruckSwap(compactPrint);
 
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");
-    if (receiptNoRow) receiptNoRow.style.display = "";
-    if (departmentRow) departmentRow.style.display = "";
+    if (receiptNoRow) receiptNoRow.style.display = driverSlip ? "none" : "";
+    if (departmentRow) departmentRow.style.display = driverSlip ? "none" : "";
+
+    const receiptTitle = byId("receiptTitle");
+    if (receiptTitle) receiptTitle.textContent = "LADEMITTEL GEGENSCHEIN";
 
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = "";
@@ -136,8 +143,8 @@
     }
     if (!res.ok) return showError(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
     let receiptLabel = data.receipt_no || "-";
-    if (data.provisional) {
-      receiptLabel = data.receipt_no ? `Vorläufig ${data.receipt_no}` : "Vorläufig";
+    if (data.provisional && receiptTitle) {
+      receiptTitle.textContent = "VORLÄUFIGER LADEMITTEL GEGENSCHEIN";
     }
     const formattedDate = data.created_at
       ? new Date(data.created_at).toLocaleDateString("de-DE")
