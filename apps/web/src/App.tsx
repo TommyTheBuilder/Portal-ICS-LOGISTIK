@@ -6,9 +6,11 @@ const MM_TO_PX = 4;
 const A4 = { w: 210, h: 297 };
 const API = (import.meta.env.VITE_TEMPLATE_API_URL as string | undefined) || '';
 const withApi = (path: string) => `${API}${path}`;
-const authHeaders = () => {
+const authHeaders = (): Headers => {
   const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return headers;
 };
 
 const blankTemplate = (): TemplateDocument => ({
@@ -136,15 +138,17 @@ export function App() {
       <button className="w-full border p-1" onClick={() => navigator.clipboard.writeText(JSON.stringify(template, null, 2))}>JSON kopieren</button>
 
       <button className="w-full border p-1" onClick={async () => {
-        const res = await fetch('/api/receipt-template', { headers: { ...authHeaders() } });
+        const res = await fetch('/api/receipt-template', { headers: authHeaders() });
         if (!res.ok) return alert('Kein aktives Portal-Belegtemplate gefunden');
         const doc = await res.json();
         setTemplate(doc);
       }}>Portal-Beleg laden</button>
       <button className="w-full border p-1" onClick={async () => {
+        const headers = authHeaders();
+        headers.set('Content-Type', 'application/json');
         const res = await fetch('/api/receipt-template', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          headers,
           body: JSON.stringify(template)
         });
         if (!res.ok) return alert('Speichern im Portal fehlgeschlagen');
