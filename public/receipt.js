@@ -110,12 +110,13 @@
     const slipMode = driverSlip || warehouseSlip;
     document.body.classList.toggle("compactMode", compactPrint);
     document.body.classList.toggle("slipMode", slipMode);
+    document.body.classList.toggle("warehouseSlipMode", warehouseSlip);
     applyCompactTruckSwap(compactPrint);
 
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");
     if (receiptNoRow) receiptNoRow.style.display = slipMode ? "none" : "";
-    if (departmentRow) departmentRow.style.display = slipMode ? "none" : "";
+    if (departmentRow) departmentRow.style.display = driverSlip ? "none" : "";
 
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = "";
