@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Layer, Line, Rect, Stage, Text, Group } from 'react-konva';
 import type { TemplateDocument, TemplateElement } from './types';
 
@@ -60,6 +60,52 @@ export function App() {
   const [snap, setSnap] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [previewData, setPreviewData] = useState<Record<string, string>>({ belegnummer: generateBelegnummer(), datum: new Date().toISOString().slice(0, 10) });
+  const [newFieldId, setNewFieldId] = useState('');
+  const [newFieldType, setNewFieldType] = useState<NonNullable<TemplateElement['fieldType']>>('string');
+  const loadPortalTemplate = async () => {
+    const res = await fetch('/api/receipt-template', { headers: authHeaders() });
+    if (!res.ok) return;
+    const doc = await res.json();
+    setTemplate(doc);
+  };
+
+  useEffect(() => {
+    loadPortalTemplate().catch(() => undefined);
+  }, []);
+
+  const addField = (fieldId: string, type: TemplateElement['fieldType'] = 'string') => {
+    const clean = fieldId.trim();
+    if (!clean) return;
+    setTemplate((t) => {
+      if (t.fields.some((f) => f.id === clean)) return t;
+      return {
+        ...t,
+        fields: [...t.fields, { id: clean, type: type || 'string' }],
+        elements: [...t.elements, {
+          ...newElement('text'),
+          id: id(),
+          fieldId: clean,
+          fieldType: type || 'string',
+          text: clean,
+          translationText: clean
+        }]
+      };
+    });
+    setPreviewData((d) => ({ ...d, [clean]: d[clean] || '' }));
+  };
+
+  const removeField = (fieldId: string) => {
+    setTemplate((t) => ({
+      ...t,
+      fields: t.fields.filter((f) => f.id !== fieldId),
+      elements: t.elements.filter((e) => e.fieldId !== fieldId)
+    }));
+    setPreviewData((d) => {
+      const next = { ...d };
+      delete next[fieldId];
+      return next;
+    });
+  };
 
   const selected = template.elements.find((e) => e.id === selectedId);
   const collisions = useMemo(() => {
@@ -231,7 +277,25 @@ export function App() {
       </> : <p>Element wählen…</p>}
       <hr/>
       <h3 className="font-medium">Felder</h3>
-      {template.fields.map((f) => <div key={f.id} className="text-xs border p-1">{f.id} ({f.type})</div>)}
+      <div className="grid grid-cols-[1fr_auto_auto] gap-1">
+        <input className="border p-1 text-xs" placeholder="z.B. unternehmer" value={newFieldId} onChange={(e) => setNewFieldId(e.target.value)} />
+        <select className="border p-1 text-xs" value={newFieldType} onChange={(e) => setNewFieldType(e.target.value as NonNullable<TemplateElement['fieldType']>)}><option>string</option><option>date</option><option>number</option></select>
+        <button className="border p-1 text-xs" onClick={() => {
+          addField(newFieldId, newFieldType);
+          setNewFieldId('');
+        }}>+ Feld</button>
+      </div>
+      {template.fields.map((f) => <div key={f.id} className="text-xs border p-1 flex items-center justify-between gap-2">
+        <button className="text-left underline" onClick={() => {
+          const existing = template.elements.find((e) => e.fieldId === f.id);
+          if (existing) return setSelectedId(existing.id);
+          setTemplate((t) => ({
+            ...t,
+            elements: [...t.elements, { ...newElement('text'), id: id(), fieldId: f.id, fieldType: f.type, text: f.id, translationText: f.id }]
+          }));
+        }}>{f.id} ({f.type})</button>
+        <button className="text-red-700" onClick={() => removeField(f.id)}>löschen</button>
+      </div>)}
     </aside>
   </div>;
 }
