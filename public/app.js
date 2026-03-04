@@ -361,7 +361,7 @@ function updateStockHint() {
   const hint = $("stockHint");
   if (!hint) return;
   if (STOCK_MODE === "overall") hint.textContent = "Komplett-Bestand (über alle Standorte).";
-  else if (STOCK_MODE === "entrepreneur") hint.textContent = "Unternehmer-Bestand (über alle Standorte).";
+  else if (STOCK_MODE === "entrepreneur") hint.textContent = "Frachtführer-Bestand (über alle Standorte).";
   else hint.textContent = "Standort-Bestand (nur ausgewählter Standort).";
 
   hint.textContent += ` Produkt: ${PRODUCT_TYPE_LABELS[STOCK_PRODUCT_TYPE] || STOCK_PRODUCT_TYPE}`;
@@ -392,7 +392,7 @@ async function loadStock() {
 
   const isEntrepreneur = STOCK_MODE === "entrepreneur";
   const head = isEntrepreneur
-    ? `<tr><th>Unternehmer</th><th>Soll</th></tr>`
+    ? `<tr><th>Frachtführer</th><th>Soll</th></tr>`
     : `<tr><th>Abteilung</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`;
   const body = (rows || []).map(x => {
     if (isEntrepreneur) {
@@ -563,7 +563,7 @@ function renderCasesTable() {
     <table>
       <thead>
         <tr>
-          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Unternehmer</th><th>Translogica</th><th>Produkt</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
+          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Frachtführer</th><th>Translogica</th><th>Produkt</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
         </tr>
       </thead>
       <tbody>
@@ -909,7 +909,7 @@ $("saveEntrepreneurModalBtn")?.addEventListener("click", async () => {
   const postal_code = ($("modalEntrepreneurPostal")?.value || "").trim();
   const city = ($("modalEntrepreneurCity")?.value || "").trim();
 
-  if (!name) return setEntrepreneurModalMsg("Bitte einen Unternehmer-Namen eingeben");
+  if (!name) return setEntrepreneurModalMsg("Bitte einen Frachtführer-Namen eingeben");
 
   const r = await api("/api/entrepreneurs", {
     method: "POST",
@@ -921,11 +921,11 @@ $("saveEntrepreneurModalBtn")?.addEventListener("click", async () => {
     })
   });
   const data = await readJsonSafe(r);
-  if (!r.ok) return setEntrepreneurModalMsg(data?.error || "Unternehmer konnte nicht gespeichert werden");
+  if (!r.ok) return setEntrepreneurModalMsg(data?.error || "Frachtführer konnte nicht gespeichert werden");
 
   await loadEntrepreneurs(data?.name || name);
   $("avisoEntrepreneur").value = data?.name || name;
-  setMsg("avisoMsg", "Unternehmer gespeichert", true);
+  setMsg("avisoMsg", "Frachtführer gespeichert", true);
   toggleEntrepreneurModal(false);
 });
 
@@ -995,7 +995,7 @@ async function loadEntrepreneurHistory() {
   const r = await api(`/api/entrepreneur-history?${qs}`, { method: "GET", headers: {} });
   if (!r.ok) {
     const data = await readJsonSafe(r);
-    return showWrapError("entrepreneurHistoryWrap", data?.error || `Unternehmer-Historie konnte nicht geladen werden (HTTP ${r.status})`);
+    return showWrapError("entrepreneurHistoryWrap", data?.error || `Frachtführer-Historie konnte nicht geladen werden (HTTP ${r.status})`);
   }
 
   ENTREPRENEUR_HISTORY = await r.json();
@@ -1046,7 +1046,7 @@ function renderHistory() {
               <div>${h.license_plate || "-"}</div>
             </div>
             <div class="rollcard-item">
-              <label>Unternehmer</label>
+              <label>Frachtführer</label>
               <div>${h.entrepreneur || "-"}</div>
             </div>
             <div class="rollcard-item">
@@ -1128,7 +1128,7 @@ function renderEntrepreneurHistory() {
               <div>${new Date(h.last_seen || h.created_at).toLocaleString("de-DE")}</div>
             </div>
             <div class="rollcard-item">
-              <label>Unternehmer</label>
+              <label>Frachtführer</label>
               <div>${h.entrepreneur || "-"}</div>
             </div>
             <div class="rollcard-item">

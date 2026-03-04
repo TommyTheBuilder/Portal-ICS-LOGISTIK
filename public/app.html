@@ -83,7 +83,7 @@
       <button class="secondary notification-toggle" id="notificationBtn" title="Benachrichtigungen">🔔<span class="notification-badge" id="notificationBadge" style="display:none;">0</span></button>
       <div class="notification-panel" id="notificationPanel"></div>
     </div>
-    <button class="secondary" id="entrepreneursMasterBtn" style="display:none;">Unternehmerstammdaten</button>
+    <button class="secondary" id="entrepreneursMasterBtn" style="display:none;">Frachtführerstammdaten</button>
     <button class="secondary" id="adminBtn" style="display:none;">Admin</button>
     <button class="secondary" id="logoutBtn">Logout</button>
   </div>
@@ -106,7 +106,7 @@
     <button data-tab="aviso">Aviso</button>
     <button data-tab="cases">Vorgänge</button>
     <button data-tab="history">Historie</button>
-    <button data-tab="entrepreneur-history">Unternehmer Historie</button>
+    <button data-tab="entrepreneur-history">Frachtführer Historie</button>
     <button data-tab="export">Export</button>
   </div>
 
@@ -125,7 +125,7 @@
               <select id="stockMode">
                 <option value="location">Standort-Bestand (je Abteilung)</option>
                 <option value="overall">Komplett-Bestand (je Abteilung)</option>
-                <option value="entrepreneur">Unternehmer-Bestand (gesamt)</option>
+                <option value="entrepreneur">Frachtführer-Bestand (gesamt)</option>
               </select>
             </div>
             <div class="rollcard-item">
@@ -176,13 +176,13 @@
         </div>
         <div class="inline-field">
           <div class="grow">
-            <label>Unternehmer (Stammdaten)</label>
+            <label>Frachtführer (Stammdaten)</label>
             <select id="avisoEntrepreneur"></select>
           </div>
-          <button class="secondary" id="addEntrepreneurBtn" type="button" title="Unternehmer hinzufügen" aria-label="Unternehmer hinzufügen">+</button>
+          <button class="secondary" id="addEntrepreneurBtn" type="button" title="Frachtführer hinzufügen" aria-label="Frachtführer hinzufügen">+</button>
         </div>
         <div>
-          <label>Unternehmer (frei, nicht speichern)</label>
+          <label>Frachtführer (frei, nicht speichern)</label>
           <input id="avisoEntrepreneurFree" placeholder="optional">
         </div>
       </div>
@@ -222,10 +222,10 @@
     <div class="modalBack" id="entrepreneurModalBack">
       <div class="modal" style="max-width:620px; width:100%; box-shadow:0 18px 45px rgba(15,23,42,.3); border:1px solid #e5e7eb;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h3 style="margin:0;">Unternehmer anlegen</h3>
+          <h3 style="margin:0;">Frachtführer anlegen</h3>
           <button class="secondary" type="button" id="closeEntrepreneurModalBtn" style="width:auto;">✕</button>
         </div>
-        <p class="muted" style="margin-top:0;">Bitte die Stammdaten für den neuen Unternehmer erfassen.</p>
+        <p class="muted" style="margin-top:0;">Bitte die Stammdaten für den neuen Frachtführer erfassen.</p>
         <div class="row">
           <div>
             <label>Name (Pflicht)</label>
@@ -247,7 +247,7 @@
         <p id="entrepreneurModalMsg" style="margin:10px 0 0;"></p>
         <div class="row" style="justify-content:flex-end; margin-top:10px;">
           <button class="secondary" type="button" id="cancelEntrepreneurModalBtn" style="min-width:140px;">Abbrechen</button>
-          <button class="primary" type="button" id="saveEntrepreneurModalBtn" style="min-width:170px;">Unternehmer speichern</button>
+          <button class="primary" type="button" id="saveEntrepreneurModalBtn" style="min-width:170px;">Frachtführer speichern</button>
         </div>
       </div>
     </div>
@@ -278,7 +278,7 @@
           </select>
         </div>
         <div>
-          <label>Suche (ID/Kennzeichen/Unternehmer/Notiz)</label>
+          <label>Suche (ID/Kennzeichen/Frachtführer/Notiz)</label>
           <input id="caseSearch" placeholder="z.B. W123AB oder 1042">
         </div>
         <div>
@@ -307,7 +307,7 @@
             <input id="histTo" type="date">
           </div>
           <div class="rollcard-item">
-            <label>Unternehmer</label>
+            <label>Frachtführer</label>
             <input id="histEntrepreneur" placeholder="optional">
           </div>
           <div class="rollcard-item">
@@ -331,10 +331,10 @@
   <!-- ENTREPRENEUR HISTORY -->
   <section id="tab-entrepreneur-history" style="display:none;">
     <div class="card">
-      <h3 style="margin-top:0;">Unternehmer Historie</h3>
+      <h3 style="margin-top:0;">Frachtführer Historie</h3>
       <div class="row">
         <div>
-          <label>Unternehmer</label>
+          <label>Frachtführer</label>
           <select id="entHistEntrepreneur">
             <option value="">Alle</option>
           </select>
@@ -392,7 +392,7 @@
         <input id="casePlate">
       </div>
       <div>
-        <label>Unternehmer</label>
+        <label>Frachtführer</label>
         <input id="caseEntrepreneur">
       </div>
       <div id="caseProductWrap" style="flex:0 0 calc(50% - 6px); min-width:220px;">

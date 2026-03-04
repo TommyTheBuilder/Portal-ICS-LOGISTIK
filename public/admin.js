@@ -243,11 +243,11 @@ async function loadEntrepreneurs() {
   document.querySelectorAll("[data-ent-del]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-ent-del");
-      if (!confirm("Unternehmer wirklich löschen?")) return;
+      if (!confirm("Frachtführer wirklich löschen?")) return;
       const rr = await api(`/api/admin/entrepreneurs/${encodeURIComponent(id)}`, { method: "DELETE" });
       const data = await rr.json().catch(() => ({}));
       if (!rr.ok) return setMsg("entMsg", data.error || "Löschen fehlgeschlagen");
-      setMsg("entMsg", "Unternehmer gelöscht", true);
+      setMsg("entMsg", "Frachtführer gelöscht", true);
       if (String(EDIT_ENTREPRENEUR_ID) === String(id)) {
         EDIT_ENTREPRENEUR_ID = null;
         $("entName").value = "";
@@ -554,7 +554,7 @@ $("saveEntBtn")?.addEventListener("click", async () => {
   const street = ($("entStreet").value || "").trim();
   const postal_code = ($("entPostal").value || "").trim();
   const city = ($("entCity").value || "").trim();
-  if (!name) return setMsg("entMsg", "Bitte Unternehmername eingeben");
+  if (!name) return setMsg("entMsg", "Bitte Frachtführername eingeben");
 
   const payload = {
     name,
@@ -578,7 +578,7 @@ $("saveEntBtn")?.addEventListener("click", async () => {
 
   const data = await rr.json().catch(() => ({}));
   if (!rr.ok) return setMsg("entMsg", data.error || "Speichern fehlgeschlagen");
-  setMsg("entMsg", EDIT_ENTREPRENEUR_ID ? "Unternehmer aktualisiert" : "Unternehmer angelegt", true);
+  setMsg("entMsg", EDIT_ENTREPRENEUR_ID ? "Frachtführer aktualisiert" : "Frachtführer angelegt", true);
   EDIT_ENTREPRENEUR_ID = null;
   $("entName").value = "";
   $("entStreet").value = "";

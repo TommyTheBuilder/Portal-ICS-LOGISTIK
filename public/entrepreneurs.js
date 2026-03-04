@@ -72,11 +72,11 @@ async function loadList() {
   $("body").querySelectorAll("[data-del]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = Number(btn.dataset.del);
-      if (!confirm("Unternehmer wirklich löschen?")) return;
+      if (!confirm("Frachtführer wirklich löschen?")) return;
       const rr = await api(`/api/entrepreneurs/manage/${encodeURIComponent(id)}`, { method: "DELETE" });
       const data = await rr.json().catch(() => ({}));
       if (!rr.ok) return setMsg(data?.error || "Löschen fehlgeschlagen");
-      setMsg("Unternehmer gelöscht", true);
+      setMsg("Frachtführer gelöscht", true);
       if (editId === id) resetForm();
       await loadList();
     });
@@ -90,7 +90,7 @@ $("saveBtn").addEventListener("click", async () => {
   const postal_code = ($("entPostal").value || "").trim();
   const city = ($("entCity").value || "").trim();
 
-  if (!name) return setMsg("Bitte Unternehmername eingeben");
+  if (!name) return setMsg("Bitte Frachtführername eingeben");
 
   const body = JSON.stringify({
     name,
@@ -106,7 +106,7 @@ $("saveBtn").addEventListener("click", async () => {
   const data = await rr.json().catch(() => ({}));
   if (!rr.ok) return setMsg(data?.error || "Speichern fehlgeschlagen");
 
-  setMsg(editId ? "Unternehmer aktualisiert" : "Unternehmer angelegt", true);
+  setMsg(editId ? "Frachtführer aktualisiert" : "Frachtführer angelegt", true);
   resetForm();
   await loadList();
 });
