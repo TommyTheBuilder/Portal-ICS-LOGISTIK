@@ -1,15 +1,29 @@
 {
   "name": "portal-ics-logistik",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "main": "server.js",
   "workspaces": [
     "apps/web",
     "apps/api"
   ],
   "scripts": {
+    "start": "node migrate_pg.js && node server.js",
     "dev": "concurrently \"npm run dev --workspace @ics/template-api\" \"npm run dev --workspace @ics/template-web\"",
+    "dev:legacy": "node migrate_pg.js && node server.js",
     "build": "npm run build --workspace @ics/template-web && npm run build --workspace @ics/template-api",
     "lint": "npm run lint --workspace @ics/template-web && npm run lint --workspace @ics/template-api"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "helmet": "^7.1.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0",
+    "socket.io": "^4.7.5"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
