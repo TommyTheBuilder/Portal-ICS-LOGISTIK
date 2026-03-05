@@ -230,8 +230,10 @@ async function migrate() {
           "submit": false,
           "approve": false,
           "cancel": false,
+          "delete": false,
           "require_employee_code": false
         },
+        "filters": { "all_locations": false },
         "masterdata": { "manage": false },
         "users": { "manage": false, "view_department": false },
         "roles": { "manage": false }

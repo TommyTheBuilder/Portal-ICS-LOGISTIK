@@ -399,7 +399,11 @@ function getPermCheckboxes() {
       edit: $("p_cases_edit")?.checked || false,
       submit: $("p_cases_submit")?.checked || false,
       approve: $("p_cases_approve")?.checked || false,
-      cancel: $("p_cases_cancel")?.checked || false
+      cancel: $("p_cases_cancel")?.checked || false,
+      delete: $("p_cases_delete")?.checked || false
+    },
+    filters: {
+      all_locations: $("p_filters_all_locations")?.checked || false
     },
     masterdata: {
       manage: $("p_master_manage")?.checked || false,
@@ -438,6 +442,12 @@ function setPermCheckboxes(perms) {
   $("p_cases_submit").checked = !!p?.cases?.submit;
   $("p_cases_approve").checked = !!p?.cases?.approve;
   $("p_cases_cancel").checked = !!p?.cases?.cancel;
+  if ($("p_cases_delete")) {
+    $("p_cases_delete").checked = !!p?.cases?.delete;
+  }
+  if ($("p_filters_all_locations")) {
+    $("p_filters_all_locations").checked = !!p?.filters?.all_locations;
+  }
 
   $("p_master_manage").checked = !!p?.masterdata?.manage;
   if ($("p_master_entrepreneurs_manage")) {
@@ -476,8 +486,10 @@ $("createRoleBtn")?.addEventListener("click", async () => {
         edit: false,
         submit: false,
         approve: false,
-        cancel: false
+        cancel: false,
+        delete: false
       },
+      filters: { all_locations: false },
       masterdata: { manage:false, entrepreneurs_manage:false },
       users: { manage:false },
       roles: { manage:false }

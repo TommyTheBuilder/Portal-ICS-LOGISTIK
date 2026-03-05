@@ -130,7 +130,7 @@ const PRODUCT_TYPE_LABELS = {
 
 const socket = io();
 function joinLocationRoom() {
-  if (CURRENT_LOCATION) socket.emit("joinLocation", CURRENT_LOCATION);
+  if (CURRENT_LOCATION > 0) socket.emit("joinLocation", CURRENT_LOCATION);
 }
 
 // Tabs
@@ -201,6 +201,7 @@ function applyPermsToUI() {
     || PERMS?.cases?.approve
     || PERMS?.cases?.create
     || PERMS?.cases?.cancel
+    || PERMS?.cases?.delete
   );
   const canHistory = !!PERMS?.bookings?.view;
   const canExport = !!PERMS?.bookings?.export;
@@ -257,6 +258,12 @@ async function loadLocations() {
   const transferFromSel = $("internalTransferFrom");
   const transferToSel = $("internalTransferTo");
   sel.innerHTML = "";
+  if (PERMS?.filters?.all_locations) {
+    const allOpt = document.createElement("option");
+    allOpt.value = "-1";
+    allOpt.textContent = "Alle Standorte";
+    sel.appendChild(allOpt);
+  }
   if (avisoSel) avisoSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   if (transferFromSel) transferFromSel.innerHTML = `<option value="">Kein Absender (nur Zugang)</option>`;
   if (transferToSel) transferToSel.innerHTML = `<option value="">Bitte wählen…</option>`;
@@ -288,8 +295,11 @@ async function loadLocations() {
     }
   });
 
-  const locked = ME && ME.role !== "admin" && ME.location_id ? String(ME.location_id) : null;
+  const locked = ME && ME.role !== "admin" && ME.location_id && !PERMS?.filters?.all_locations
+    ? String(ME.location_id)
+    : null;
   if (locked) sel.value = locked;
+  else if (PERMS?.filters?.all_locations) sel.value = "-1";
   if (avisoSel) avisoSel.value = locked || "";
   if (transferFromSel) transferFromSel.value = locked || "";
   if (transferToSel) transferToSel.value = locked || "";
@@ -379,7 +389,7 @@ function statusLabel(s) {
 }
 
 function canSeeAllCases() {
-  return !!(PERMS?.cases?.claim || PERMS?.cases?.edit || PERMS?.cases?.submit || PERMS?.cases?.approve || PERMS?.cases?.cancel);
+  return !!(PERMS?.cases?.claim || PERMS?.cases?.edit || PERMS?.cases?.submit || PERMS?.cases?.approve || PERMS?.cases?.cancel || PERMS?.cases?.delete);
 }
 
 // ---------- Stock ----------
@@ -623,7 +633,7 @@ function renderCasesTable() {
             <td>
               <button class="secondary" data-open-case="${c.id}">Öffnen</button>
               ${(PERMS?.bookings?.receipt && Number(c.status) === 3) ? `<button class="secondary" data-print-case="${c.id}">Vorl. Druck</button>` : ""}
-              ${(PERMS?.cases?.cancel) ? `<button class="danger" data-delete-case="${c.id}">Löschen</button>` : ""}
+              ${(PERMS?.cases?.delete) ? `<button class="danger" data-delete-case="${c.id}">Löschen</button>` : ""}
             </td>
           </tr>
         `).join("")}
@@ -746,7 +756,7 @@ async function openCaseModal(id) {
   $("printCaseBtn").textContent = Number(c.status) === 4 ? "Drucken" : "Vorläufig drucken";
   $("approveCaseBtn").style.display = (PERMS?.cases?.approve && c.status === 3) ? "" : "none";
   $("cancelCaseBtn").style.display = (PERMS?.cases?.cancel && [1, 2, 3].includes(Number(c.status))) ? "" : "none";
-  $("deleteCaseBtn").style.display = (PERMS?.cases?.cancel && [0, 1].includes(Number(c.status))) ? "" : "none";
+  $("deleteCaseBtn").style.display = (PERMS?.cases?.delete && [0, 1].includes(Number(c.status))) ? "" : "none";
 
   showCaseModal(true);
 }

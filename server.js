@@ -319,8 +319,10 @@ async function getMyPermissions(user) {
         submit: true,
         approve: true,
         cancel: true,
+        delete: true,
         require_employee_code: false
       },
+      filters: { all_locations: true },
       masterdata: { manage: true, entrepreneurs_manage: true },
       users: { manage: true, view_department: true },
       roles: { manage: true }
@@ -339,8 +341,10 @@ async function getMyPermissions(user) {
         submit: false,
         approve: false,
         cancel: false,
+        delete: false,
         require_employee_code: false
       },
+      filters: { all_locations: false },
       masterdata: { manage: false, entrepreneurs_manage: false },
       users: { manage: false, view_department: false },
       roles: { manage: false }
@@ -362,8 +366,10 @@ async function getMyPermissions(user) {
       submit: false,
       approve: false,
       cancel: false,
+      delete: false,
       require_employee_code: false
     },
+    filters: { all_locations: false },
     masterdata: { manage: false, entrepreneurs_manage: false },
     users: { manage: false, view_department: false },
     roles: { manage: false }
@@ -927,13 +933,24 @@ app.get("/api/cases", authRequired, async (req, res) => {
 
   if (!location_id) return res.status(400).json({ error: "location_id required" });
 
-  if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id)) {
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  const isAllLocations = location_id === -1;
+
+  if (isAllLocations) {
+    if (!canUseAllLocations) return res.status(403).json({ error: "Keine Berechtigung für Alle Standorte" });
+  } else if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id) && !canUseAllLocations) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const where = [`c.location_id=$1`];
-  const params = [location_id];
-  let idx = 2;
+  const where = ["1=1"];
+  const params = [];
+  let idx = 1;
+  if (!isAllLocations) {
+    where.push(`c.location_id=$${idx}`);
+    params.push(location_id);
+    idx += 1;
+  }
 
   if (status) { where.push(`c.status=$${idx}`); params.push(status); idx++; }
   if (translogicaFilter !== null) { where.push(`c.translogica_transferred=$${idx}`); params.push(translogicaFilter); idx++; }
@@ -1411,7 +1428,7 @@ app.delete("/api/cases/:id", authRequired, async (req, res) => {
   }
 
   const perms = await getMyPermissions(req.user);
-  if (!perms?.cases?.cancel) return res.status(403).json({ error: "Keine Berechtigung" });
+  if (!perms?.cases?.delete) return res.status(403).json({ error: "Keine Berechtigung" });
   await q(`DELETE FROM booking_cases WHERE id=$1`, [id]);
   await deleteNotificationsForCase(id);
 
@@ -1613,13 +1630,25 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
 
   if (!location_id || !department_id) return res.status(400).json({ error: "location_id + department_id required" });
 
-  if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id)) {
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  const isAllLocations = location_id === -1;
+
+  if (isAllLocations) {
+    if (!canUseAllLocations) return res.status(403).json({ error: "Keine Berechtigung für Alle Standorte" });
+  } else if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id) && !canUseAllLocations) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const where = [`b.location_id=$1`, `b.department_id=$2`];
-  const params = [location_id, department_id];
-  let idx = 3;
+  const where = [`b.department_id=$1`];
+  const params = [department_id];
+  let idx = 2;
+
+  if (!isAllLocations) {
+    where.push(`b.location_id=$${idx}`);
+    params.push(location_id);
+    idx += 1;
+  }
 
   if (date_from) { where.push(`b.created_at >= $${idx}::date`); params.push(date_from); idx++; }
   if (date_to) { where.push(`b.created_at < ($${idx}::date + interval '1 day')`); params.push(date_to); idx++; }
@@ -1677,13 +1706,24 @@ app.get("/api/entrepreneur-history", authRequired, requirePermission("bookings.v
 
   if (!location_id) return res.status(400).json({ error: "location_id required" });
 
-  if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id)) {
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  const isAllLocations = location_id === -1;
+
+  if (isAllLocations) {
+    if (!canUseAllLocations) return res.status(403).json({ error: "Keine Berechtigung für Alle Standorte" });
+  } else if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id) && !canUseAllLocations) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const where = [`c.location_id=$1`, `c.status <> 0`];
-  const params = [location_id];
-  let idx = 2;
+  const where = [`c.status <> 0`];
+  const params = [];
+  let idx = 1;
+  if (!isAllLocations) {
+    where.push(`c.location_id=$${idx}`);
+    params.push(location_id);
+    idx += 1;
+  }
 
   if (department_id) { where.push(`c.department_id=$${idx}`); params.push(department_id); idx++; }
   if (entrepreneur) { where.push(`c.entrepreneur ILIKE $${idx}`); params.push(`%${entrepreneur}%`); idx++; }
@@ -1721,13 +1761,24 @@ app.get("/api/entrepreneur-history/plates", authRequired, requirePermission("boo
 
   if (!location_id) return res.status(400).json({ error: "location_id required" });
 
-  if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id)) {
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  const isAllLocations = location_id === -1;
+
+  if (isAllLocations) {
+    if (!canUseAllLocations) return res.status(403).json({ error: "Keine Berechtigung für Alle Standorte" });
+  } else if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id) && !canUseAllLocations) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const where = [`eh.location_id=$1`];
-  const params = [location_id];
-  let idx = 2;
+  const where = ["1=1"];
+  const params = [];
+  let idx = 1;
+  if (!isAllLocations) {
+    where.push(`eh.location_id=$${idx}`);
+    params.push(location_id);
+    idx += 1;
+  }
   if (department_id) { where.push(`eh.department_id=$${idx}`); params.push(department_id); idx++; }
 
   const rows = (await q(

@@ -5,7 +5,8 @@ const { pool } = require("./db_pg");
 const DEFAULTS = {
   bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
   stock: { view: true, overall: true },
-  cases: { create: true, internal_transfer: false, claim: false, edit: false, submit: false, approve: false, cancel: false, require_employee_code: false },
+  cases: { create: true, internal_transfer: false, claim: false, edit: false, submit: false, approve: false, cancel: false, delete: false, require_employee_code: false },
+  filters: { all_locations: false },
   masterdata: { manage: false, entrepreneurs_manage: false },
   users: { manage: false, view_department: false },
   roles: { manage: false }
@@ -40,7 +41,8 @@ async function loadPermissionsForUser(user) {
     return {
       bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true, translogica: true },
       stock: { view: true, overall: true },
-      cases: { create: true, internal_transfer: true, claim: true, edit: true, submit: true, approve: true, cancel: true, require_employee_code: false },
+      cases: { create: true, internal_transfer: true, claim: true, edit: true, submit: true, approve: true, cancel: true, delete: true, require_employee_code: false },
+      filters: { all_locations: true },
       masterdata: { manage: true, entrepreneurs_manage: true },
       users: { manage: true },
       roles: { manage: true }

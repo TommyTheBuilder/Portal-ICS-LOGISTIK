@@ -103,7 +103,8 @@
           <label><input type="checkbox" id="p_cases_edit"> Ändern</label>
           <label><input type="checkbox" id="p_cases_submit"> Zur Prüfung senden</label>
           <label><input type="checkbox" id="p_cases_approve"> Buchen/abschließen</label>
-          <label><input type="checkbox" id="p_cases_cancel"> Stornieren/Löschen</label>
+          <label><input type="checkbox" id="p_cases_cancel"> Stornieren</label>
+          <label><input type="checkbox" id="p_cases_delete"> Löschen</label>
         </div>
 
         <div class="permBox">
@@ -125,6 +126,13 @@
           <label><input type="checkbox" id="p_roles_manage"> Verwalten</label>
           <small class="muted">Business-Rollen & Rechte verwalten</small>
         </div>
+
+        <div class="permBox">
+          <b>Filter</b>
+          <label><input type="checkbox" id="p_filters_all_locations"> Standortfilter „Alle Standorte“ (Vorgänge/Historie)</label>
+          <small class="muted">Erlaubt die Auswahl über alle Standorte statt nur den zugewiesenen Standort.</small>
+        </div>
+
       </div>
 
       <p id="roleEditMsg"></p>
