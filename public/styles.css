@@ -408,3 +408,145 @@ body.light .filter-select {
 body.light .nav-button {
   background: linear-gradient(135deg, #4f7cff, #3156d3);
 }
+
+.admin-main {
+  max-width: 1320px;
+}
+
+.admin-header .dashboard-title-row {
+  margin-bottom: 10px;
+}
+
+.admin-tabs {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.admin-tabs::before {
+  display: none;
+}
+
+.admin-tabs .nav-button {
+  height: 56px;
+  border-radius: 14px;
+  font-size: 16px;
+}
+
+.admin-tabs .nav-icon {
+  font-size: 20px;
+}
+
+.admin-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.grid2 > .card:last-child {
+  grid-column: 1 / -1;
+}
+
+.modern-perm-grid {
+  grid-template-columns: repeat(3, minmax(250px, 1fr));
+  gap: 14px;
+}
+
+.permBox {
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(239,246,255,.92));
+}
+
+.permBox label {
+  position: relative;
+  padding-left: 44px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.permBox input[type="checkbox"] {
+  appearance: none;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid #94a3b8;
+  background: #e2e8f0;
+  transition: all .2s ease;
+}
+
+.permBox input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: all .2s ease;
+}
+
+.permBox input[type="checkbox"]:checked {
+  background: #2563eb;
+  border-color: #1d4ed8;
+}
+
+.permBox input[type="checkbox"]:checked::after {
+  left: 17px;
+}
+
+body.darkmode .admin-card,
+body.darkmode .permBox {
+  background: #1f2937 !important;
+}
+
+body.darkmode .permBox input[type="checkbox"] {
+  border-color: #64748b;
+  background: #334155;
+}
+
+body.darkmode .permBox input[type="checkbox"]:checked {
+  background: #3b82f6;
+}
+
+@media (max-width: 980px) {
+  .admin-tabs,
+  .modern-perm-grid,
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-modern {
+    grid-template-columns: 46px 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .topbar-modern .system-logo-wrap {
+    justify-self: start;
+  }
+
+  .topbar-modern .topbar-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .topbar-modern .topbar-actions button {
+    width: 100%;
+  }
+}

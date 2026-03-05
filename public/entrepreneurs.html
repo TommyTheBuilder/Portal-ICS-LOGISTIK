@@ -7,20 +7,24 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<div class="system-logo-wrap">
-  <img src="/logo.png" alt="Systemlogo" class="system-logo">
-  <a href="/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
-</div>
-<header>
-  <div><b>Frachtführerstammdaten</b></div>
-  <div class="right" style="display:flex; gap:8px;">
-    <button class="secondary" id="backBtn" style="width:auto;">Zur App</button>
-    <button class="secondary" id="logoutBtn" style="width:auto;">Logout</button>
+<header class="topbar topbar-modern admin-topbar">
+  <button class="nav-orb" type="button" aria-hidden="true" tabindex="-1"><span></span></button>
+  <div class="system-logo-wrap">
+    <img src="/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+  </div>
+  <div class="row topbar-actions" style="align-items:center;">
+    <button class="secondary" id="backBtn">Zur App</button>
+    <button class="secondary" id="logoutBtn">Logout</button>
   </div>
 </header>
 
-<main>
-  <div class="card">
+<main class="dashboard-main admin-main">
+  <section class="dashboard-header admin-header">
+    <div class="dashboard-title-row"><b>Frachtführerstammdaten</b></div>
+  </section>
+
+  <div class="card admin-card">
     <h3 style="margin-top:0;">Frachtführer verwalten</h3>
     <div class="row">
       <div>
