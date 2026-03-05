@@ -118,7 +118,8 @@ let ENTREPRENEURS = [];
 let CURRENT_LOCATION = null;
 let CURRENT_DEPARTMENT = null;
 
-let STOCK_MODE = localStorage.getItem("stockMode") || "location";
+let STOCK_MODE = localStorage.getItem("stockMode") || "location_total";
+if (STOCK_MODE === "location") STOCK_MODE = "location_total";
 let STOCK_PRODUCT_TYPE = localStorage.getItem("stockProductType") || "euro";
 
 const PRODUCT_TYPE_LABELS = {
@@ -186,9 +187,9 @@ function ensureOverallOption() {
   if (optOverall) optOverall.style.display = PERMS?.stock?.overall ? "" : "none";
 
   if (!PERMS?.stock?.overall && stockSel.value === "overall") {
-    stockSel.value = "location";
-    STOCK_MODE = "location";
-    localStorage.setItem("stockMode", "location");
+    stockSel.value = "location_total";
+    STOCK_MODE = "location_total";
+    localStorage.setItem("stockMode", "location_total");
   }
 }
 
@@ -388,7 +389,7 @@ function updateStockHint() {
   if (STOCK_MODE === "overall") hint.textContent = "Komplett-Bestand (über alle Standorte).";
   else if (STOCK_MODE === "location_total") hint.textContent = "Standort-Bestand gesamt (unabhängig von Abteilung/Frachtführer).";
   else if (STOCK_MODE === "entrepreneur") hint.textContent = "Frachtführer-Bestand (über alle Standorte).";
-  else hint.textContent = "Standort-Bestand (nur ausgewählter Standort).";
+  else hint.textContent = "Standort-Bestand gesamt (unabhängig von Abteilung/Frachtführer).";
 
   hint.textContent += ` Produkt: ${PRODUCT_TYPE_LABELS[STOCK_PRODUCT_TYPE] || STOCK_PRODUCT_TYPE}`;
 }
@@ -407,7 +408,7 @@ async function loadStock() {
   } else if (STOCK_MODE === "entrepreneur") {
     url = `/api/stock?mode=entrepreneur&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else {
-    url = `/api/stock?mode=location&location_id=${encodeURIComponent(CURRENT_LOCATION)}&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
+    url = `/api/stock?mode=location_total&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   }
 
   const r = await api(url, { method: "GET", headers: {} });
