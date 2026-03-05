@@ -286,7 +286,21 @@
       line-height: 1.18;
       color: #111;
     }
-    body.driverSlipMode .driverSlipTopMask {
+    body.warehouseSlipMode .footerText,
+    body.caseSlipMode .footerText {
+      display: none;
+    }
+    body.warehouseSlipMode .logoFrame,
+    body.caseSlipMode .logoFrame {
+      top: 10.5mm;
+    }
+    body.warehouseSlipMode .logoHomeBtn,
+    body.caseSlipMode .logoHomeBtn {
+      top: 10.5mm;
+    }
+    body.driverSlipMode .driverSlipTopMask,
+    body.warehouseSlipMode .driverSlipTopMask,
+    body.caseSlipMode .driverSlipTopMask {
       display: block;
       position: absolute;
       top: 46.5mm;
@@ -296,7 +310,9 @@
       background: #fff;
       z-index: 1;
     }
-    body.driverSlipMode .driverSlipFooterMask {
+    body.driverSlipMode .driverSlipFooterMask,
+    body.warehouseSlipMode .driverSlipFooterMask,
+    body.caseSlipMode .driverSlipFooterMask {
       display: block;
       position: absolute;
       left: 0;
@@ -306,7 +322,9 @@
       background: #fff;
       z-index: 1;
     }
-    body.driverSlipMode .driverSlipFooterReplacement {
+    body.driverSlipMode .driverSlipFooterReplacement,
+    body.warehouseSlipMode .driverSlipFooterReplacement,
+    body.caseSlipMode .driverSlipFooterReplacement {
       display: block;
       position: absolute;
       left: 50%;
@@ -472,7 +490,7 @@ BANKVERB.: Volksbank, BLZ: 71090000, Kto.-Nr.:2330, S.W.I.F.T./BIC: GENODEF1BGL,
   </div>
   <a href="/app.html" class="logoHomeBtn" aria-label="Zur App-Startseite"></a>
   <div class="content">
-    <div class="title" id="receiptTitle">LADEMITTEL GEGENSCHEIN</div>
+    <div class="title" id="receiptTitle">LADEMITTELSCHEIN</div>
 
     <div class="metaCard">
       <div class="metaLayout">
