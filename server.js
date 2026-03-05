@@ -171,30 +171,50 @@ function normalizeEmail(emailRaw) {
 
 async function createNewCaseNotifications(caseRow) {
   try {
-    const recipients = await q(
+    const locationInfo = await q(
+      `SELECT name FROM locations WHERE id=$1`,
+      [caseRow.location_id]
+    );
+    const locationName = locationInfo.rowCount ? locationInfo.rows[0].name : `Standort ${caseRow.location_id}`;
+
+    const departmentInfo = await q(
+      `SELECT name FROM departments WHERE id=$1`,
+      [caseRow.department_id]
+    );
+    const departmentName = departmentInfo.rowCount ? departmentInfo.rows[0].name : `Abteilung ${caseRow.department_id}`;
+
+    const locationRecipients = await q(
       `SELECT id FROM users WHERE is_active=TRUE AND location_id=$1`,
       [caseRow.location_id]
     );
-    if (recipients.rowCount === 0) return;
 
-    const info = await q(
-      `SELECT l.name AS location
-       FROM locations l
-       WHERE l.id=$1`,
-      [caseRow.location_id]
-    );
-    const location = info.rowCount ? info.rows[0].location : `Standort ${caseRow.location_id}`;
-    const message = `Neues Aviso #${caseRow.id} wurde für ${location} erstellt.`;
-
-    for (const recipient of recipients.rows) {
+    for (const recipient of locationRecipients.rows) {
       if (Number(recipient.id) === Number(caseRow.created_by)) continue;
       const inserted = await q(
         `INSERT INTO user_notifications (user_id, case_id, title, message)
          VALUES ($1, $2, $3, $4)
          RETURNING id, user_id, case_id, title, message, is_read, created_at`,
-        [recipient.id, caseRow.id, "Neues Aviso", message]
+        [recipient.id, caseRow.id, "Neues Aviso (Standort)", `Neues Aviso #${caseRow.id} am ${locationName}.`]
       );
       io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
+    }
+
+    if (caseRow.department_id) {
+      const departmentRecipients = await q(
+        `SELECT id FROM users WHERE is_active=TRUE AND fixed_department_id=$1`,
+        [caseRow.department_id]
+      );
+
+      for (const recipient of departmentRecipients.rows) {
+        if (Number(recipient.id) === Number(caseRow.created_by)) continue;
+        const inserted = await q(
+          `INSERT INTO user_notifications (user_id, case_id, title, message)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, user_id, case_id, title, message, is_read, created_at`,
+          [recipient.id, caseRow.id, "Neues Aviso (Abteilung)", `Neues Aviso #${caseRow.id} in ${departmentName}.`]
+        );
+        io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
+      }
     }
   } catch (err) {
     console.error("Aviso-Notification fehlgeschlagen:", err);
@@ -1023,6 +1043,7 @@ app.post("/api/cases", authRequired, async (req, res) => {
   void createNewCaseNotifications({
     id: caseId,
     location_id: locId,
+    department_id: depId,
     created_by: req.user.id
   });
   res.json({ id: caseId });
