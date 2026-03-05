@@ -232,6 +232,7 @@ body.light {
 .topbar-actions {
   justify-content: flex-end;
   gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .topbar-actions > * {
@@ -248,6 +249,7 @@ body.light {
 .topbar-modern .notification-toggle,
 .topbar-modern #entrepreneursMasterBtn,
 .topbar-modern #adminBtn,
+.topbar-modern #backBtn,
 .topbar-modern #logoutBtn {
   width: 260px;
   height: 48px;
