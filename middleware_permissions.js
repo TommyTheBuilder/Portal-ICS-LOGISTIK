@@ -3,7 +3,7 @@ const { pool } = require("./db_pg");
 
 // Defaults (wie in server.js), damit ältere Rollen nicht plötzlich alles verlieren
 const DEFAULTS = {
-  bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false },
+  bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
   stock: { view: true, overall: true },
   cases: { create: true, claim: false, edit: false, submit: false, approve: false },
   masterdata: { manage: false, entrepreneurs_manage: false },
@@ -38,7 +38,7 @@ async function loadPermissionsForUser(user) {
   // Admin: immer alles
   if (user?.role === "admin") {
     return {
-      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true },
+      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true, translogica: true },
       stock: { view: true, overall: true },
       cases: { create: true, claim: true, edit: true, submit: true, approve: true },
       masterdata: { manage: true, entrepreneurs_manage: true },

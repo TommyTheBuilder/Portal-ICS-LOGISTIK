@@ -384,7 +384,8 @@ function getPermCheckboxes() {
       export: $("p_bookings_export")?.checked || false,
       receipt: $("p_bookings_receipt")?.checked || false,
       edit: $("p_bookings_edit")?.checked || false,
-      delete: $("p_bookings_delete")?.checked || false
+      delete: $("p_bookings_delete")?.checked || false,
+      translogica: $("p_bookings_translogica")?.checked || false
     },
     stock: {
       view: $("p_stock_view")?.checked || false,
@@ -419,6 +420,9 @@ function setPermCheckboxes(perms) {
   $("p_bookings_receipt").checked = !!p?.bookings?.receipt;
   $("p_bookings_edit").checked = !!p?.bookings?.edit;
   $("p_bookings_delete").checked = !!p?.bookings?.delete;
+  if ($("p_bookings_translogica")) {
+    $("p_bookings_translogica").checked = !!p?.bookings?.translogica;
+  }
 
   $("p_stock_view").checked = !!p?.stock?.view;
   $("p_stock_overall").checked = !!p?.stock?.overall;
@@ -458,7 +462,7 @@ $("createRoleBtn")?.addEventListener("click", async () => {
   const rr = await api("/api/admin/roles", {
     method: "POST",
     body: JSON.stringify({ name, permissions: {
-      bookings: { create:true, view:true, export:true, receipt:true, edit:false, delete:false },
+      bookings: { create:true, view:true, export:true, receipt:true, edit:false, delete:false, translogica:false },
       stock: { view:true, overall:true },
       cases: {
         create: true,

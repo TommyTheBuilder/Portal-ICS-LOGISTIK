@@ -220,7 +220,7 @@ async function migrate() {
     VALUES (
       'Standard',
       '{
-        "bookings": { "create": true, "view": true, "export": true, "receipt": true, "edit": false, "delete": false },
+        "bookings": { "create": true, "view": true, "export": true, "receipt": true, "edit": false, "delete": false, "translogica": false },
         "stock": { "view": true, "overall": true },
         "cases": {
           "create": true,

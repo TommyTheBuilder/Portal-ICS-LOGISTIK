@@ -262,7 +262,7 @@ async function deleteNotificationsForCase(caseId) {
 async function getMyPermissions(user) {
   if (user.role === "admin") {
     return {
-      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true },
+      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true, translogica: true },
       stock: { view: true, overall: true },
       cases: {
         create: true,
@@ -281,7 +281,7 @@ async function getMyPermissions(user) {
 
   if (!user.role_id) {
     return {
-      bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false },
+      bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
       stock: { view: true, overall: true },
       cases: {
         create: true,
@@ -303,7 +303,7 @@ async function getMyPermissions(user) {
 
   // Fehlende Schalter mit Defaults auffüllen, damit bestehende Rollen nicht "plötzlich" Features verlieren.
   const defaults = {
-    bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false },
+    bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
     stock: { view: true, overall: true },
     cases: {
       create: true,
@@ -1245,7 +1245,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
   }
 
   if (action === "set_translogica") {
-    if (!perms?.cases?.approve) return res.status(403).json({ error: "Keine Berechtigung" });
+    if (!perms?.bookings?.translogica) return res.status(403).json({ error: "Keine Berechtigung" });
     if (Number(c.status) !== 4) return res.status(400).json({ error: "Nur für gebuchte Vorgänge möglich" });
     if (typeof translogica_transferred !== "boolean") {
       return res.status(400).json({ error: "translogica_transferred must be boolean" });

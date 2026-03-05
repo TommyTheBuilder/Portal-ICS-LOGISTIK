@@ -683,7 +683,7 @@ async function openCaseModal(id) {
   $("caseNonExchangeable").value = nonExchangeableQty;
   $("caseProductType").value = c.product_type || "euro";
   $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
-  $("caseTranslogicaTransferred").disabled = !(PERMS?.cases?.approve && Number(c.status) === 4);
+  $("caseTranslogicaTransferred").disabled = !(PERMS?.bookings?.translogica && Number(c.status) === 4);
   $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
   const showNonExchangeable = Number(c.status) >= 2;
   const showStatus2Fields = Number(c.status) === 2;
