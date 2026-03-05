@@ -124,6 +124,17 @@
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = "";
 
+    const footerTextDe = byId("footerTextDe");
+    const footerTextEn = byId("footerTextEn");
+    if (driverSlip) {
+      if (footerTextDe) {
+        footerTextDe.innerHTML = "Ladehilfsmittel werden mit 22 €/Palette verrechnet, zuzüglich 25 € Bearbeitungsgebühr.<br>Die Rückgabe ist nur innerhalb von 6 Wochen mit diesem Originalschein bei ICS-Logistik möglich.<br>Die Gebühr wird nicht gutgeschrieben. Bei Nichttausch durch den Empfänger ist<br>ICS sofort zu informieren. Spätere Reklamationen werden nicht akzeptiert.";
+      }
+      if (footerTextEn) {
+        footerTextEn.innerHTML = "Loading aids are charged at €22 per pallet, plus a €25 processing fee.<br>Returns are only possible within 6 weeks with this original receipt at ICS-Logistik.<br>The fee is not credited. If exchange is refused by the recipient,<br>ICS must be informed immediately. Later complaints will not be accepted.";
+      }
+    }
+
     if (!bookingId && !caseId) {
       if (!allowBlankPrint) return showError("Keine Beleg-ID übergeben");
       clearReceiptForBlankPrint();
