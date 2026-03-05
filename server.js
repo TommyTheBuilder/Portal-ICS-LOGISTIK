@@ -169,35 +169,35 @@ function normalizeEmail(emailRaw) {
   return { ok: true, email: normalized };
 }
 
-async function createStatus3Notifications(caseRow) {
+async function createNewCaseNotifications(caseRow) {
   try {
     const recipients = await q(
-      `SELECT id FROM users WHERE is_active=TRUE AND fixed_department_id=$1`,
-      [caseRow.department_id]
+      `SELECT id FROM users WHERE is_active=TRUE AND location_id=$1`,
+      [caseRow.location_id]
     );
     if (recipients.rowCount === 0) return;
 
     const info = await q(
-      `SELECT d.name AS department, l.name AS location
-       FROM departments d, locations l
-       WHERE d.id=$1 AND l.id=$2`,
-      [caseRow.department_id, caseRow.location_id]
+      `SELECT l.name AS location
+       FROM locations l
+       WHERE l.id=$1`,
+      [caseRow.location_id]
     );
-    const department = info.rowCount ? info.rows[0].department : `Abteilung ${caseRow.department_id}`;
     const location = info.rowCount ? info.rows[0].location : `Standort ${caseRow.location_id}`;
-    const message = `Aviso #${caseRow.id} ist jetzt in Prüfung (${department}, ${location}).`;
+    const message = `Neues Aviso #${caseRow.id} wurde für ${location} erstellt.`;
 
     for (const recipient of recipients.rows) {
+      if (Number(recipient.id) === Number(caseRow.created_by)) continue;
       const inserted = await q(
         `INSERT INTO user_notifications (user_id, case_id, title, message)
          VALUES ($1, $2, $3, $4)
          RETURNING id, user_id, case_id, title, message, is_read, created_at`,
-        [recipient.id, caseRow.id, "Aviso in Prüfung", message]
+        [recipient.id, caseRow.id, "Neues Aviso", message]
       );
       io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
     }
   } catch (err) {
-    console.error("Status-3-Notification fehlgeschlagen:", err);
+    console.error("Aviso-Notification fehlgeschlagen:", err);
   }
 }
 
@@ -207,7 +207,7 @@ async function pruneNotificationsForUser(userId) {
      USING booking_cases c
      WHERE n.case_id = c.id
        AND n.user_id = $1
-       AND c.status <> 3
+       AND c.status >= 3
      RETURNING n.id`,
     [userId]
   );
@@ -1018,8 +1018,14 @@ app.post("/api/cases", authRequired, async (req, res) => {
     );
   }
 
+  const caseId = Number(r.rows[0].id);
   io.to(`loc:${locId}`).emit("casesUpdated", { location_id: locId });
-  res.json({ id: r.rows[0].id });
+  void createNewCaseNotifications({
+    id: caseId,
+    location_id: locId,
+    created_by: req.user.id
+  });
+  res.json({ id: caseId });
 });
 
 app.put("/api/cases/:id", authRequired, async (req, res) => {
@@ -1172,8 +1178,8 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       [req.user.id, nonExchangeableQty, employeeCode, id]
     );
 
+    await deleteNotificationsForCase(id);
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
-    void createStatus3Notifications(c);
     return res.json({ ok: true });
   }
 
