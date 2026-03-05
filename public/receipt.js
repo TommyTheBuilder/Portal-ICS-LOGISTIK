@@ -117,7 +117,9 @@
     if (departmentRow) departmentRow.style.display = driverSlip ? "none" : "";
 
     const receiptTitle = byId("receiptTitle");
-    if (receiptTitle) receiptTitle.textContent = "LADEMITTEL GEGENSCHEIN";
+    if (receiptTitle) {
+      receiptTitle.textContent = driverSlip ? "LADEMITTELSCHEIN" : "LADEMITTEL GEGENSCHEIN";
+    }
 
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = "";
@@ -144,7 +146,9 @@
     if (!res.ok) return showError(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
     let receiptLabel = data.receipt_no || "-";
     if (data.provisional && receiptTitle) {
-      receiptTitle.textContent = "VORLÄUFIGER LADEMITTEL GEGENSCHEIN";
+      receiptTitle.textContent = driverSlip
+        ? "VORLÄUFIGER LADEMITTELSCHEIN"
+        : "VORLÄUFIGER LADEMITTEL GEGENSCHEIN";
     }
     const formattedDate = data.created_at
       ? new Date(data.created_at).toLocaleDateString("de-DE")

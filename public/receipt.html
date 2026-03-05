@@ -124,6 +124,12 @@
       margin: 0 0 4.8mm;
     }
 
+    .driverSlipTopMask,
+    .driverSlipFooterMask,
+    .driverSlipFooterReplacement {
+      display: none;
+    }
+
     .metaCard {
       border: 1px solid #d9dee7;
       border-radius: 5mm;
@@ -222,6 +228,17 @@
       align-content: start;
       padding-top: 0.8mm;
     }
+    body.driverSlipMode .metaCard {
+      min-height: 35mm;
+      padding-top: 4.4mm;
+      padding-bottom: 3.8mm;
+    }
+    body.driverSlipMode .metaField {
+      min-height: 8.6mm;
+    }
+    body.driverSlipMode .metaField.carrierField {
+      min-height: 28mm;
+    }
     body.driverSlipMode .carrierLabelSub {
       display: block;
     }
@@ -230,6 +247,47 @@
     }
     body.driverSlipMode .metaLabelSub {
       display: block;
+    }
+    body.driverSlipMode .metaLabel,
+    body.driverSlipMode .transferLabel,
+    body.driverSlipMode th {
+      color: #111;
+    }
+    body.driverSlipMode .driverSlipTopMask {
+      display: block;
+      position: absolute;
+      top: 47.5mm;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 193mm;
+      height: 13mm;
+      background: #fff;
+      z-index: 1;
+    }
+    body.driverSlipMode .driverSlipFooterMask {
+      display: block;
+      position: absolute;
+      left: 50%;
+      bottom: 8.5mm;
+      transform: translateX(-50%);
+      width: 196mm;
+      height: 21mm;
+      background: #fff;
+      z-index: 1;
+    }
+    body.driverSlipMode .driverSlipFooterReplacement {
+      display: block;
+      position: absolute;
+      left: 50%;
+      bottom: 9.2mm;
+      transform: translateX(-50%);
+      width: 194mm;
+      text-align: center;
+      font-size: 2.88mm;
+      line-height: 1.2;
+      color: #111;
+      z-index: 2;
+      white-space: pre-line;
     }
     .metaValue {
       font-size: 3.95mm;
@@ -363,6 +421,9 @@
       margin-top: 1.1mm;
     }
     .footerText b { font-weight: 800; }
+    body.driverSlipMode .footerText {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -374,6 +435,10 @@
 
 <div class="sheet">
   <img class="briefkopf" src="/briefkopf.svg" alt="Briefkopf" />
+  <div class="driverSlipTopMask" aria-hidden="true"></div>
+  <div class="driverSlipFooterMask" aria-hidden="true"></div>
+  <div class="driverSlipFooterReplacement">ICS Logistik &amp; Transport GmbH - Breslauer Straße 49, D-83395 Freilassing, USt.-ID:DE813616871 Tel.: +49 8654 4697-0 Fax: +49 8654 4697-19 www.ics-logistik.com
+BANKVERB.: Volksbank, BLZ: 71090000, Kto.-Nr.:2330, S.W.I.F.T./BIC: GENODEF1BGL, IBAN: DE72 7109 0000 0000 0023 30</div>
   <div class="logoFrame">
     <img class="companyLogo" src="/logo.png" alt="ICS Firmenlogo" />
   </div>
