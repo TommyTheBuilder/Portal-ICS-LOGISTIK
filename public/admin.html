@@ -44,7 +44,7 @@
   <section id="tab-roles">
     <div class="card admin-card">
       <h3 style="margin-top:0;">Neue Rolle anlegen</h3>
-      <div class="row" style="align-items:flex-end;">
+      <div class="row role-create-row">
         <div>
           <label>Rollenname</label>
           <input id="roleName" placeholder="z.B. Dispo">
@@ -57,12 +57,12 @@
     </div>
 
     <div class="card admin-card">
-      <div class="topbar">
-        <h3 style="margin:0;">Rechte Verwaltung</h3>
+      <div class="admin-card-head">
+        <h3>Rechte Verwaltung</h3>
         <button class="secondary" id="reloadRolesBtn">Neu laden</button>
       </div>
 
-      <div class="row">
+      <div class="row rights-controls">
         <div>
           <label>Rolle auswählen</label>
           <select id="roleSelect"></select>
@@ -285,8 +285,8 @@
     </div>
 
     <div class="card admin-card">
-      <div class="topbar">
-        <h3 style="margin:0;">Benutzerliste</h3>
+      <div class="admin-card-head">
+        <h3>Benutzerliste</h3>
         <button class="secondary" id="reloadUsersBtn">Neu laden</button>
       </div>
       <div style="overflow:auto;">
