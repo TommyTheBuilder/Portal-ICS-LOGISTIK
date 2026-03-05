@@ -213,14 +213,14 @@ body.light {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 16px;
 }
 
 .topbar-modern .system-logo-wrap {
   padding: 0;
-  justify-self: center;
+  justify-self: start;
 }
 
 .topbar-modern .system-logo {
@@ -228,24 +228,6 @@ body.light {
   width: auto;
 }
 
-.nav-orb {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: #1c4ed8;
-  display: grid;
-  place-items: center;
-  box-shadow: inset 0 4px 10px rgba(255, 255, 255, 0.2), 0 8px 20px rgba(0, 0, 0, 0.28);
-}
-
-.nav-orb span {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #f7c948;
-  box-shadow: 0 0 0 4px rgba(247, 201, 72, 0.2);
-}
 
 .topbar-actions {
   justify-content: flex-end;
@@ -530,7 +512,7 @@ body.darkmode .permBox input[type="checkbox"]:checked {
   }
 
   .topbar-modern {
-    grid-template-columns: 46px 1fr;
+    grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     height: auto;
     padding: 10px 12px;
