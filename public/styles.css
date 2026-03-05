@@ -285,14 +285,14 @@ body.light {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #fff;
+  color: #1f2937;
   font-size: 42px;
   margin: 16px 0;
 }
 
 .dashboard-title-row .pill {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: rgba(37, 99, 235, 0.14);
+  color: #1e3a8a;
   padding: 4px 10px;
   border-radius: 10px;
   font-size: 12px;
@@ -310,17 +310,17 @@ body.light {
 
 .filter-field label {
   font-size: 12px;
-  opacity: 0.8;
-  color: #fff;
+  opacity: 0.9;
+  color: #334155;
 }
 
 .filter-select {
   width: 100%;
   height: 46px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #111827;
 }
 
 .dashboard-nav {
@@ -338,7 +338,7 @@ body.light {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.18);
 }
 
 .nav-button {
@@ -377,18 +377,43 @@ body.light .filter-field label {
 }
 
 body.light .dashboard-title-row .pill {
-  color: #1f2937;
-  background: rgba(255, 255, 255, 0.9);
+  color: #1e3a8a;
+  background: rgba(37, 99, 235, 0.14);
 }
 
 body.light .filter-select {
   background: #fff;
-  color: #1f2937;
+  color: #111827;
   border: 1px solid #d1d5db;
 }
 
 body.light .nav-button {
   background: linear-gradient(135deg, #4f7cff, #3156d3);
+}
+
+body.dark .dashboard-title-row,
+body.darkmode .dashboard-title-row,
+body.dark .filter-field label,
+body.darkmode .filter-field label {
+  color: #fff;
+}
+
+body.dark .dashboard-title-row .pill,
+body.darkmode .dashboard-title-row .pill {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+body.dark .filter-select,
+body.darkmode .filter-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+body.dark .dashboard-nav::before,
+body.darkmode .dashboard-nav::before {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .admin-main {
