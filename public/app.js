@@ -205,7 +205,8 @@ function applyPermsToUI() {
   const canExport = !!PERMS?.bookings?.export;
 
   const tabBtn = (name) => document.querySelector(`.tabs button[data-tab="${name}"]`);
-  if (tabBtn("aviso")) tabBtn("aviso").style.display = PERMS?.cases?.create ? "" : "none";
+  const canAviso = !!(PERMS?.cases?.create || PERMS?.cases?.internal_transfer);
+  if (tabBtn("aviso")) tabBtn("aviso").style.display = canAviso ? "" : "none";
   if (tabBtn("cases")) tabBtn("cases").style.display = canCases ? "" : "none";
   if (tabBtn("history")) tabBtn("history").style.display = canHistory ? "" : "none";
   if (tabBtn("entrepreneur-history")) tabBtn("entrepreneur-history").style.display = canHistory ? "" : "none";
@@ -213,6 +214,10 @@ function applyPermsToUI() {
 
   if ($("entrepreneursMasterBtn")) {
     $("entrepreneursMasterBtn").style.display = PERMS?.masterdata?.entrepreneurs_manage ? "" : "none";
+  }
+
+  if ($("internalTransferCard")) {
+    $("internalTransferCard").style.display = PERMS?.cases?.internal_transfer ? "" : "none";
   }
 
   ensureOverallOption();
@@ -248,8 +253,12 @@ async function loadLocations() {
 
   const sel = $("locationSelect");
   const avisoSel = $("avisoLocation");
+  const transferFromSel = $("internalTransferFrom");
+  const transferToSel = $("internalTransferTo");
   sel.innerHTML = "";
   if (avisoSel) avisoSel.innerHTML = `<option value="">Bitte wählen…</option>`;
+  if (transferFromSel) transferFromSel.innerHTML = `<option value="">Kein Absender (nur Zugang)</option>`;
+  if (transferToSel) transferToSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   LOCATIONS.forEach(l => {
     const o = document.createElement("option");
     o.value = l.id;
@@ -262,11 +271,27 @@ async function loadLocations() {
       o2.textContent = l.name;
       avisoSel.appendChild(o2);
     }
+
+    if (transferFromSel) {
+      const o3 = document.createElement("option");
+      o3.value = l.id;
+      o3.textContent = l.name;
+      transferFromSel.appendChild(o3);
+    }
+
+    if (transferToSel) {
+      const o4 = document.createElement("option");
+      o4.value = l.id;
+      o4.textContent = l.name;
+      transferToSel.appendChild(o4);
+    }
   });
 
   const locked = ME && ME.role !== "admin" && ME.location_id ? String(ME.location_id) : null;
   if (locked) sel.value = locked;
   if (avisoSel) avisoSel.value = locked || "";
+  if (transferFromSel) transferFromSel.value = locked || "";
+  if (transferToSel) transferToSel.value = locked || "";
 
   CURRENT_LOCATION = Number(sel.value || 0);
   joinLocationRoom();
@@ -361,6 +386,7 @@ function updateStockHint() {
   const hint = $("stockHint");
   if (!hint) return;
   if (STOCK_MODE === "overall") hint.textContent = "Komplett-Bestand (über alle Standorte).";
+  else if (STOCK_MODE === "location_total") hint.textContent = "Standort-Bestand gesamt (unabhängig von Abteilung/Frachtführer).";
   else if (STOCK_MODE === "entrepreneur") hint.textContent = "Frachtführer-Bestand (über alle Standorte).";
   else hint.textContent = "Standort-Bestand (nur ausgewählter Standort).";
 
@@ -376,6 +402,8 @@ async function loadStock() {
   let url = "";
   if (STOCK_MODE === "overall") {
     url = `/api/stock?mode=overall&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
+  } else if (STOCK_MODE === "location_total") {
+    url = `/api/stock?mode=location_total&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else if (STOCK_MODE === "entrepreneur") {
     url = `/api/stock?mode=entrepreneur&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else {
@@ -391,14 +419,27 @@ async function loadStock() {
   const rows = await r.json();
 
   const isEntrepreneur = STOCK_MODE === "entrepreneur";
+  const isLocationTotal = STOCK_MODE === "location_total";
   const head = isEntrepreneur
     ? `<tr><th>Frachtführer</th><th>Soll</th></tr>`
+    : isLocationTotal
+      ? `<tr><th>Standort</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`
     : `<tr><th>Abteilung</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`;
   const body = (rows || []).map(x => {
     if (isEntrepreneur) {
       return `
         <tr>
           <td>${x.entrepreneur || "-"}</td>
+          <td><b>${x.saldo}</b></td>
+        </tr>
+      `;
+    }
+    if (isLocationTotal) {
+      return `
+        <tr>
+          <td>${x.location}</td>
+          <td>${x.ins}</td>
+          <td>${x.outs}</td>
           <td><b>${x.saldo}</b></td>
         </tr>
       `;
@@ -820,6 +861,14 @@ function resetAvisoForm() {
   $("avisoEmployeeCode").value = "";
 }
 
+function resetInternalTransferForm() {
+  if ($("internalTransferFrom")) $("internalTransferFrom").value = "";
+  if ($("internalTransferTo")) $("internalTransferTo").value = "";
+  if ($("internalTransferProductType")) $("internalTransferProductType").value = "euro";
+  if ($("internalTransferQty")) $("internalTransferQty").value = 1;
+  if ($("internalTransferNote")) $("internalTransferNote").value = "";
+}
+
 $("createAvisoBtn").addEventListener("click", async () => {
   setMsg("avisoMsg", "");
   if (!PERMS?.cases?.create) return setMsg("avisoMsg", "Keine Berechtigung für Aviso");
@@ -866,6 +915,42 @@ $("createAvisoBtn").addEventListener("click", async () => {
   resetAvisoForm();
 
   await loadCases();
+});
+
+$("createInternalTransferBtn")?.addEventListener("click", async () => {
+  setMsg("internalTransferMsg", "");
+  if (!PERMS?.cases?.internal_transfer) return setMsg("internalTransferMsg", "Keine Berechtigung für interne Lagerumbuchung");
+
+  const from_location_id = Number($("internalTransferFrom")?.value || 0) || null;
+  const to_location_id = Number($("internalTransferTo")?.value || 0);
+  const qty = Number($("internalTransferQty")?.value || 0);
+  const note = String($("internalTransferNote")?.value || "").trim();
+  const product_type = $("internalTransferProductType")?.value || "euro";
+
+  if (!to_location_id) return setMsg("internalTransferMsg", "Empfänger Standort/Lager ist Pflicht");
+  if (!Number.isInteger(qty) || qty <= 0) return setMsg("internalTransferMsg", "Menge muss größer als 0 sein");
+  if (!note) return setMsg("internalTransferMsg", "Notiz ist Pflicht");
+  if (from_location_id && from_location_id === to_location_id) {
+    return setMsg("internalTransferMsg", "Absender und Empfänger dürfen nicht identisch sein");
+  }
+
+  const rr = await api("/api/internal-transfers", {
+    method: "POST",
+    body: JSON.stringify({
+      from_location_id,
+      to_location_id,
+      qty,
+      note,
+      product_type
+    })
+  });
+  const data = await rr.json().catch(() => ({}));
+  if (!rr.ok) return setMsg("internalTransferMsg", data.error || "Umbuchung konnte nicht gebucht werden");
+
+  setMsg("internalTransferMsg", `Umbuchung gebucht (${data.mode === "transfer" ? "OUT/IN" : "IN"})`, true);
+  resetInternalTransferForm();
+  await loadStock();
+  await loadHistory({ resetPage: true });
 });
 
 function toggleEntrepreneurModal(show) {
@@ -1259,9 +1344,10 @@ if ($("entHistDept")) {
 
 // Live events
 socket.on("stockUpdated", async (payload) => {
-  if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) {
-    await loadStock();
-  }
+  if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) return loadStock();
+  if (payload?.from_location_id && Number(payload.from_location_id) === Number(CURRENT_LOCATION)) return loadStock();
+  if (payload?.to_location_id && Number(payload.to_location_id) === Number(CURRENT_LOCATION)) return loadStock();
+  if (!payload?.location_id && !payload?.from_location_id && !payload?.to_location_id) return loadStock();
 });
 socket.on("casesUpdated", async (payload) => {
   if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) {

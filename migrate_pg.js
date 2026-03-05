@@ -224,6 +224,7 @@ async function migrate() {
         "stock": { "view": true, "overall": true },
         "cases": {
           "create": true,
+          "internal_transfer": false,
           "claim": false,
           "edit": false,
           "submit": false,

@@ -313,6 +313,7 @@ async function getMyPermissions(user) {
       stock: { view: true, overall: true },
       cases: {
         create: true,
+        internal_transfer: true,
         claim: true,
         edit: true,
         submit: true,
@@ -332,6 +333,7 @@ async function getMyPermissions(user) {
       stock: { view: true, overall: true },
       cases: {
         create: true,
+        internal_transfer: false,
         claim: false,
         edit: false,
         submit: false,
@@ -354,6 +356,7 @@ async function getMyPermissions(user) {
     stock: { view: true, overall: true },
     cases: {
       create: true,
+      internal_transfer: false,
       claim: false,
       edit: false,
       submit: false,
@@ -1075,6 +1078,64 @@ app.post("/api/cases", authRequired, async (req, res) => {
   res.json({ id: caseId });
 });
 
+app.post("/api/internal-transfers", authRequired, async (req, res) => {
+  const perms = await getMyPermissions(req.user);
+  if (!perms?.cases?.internal_transfer) return res.status(403).json({ error: "Keine Berechtigung" });
+
+  const fromLocationIdRaw = req.body?.from_location_id;
+  const fromLocationId = fromLocationIdRaw !== null && fromLocationIdRaw !== undefined && String(fromLocationIdRaw) !== ""
+    ? Number(fromLocationIdRaw)
+    : null;
+  const toLocationId = Number(req.body?.to_location_id || 0);
+  const qty = Number(req.body?.qty || 0);
+  const note = safeTrim(req.body?.note);
+
+  if (!toLocationId) return res.status(400).json({ error: "to_location_id required" });
+  if (!Number.isInteger(qty) || qty <= 0) return res.status(400).json({ error: "qty invalid" });
+  if (!note) return res.status(400).json({ error: "Notiz ist Pflicht" });
+  if (fromLocationId && fromLocationId === toLocationId) return res.status(400).json({ error: "from_location_id und to_location_id dürfen nicht identisch sein" });
+
+  const productTypeCheck = normalizeProductType(req.body?.product_type || "euro");
+  if (!productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
+
+  const userLocationLock = (req.user.role !== "admin" && req.user.location_id) ? Number(req.user.location_id) : null;
+  if (userLocationLock) {
+    if (toLocationId !== userLocationLock) return res.status(403).json({ error: "Forbidden" });
+    if (fromLocationId && fromLocationId !== userLocationLock) return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const groupId = randomUUID();
+  let line = 1;
+
+  if (fromLocationId) {
+    await q(
+      `
+      INSERT INTO bookings (location_id, department_id, user_id, type, quantity, note, receipt_no, license_plate, entrepreneur, booking_group_id, line_no, product_type)
+      VALUES ($1,NULL,$2,'OUT',$3,$4,NULL,NULL,NULL,$5,$6,$7)
+      `,
+      [fromLocationId, req.user.id, qty, note, groupId, line, productTypeCheck.productType]
+    );
+    line += 1;
+  }
+
+  await q(
+    `
+    INSERT INTO bookings (location_id, department_id, user_id, type, quantity, note, receipt_no, license_plate, entrepreneur, booking_group_id, line_no, product_type)
+    VALUES ($1,NULL,$2,'IN',$3,$4,NULL,NULL,NULL,$5,$6,$7)
+    `,
+    [toLocationId, req.user.id, qty, note, groupId, line, productTypeCheck.productType]
+  );
+
+  if (fromLocationId) {
+    io.to(`loc:${fromLocationId}`).emit("stockUpdated", { from_location_id: fromLocationId, to_location_id: toLocationId });
+    io.to(`loc:${fromLocationId}`).emit("bookingsUpdated", { location_id: fromLocationId });
+  }
+  io.to(`loc:${toLocationId}`).emit("stockUpdated", { from_location_id: fromLocationId, to_location_id: toLocationId });
+  io.to(`loc:${toLocationId}`).emit("bookingsUpdated", { location_id: toLocationId });
+
+  res.json({ ok: true, mode: fromLocationId ? "transfer" : "in_only" });
+});
+
 app.put("/api/cases/:id", authRequired, async (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ error: "invalid id" });
@@ -1480,6 +1541,35 @@ app.get("/api/stock", authRequired, requirePermission("stock.view"), async (req,
         LEFT JOIN bookings b ON b.department_id=d.id AND COALESCE(b.product_type, 'euro')=$1
         GROUP BY d.id
         ORDER BY d.name
+      `;
+
+    return res.json((await q(sql, userLocationLock ? [userLocationLock, productType] : [productType])).rows);
+  }
+
+  if (mode === "location_total") {
+    const sql = userLocationLock
+      ? `
+        SELECT l.id AS location_id, l.name AS location,
+               COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0)  AS ins,
+               COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS outs,
+               COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0) -
+               COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS saldo
+        FROM locations l
+        LEFT JOIN bookings b ON b.location_id=l.id AND COALESCE(b.product_type, 'euro')=$2
+        WHERE l.id=$1
+        GROUP BY l.id
+        ORDER BY l.name
+      `
+      : `
+        SELECT l.id AS location_id, l.name AS location,
+               COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0)  AS ins,
+               COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS outs,
+               COALESCE(SUM(CASE WHEN b.type='IN'  THEN b.quantity END),0) -
+               COALESCE(SUM(CASE WHEN b.type='OUT' THEN b.quantity END),0) AS saldo
+        FROM locations l
+        LEFT JOIN bookings b ON b.location_id=l.id AND COALESCE(b.product_type, 'euro')=$1
+        GROUP BY l.id
+        ORDER BY l.name
       `;
 
     return res.json((await q(sql, userLocationLock ? [userLocationLock, productType] : [productType])).rows);

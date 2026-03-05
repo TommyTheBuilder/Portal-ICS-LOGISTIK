@@ -124,6 +124,7 @@
               <label>Ansicht</label>
               <select id="stockMode">
                 <option value="location">Standort-Bestand (je Abteilung)</option>
+                <option value="location_total">Standort-Bestand (gesamt)</option>
                 <option value="overall">Komplett-Bestand (je Abteilung)</option>
                 <option value="entrepreneur">Frachtführer-Bestand (gesamt)</option>
               </select>
@@ -217,6 +218,41 @@
         </div>
       </div>
       <p id="avisoMsg"></p>
+    </div>
+
+    <div class="card" id="internalTransferCard" style="display:none;">
+      <h3 style="margin-top:0;">Interne Lagerumbuchung</h3>
+      <div class="muted" style="margin-bottom:8px;">Umbuchung zwischen Standorten oder direkter Zugang auf einen Standort (ohne Kennzeichen, Frachtführer, Abteilung).</div>
+      <div class="row">
+        <div>
+          <label>Von Standort/Lager (optional)</label>
+          <select id="internalTransferFrom"></select>
+        </div>
+        <div>
+          <label>Empfänger Standort/Lager (Pflicht)</label>
+          <select id="internalTransferTo"></select>
+        </div>
+        <div>
+          <label>Produkt</label>
+          <select id="internalTransferProductType">
+            <option value="euro">Euro-Paletten</option>
+            <option value="h1">H1-Paletten</option>
+            <option value="gitterbox">Gitterboxen</option>
+          </select>
+        </div>
+        <div>
+          <label>Menge (Pflicht)</label>
+          <input id="internalTransferQty" type="number" min="1" value="1">
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <label>Notiz (Pflicht)</label>
+          <input id="internalTransferNote" placeholder="z.B. Umlagerung Wien → Linz">
+        </div>
+        <div>
+          <button class="primary" id="createInternalTransferBtn" type="button">Umbuchung buchen</button>
+        </div>
+      </div>
+      <p id="internalTransferMsg"></p>
     </div>
 
     <div class="modalBack" id="entrepreneurModalBack">

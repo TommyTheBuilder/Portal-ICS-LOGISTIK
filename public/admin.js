@@ -393,6 +393,7 @@ function getPermCheckboxes() {
     },
     cases: {
       create: $("p_cases_create")?.checked || false,
+      internal_transfer: $("p_cases_internal_transfer")?.checked || false,
       require_employee_code: $("p_cases_employee_code")?.checked || false,
       claim: $("p_cases_claim")?.checked || false,
       edit: $("p_cases_edit")?.checked || false,
@@ -428,6 +429,9 @@ function setPermCheckboxes(perms) {
   $("p_stock_overall").checked = !!p?.stock?.overall;
 
   $("p_cases_create").checked = !!p?.cases?.create;
+  if ($("p_cases_internal_transfer")) {
+    $("p_cases_internal_transfer").checked = !!p?.cases?.internal_transfer;
+  }
   $("p_cases_employee_code").checked = !!p?.cases?.require_employee_code;
   $("p_cases_claim").checked = !!p?.cases?.claim;
   $("p_cases_edit").checked = !!p?.cases?.edit;
@@ -466,6 +470,7 @@ $("createRoleBtn")?.addEventListener("click", async () => {
       stock: { view:true, overall:true },
       cases: {
         create: true,
+        internal_transfer: false,
         require_employee_code: false,
         claim: false,
         edit: false,
