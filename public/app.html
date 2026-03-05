@@ -5,80 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Palettenmanagement</title>
   <link rel="stylesheet" href="/styles.css">
-  <style>
-    body { background:#f6f7fb; }
-
-    .topbar {
-      background:#0b2a4a;
-      color:#fff;
-      padding:14px 18px;
-      border-bottom: 1px solid #0b2440;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
-    .topbar .pill { background: rgba(255,255,255,0.15); color:#fff; }
-    .topbar .secondary { background:#e9eef5; color:#0b2a4a; }
-    .topbar .row > * { flex: 0 0 auto; min-width: auto; }
-
-    .tabs { display:flex; gap:10px; flex-wrap:wrap; margin: 12px 0; }
-    .tabs button {
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid #d1d5db;
-      background:#f9fafb;
-      color:#111827;
-      cursor:pointer;
-      font-weight:600;
-    }
-    .tabs button:hover { background:#eef2f7; }
-    .tabs button.active {
-      background:#111827;
-      color:#ffffff;
-      border-color:#111827;
-    }
-
-    .card { background:#fff; padding: 14px; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); margin-bottom: 14px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-    label { display:block; font-size: 12px; color:#6b7280; margin-bottom:4px; }
-    input, select { padding: 10px; border-radius: 10px; border: 1px solid #e5e7eb; min-width: 200px; background:#fff; }
-    button { padding: 10px 12px; border-radius: 10px; border:0; cursor:pointer; }
-    button.primary { background:#111827; color:#fff; }
-    button.secondary { background:#e5e7eb; color:#111827; }
-    button.danger { background:#b91c1c; color:#fff; }
-    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; font-size: 12px; }
-    table { width:100%; border-collapse: collapse; background:#fff; border-radius:12px; overflow:hidden; }
-    th, td { border-bottom:1px solid #e5e7eb; padding: 10px; font-size: 14px; text-align:left; vertical-align: top; }
-    th { background:#f9fafb; }
-    .modalBack { position:fixed; inset:0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding: 14px; }
-    .modal { background:#fff; width:min(900px, 100%); border-radius: 14px; padding: 14px; }
-    .confirm-modal { width:min(520px, 100%); box-shadow:0 20px 45px rgba(15,23,42,.28); border:1px solid #e5e7eb; padding:18px; }
-    .confirm-modal h3 { margin:0; font-size:18px; }
-    .confirm-modal .icon {
-      width:42px;
-      height:42px;
-      border-radius:50%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#eef2ff;
-      color:#3730a3;
-      font-size:22px;
-    }
-    .muted { color:#6b7280; font-size: 12px; }
-    .history-filters .rollcard-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
-    .history-filters .rollcard-item button { width: 100%; }
-    .toggle-btn { width: 36px; height: 36px; padding: 0; display:flex; align-items:center; justify-content:center; }
-  </style>
 </head>
 <body>
-<div class="system-logo-wrap">
-  <img src="/logo.png" alt="Systemlogo" class="system-logo">
-  <a href="/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
-</div>
-<header class="topbar">
-  <div><b>Palettenmanagement</b> <span class="pill" id="me">-</span></div>
-  <div class="row" style="align-items:center;">
+<header class="topbar topbar-modern">
+  <button class="nav-orb" type="button" aria-label="Navigation öffnen"><span></span></button>
+  <div class="system-logo-wrap">
+    <img src="/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+  </div>
+  <div class="row topbar-actions" style="align-items:center;">
     <div class="notification-wrap">
       <button class="secondary notification-toggle" id="notificationBtn" title="Benachrichtigungen">🔔<span class="notification-badge" id="notificationBadge" style="display:none;">0</span></button>
       <div class="notification-panel" id="notificationPanel"></div>
@@ -89,25 +24,28 @@
   </div>
 </header>
 
-<main style="max-width: 1100px; margin: 0 auto; padding: 16px;">
-  <div class="row">
-    <div>
+<main class="dashboard-main">
+  <section class="dashboard-header">
+    <div class="dashboard-title-row"><b>Palettenmanagement</b> <span class="pill" id="me">-</span></div>
+    <div class="row filter-row">
+    <div class="filter-field">
       <label>Standort (Filter für Vorgänge/Historie)</label>
-      <select id="locationSelect"></select>
+      <select id="locationSelect" class="filter-select"></select>
     </div>
-    <div>
+    <div class="filter-field">
       <label>Abteilung (für Historie/Export)</label>
-      <select id="departmentSelect"></select>
+      <select id="departmentSelect" class="filter-select"></select>
     </div>
   </div>
+  </section>
 
-  <div class="tabs">
-    <button data-tab="dashboard" class="active">Dashboard</button>
-    <button data-tab="aviso">Aviso</button>
-    <button data-tab="cases">Vorgänge</button>
-    <button data-tab="history">Historie</button>
-    <button data-tab="entrepreneur-history">Frachtführer Historie</button>
-    <button data-tab="export">Export</button>
+  <div class="tabs dashboard-nav">
+    <button data-tab="dashboard" class="active nav-button"><span class="nav-icon">🏠</span>Dashboard</button>
+    <button data-tab="history" class="nav-button"><span class="nav-icon">📅</span>Historie</button>
+    <button data-tab="aviso" class="nav-button"><span class="nav-icon">📄</span>Aviso</button>
+    <button data-tab="entrepreneur-history" class="nav-button"><span class="nav-icon">🚚</span>Frachtführer Historie</button>
+    <button data-tab="cases" class="nav-button"><span class="nav-icon">⚙️</span>Vorgänge</button>
+    <button data-tab="export" class="nav-button"><span class="nav-icon">⤴</span>Export</button>
   </div>
 
   <!-- DASHBOARD -->
