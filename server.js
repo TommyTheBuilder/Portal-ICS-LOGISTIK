@@ -169,7 +169,7 @@ function normalizeEmail(emailRaw) {
   return { ok: true, email: normalized };
 }
 
-async function createNewCaseNotifications(caseRow) {
+async function createLocationStatus1Notifications(caseRow) {
   try {
     const locationInfo = await q(
       `SELECT name FROM locations WHERE id=$1`,
@@ -177,47 +177,53 @@ async function createNewCaseNotifications(caseRow) {
     );
     const locationName = locationInfo.rowCount ? locationInfo.rows[0].name : `Standort ${caseRow.location_id}`;
 
+    const recipients = await q(
+      `SELECT id FROM users WHERE is_active=TRUE AND location_id=$1`,
+      [caseRow.location_id]
+    );
+
+    for (const recipient of recipients.rows) {
+      if (Number(recipient.id) === Number(caseRow.created_by)) continue;
+      const inserted = await q(
+        `INSERT INTO user_notifications (user_id, case_id, title, message)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, user_id, case_id, title, message, is_read, created_at`,
+        [recipient.id, caseRow.id, "Aviso Standort (Status 1)", `Neues Aviso #${caseRow.id} am ${locationName}.`]
+      );
+      io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
+    }
+  } catch (err) {
+    console.error("Standort-Notification fehlgeschlagen:", err);
+  }
+}
+
+async function createDepartmentStatus3Notifications(caseRow) {
+  try {
+    if (!caseRow.department_id) return;
+
     const departmentInfo = await q(
       `SELECT name FROM departments WHERE id=$1`,
       [caseRow.department_id]
     );
     const departmentName = departmentInfo.rowCount ? departmentInfo.rows[0].name : `Abteilung ${caseRow.department_id}`;
 
-    const locationRecipients = await q(
-      `SELECT id FROM users WHERE is_active=TRUE AND location_id=$1`,
-      [caseRow.location_id]
+    const recipients = await q(
+      `SELECT id FROM users WHERE is_active=TRUE AND fixed_department_id=$1`,
+      [caseRow.department_id]
     );
 
-    for (const recipient of locationRecipients.rows) {
-      if (Number(recipient.id) === Number(caseRow.created_by)) continue;
+    for (const recipient of recipients.rows) {
+      if (Number(recipient.id) === Number(caseRow.submitted_by || caseRow.created_by)) continue;
       const inserted = await q(
         `INSERT INTO user_notifications (user_id, case_id, title, message)
          VALUES ($1, $2, $3, $4)
          RETURNING id, user_id, case_id, title, message, is_read, created_at`,
-        [recipient.id, caseRow.id, "Neues Aviso (Standort)", `Neues Aviso #${caseRow.id} am ${locationName}.`]
+        [recipient.id, caseRow.id, "Aviso Abteilung (Status 3)", `Aviso #${caseRow.id} ist in Prüfung (${departmentName}).`]
       );
       io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
     }
-
-    if (caseRow.department_id) {
-      const departmentRecipients = await q(
-        `SELECT id FROM users WHERE is_active=TRUE AND fixed_department_id=$1`,
-        [caseRow.department_id]
-      );
-
-      for (const recipient of departmentRecipients.rows) {
-        if (Number(recipient.id) === Number(caseRow.created_by)) continue;
-        const inserted = await q(
-          `INSERT INTO user_notifications (user_id, case_id, title, message)
-           VALUES ($1, $2, $3, $4)
-           RETURNING id, user_id, case_id, title, message, is_read, created_at`,
-          [recipient.id, caseRow.id, "Neues Aviso (Abteilung)", `Neues Aviso #${caseRow.id} in ${departmentName}.`]
-        );
-        io.to(`user:${recipient.id}`).emit("notificationCreated", inserted.rows[0]);
-      }
-    }
   } catch (err) {
-    console.error("Aviso-Notification fehlgeschlagen:", err);
+    console.error("Abteilungs-Notification fehlgeschlagen:", err);
   }
 }
 
@@ -227,7 +233,10 @@ async function pruneNotificationsForUser(userId) {
      USING booking_cases c
      WHERE n.case_id = c.id
        AND n.user_id = $1
-       AND c.status >= 3
+       AND (
+         (n.title='Aviso Standort (Status 1)' AND c.status >= 3)
+         OR (n.title='Aviso Abteilung (Status 3)' AND c.status >= 4)
+       )
      RETURNING n.id`,
     [userId]
   );
@@ -267,6 +276,24 @@ async function deleteNotificationsForCase(caseId) {
      WHERE case_id=$1
      RETURNING id, user_id`,
     [caseId]
+  );
+
+  if (deleted.rowCount === 0) return;
+
+  const payloadByUser = new Map();
+  for (const row of deleted.rows) {
+    if (!payloadByUser.has(row.user_id)) payloadByUser.set(row.user_id, []);
+    payloadByUser.get(row.user_id).push(row.id);
+  }
+  emitNotificationsDeleted(payloadByUser);
+}
+
+async function deleteNotificationsForCaseByTitle(caseId, title) {
+  const deleted = await q(
+    `DELETE FROM user_notifications
+     WHERE case_id=$1 AND title=$2
+     RETURNING id, user_id`,
+    [caseId, title]
   );
 
   if (deleted.rowCount === 0) return;
@@ -1040,10 +1067,9 @@ app.post("/api/cases", authRequired, async (req, res) => {
 
   const caseId = Number(r.rows[0].id);
   io.to(`loc:${locId}`).emit("casesUpdated", { location_id: locId });
-  void createNewCaseNotifications({
+  void createLocationStatus1Notifications({
     id: caseId,
     location_id: locId,
-    department_id: depId,
     created_by: req.user.id
   });
   res.json({ id: caseId });
@@ -1199,7 +1225,12 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       [req.user.id, nonExchangeableQty, employeeCode, id]
     );
 
-    await deleteNotificationsForCase(id);
+    await deleteNotificationsForCaseByTitle(id, "Aviso Standort (Status 1)");
+    void createDepartmentStatus3Notifications({
+      id,
+      department_id: c.department_id,
+      submitted_by: req.user.id
+    });
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
   }
@@ -1260,7 +1291,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         receipt_no
       });
 
-      await deleteNotificationsForCase(id);
+      await deleteNotificationsForCaseByTitle(id, "Aviso Abteilung (Status 3)");
 
       return res.json({ ok: true, receipt_no });
     } catch (e) {
