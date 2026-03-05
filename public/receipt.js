@@ -55,6 +55,7 @@
       "note",
       "receiptNoInline",
       "nonExchangeable",
+      "driverTrailerNo",
       "entrepreneurAddress",
       "qtyInEu", "qtyOutEu",
       "qtyInH1", "qtyOutH1",
@@ -113,8 +114,10 @@
 
     const receiptNoRow = byId("receiptNoRow");
     const departmentRow = byId("departmentRow");
+    const driverTrailerRow = byId("driverTrailerRow");
     if (receiptNoRow) receiptNoRow.style.display = driverSlip ? "none" : "";
     if (departmentRow) departmentRow.style.display = driverSlip ? "none" : "";
+    if (driverTrailerRow) driverTrailerRow.style.display = driverSlip ? "" : "none";
 
     const receiptTitle = byId("receiptTitle");
     if (receiptTitle) {
@@ -123,17 +126,6 @@
 
     const metaCard = document.querySelector(".metaCard");
     if (metaCard) metaCard.style.display = "";
-
-    const footerTextDe = byId("footerTextDe");
-    const footerTextEn = byId("footerTextEn");
-    if (driverSlip) {
-      if (footerTextDe) {
-        footerTextDe.innerHTML = "Ladehilfsmittel werden mit 22 €/Palette verrechnet, zuzüglich 25 € Bearbeitungsgebühr.<br>Die Rückgabe ist nur innerhalb von 6 Wochen mit diesem Originalschein bei ICS-Logistik möglich.<br>Die Gebühr wird nicht gutgeschrieben. Bei Nichttausch durch den Empfänger ist<br>ICS sofort zu informieren. Spätere Reklamationen werden nicht akzeptiert.";
-      }
-      if (footerTextEn) {
-        footerTextEn.innerHTML = "Loading aids are charged at €22 per pallet, plus a €25 processing fee.<br>Returns are only possible within 6 weeks with this original receipt at ICS-Logistik.<br>The fee is not credited. If exchange is refused by the recipient,<br>ICS must be informed immediately. Later complaints will not be accepted.";
-      }
-    }
 
     if (!bookingId && !caseId) {
       if (!allowBlankPrint) return showError("Keine Beleg-ID übergeben");
@@ -166,6 +158,7 @@
       : "-";
     setText("receiptDate", formattedDate);
     setText("trailerNo", data.license_plate || "-");
+    setText("driverTrailerNo", data.trailer_no || data.trailer || "-");
     setText("receiptNoInline", receiptLabel);
     setText("department", data.department || "-");
     setText("entrepreneurAddress", buildCarrierAddress(data));
@@ -191,6 +184,7 @@
       [
         "receiptDate",
         "trailerNo",
+        "driverTrailerNo",
         "department",
         "note",
         "receiptNoInline",
