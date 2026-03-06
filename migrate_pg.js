@@ -23,19 +23,6 @@ async function migrate() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
-    CREATE TABLE IF NOT EXISTS entrepreneur_history (
-      id SERIAL PRIMARY KEY,
-      location_id INTEGER NOT NULL REFERENCES locations(id),
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      entrepreneur TEXT NOT NULL,
-      license_plate TEXT,
-      qty_in INTEGER NOT NULL DEFAULT 0,
-      qty_out INTEGER NOT NULL DEFAULT 0,
-      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
@@ -56,6 +43,19 @@ async function migrate() {
       note TEXT,
       receipt_no TEXT,
       license_plate TEXT,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS entrepreneur_history (
+      id SERIAL PRIMARY KEY,
+      location_id INTEGER NOT NULL REFERENCES locations(id),
+      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      entrepreneur TEXT NOT NULL,
+      license_plate TEXT,
+      qty_in INTEGER NOT NULL DEFAULT 0,
+      qty_out INTEGER NOT NULL DEFAULT 0,
       product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
