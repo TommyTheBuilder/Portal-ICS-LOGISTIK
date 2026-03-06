@@ -2001,6 +2001,22 @@ app.get("/api/export/xlsx", authRequired, requirePermission("bookings.export"), 
 
 
 async function ensureRuntimeTables() {
+  const usersTable = await q(`SELECT to_regclass('public.users') AS users_table`);
+  if (!usersTable.rows[0]?.users_table) {
+    await q(`
+      CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('admin','disponent','lager')),
+        location_id INTEGER,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+    console.log("Tabelle 'users' wurde beim Start automatisch erstellt.");
+  }
+
   await q(`
     CREATE TABLE IF NOT EXISTS ip_preferences (
       ip_address TEXT PRIMARY KEY,
