@@ -167,6 +167,10 @@ async function migrate() {
     ADD CONSTRAINT entrepreneur_history_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
   `);
 
+  // users.email + users.fixed_department_id hinzufügen
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER REFERENCES departments(id);`);
+
   await pool.query(`
     ALTER TABLE users
     DROP CONSTRAINT IF EXISTS users_fixed_department_id_fkey;
@@ -213,10 +217,6 @@ async function migrate() {
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS role_id INTEGER REFERENCES roles(id);
   `);
-
-  // users.email + users.fixed_department_id hinzufügen
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER REFERENCES departments(id);`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ip_preferences (
