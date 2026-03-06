@@ -169,15 +169,27 @@ async function migrate() {
 
   // users.email + users.fixed_department_id hinzufügen
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER REFERENCES departments(id);`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER;`);
 
   await pool.query(`
     ALTER TABLE users
     DROP CONSTRAINT IF EXISTS users_fixed_department_id_fkey;
   `);
   await pool.query(`
-    ALTER TABLE users
-    ADD CONSTRAINT users_fixed_department_id_fkey FOREIGN KEY (fixed_department_id) REFERENCES departments(id) ON DELETE SET NULL;
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'users'
+          AND column_name = 'fixed_department_id'
+      ) THEN
+        ALTER TABLE users
+        ADD CONSTRAINT users_fixed_department_id_fkey FOREIGN KEY (fixed_department_id) REFERENCES departments(id) ON DELETE SET NULL;
+      END IF;
+    END
+    $$;
   `);
   await pool.query(`
     ALTER TABLE users
