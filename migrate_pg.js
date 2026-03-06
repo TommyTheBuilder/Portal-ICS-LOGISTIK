@@ -60,6 +60,32 @@ async function migrate() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    CREATE TABLE IF NOT EXISTS booking_cases (
+      id SERIAL PRIMARY KEY,
+      location_id INTEGER NOT NULL REFERENCES locations(id),
+      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      status INTEGER NOT NULL DEFAULT 1, -- 0 Storniert, 1 Aviso, 2 In Bearbeitung, 3 In Prüfung, 4 Gebucht
+      license_plate TEXT NOT NULL,
+      entrepreneur TEXT,
+      note TEXT,
+      qty_in INTEGER NOT NULL DEFAULT 0,
+      qty_out INTEGER NOT NULL DEFAULT 0,
+      non_exchangeable_qty INTEGER NOT NULL DEFAULT 0,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
+      translogica_transferred BOOLEAN NOT NULL DEFAULT FALSE,
+      receipt_no TEXT,
+      claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      claimed_at TIMESTAMPTZ,
+      submitted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      submitted_at TIMESTAMPTZ,
+      approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      approved_at TIMESTAMPTZ,
+      employee_code TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
     CREATE TABLE IF NOT EXISTS receipt_seq (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       next_no BIGINT NOT NULL
@@ -242,34 +268,8 @@ async function migrate() {
     ON CONFLICT (name) DO NOTHING;
   `);
 
-  // booking_cases + Index
+  // booking_cases Index
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS booking_cases (
-      id SERIAL PRIMARY KEY,
-      location_id INTEGER NOT NULL REFERENCES locations(id),
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      status INTEGER NOT NULL DEFAULT 1, -- 0 Storniert, 1 Aviso, 2 In Bearbeitung, 3 In Prüfung, 4 Gebucht
-      license_plate TEXT NOT NULL,
-      entrepreneur TEXT,
-      note TEXT,
-      qty_in INTEGER NOT NULL DEFAULT 0,
-      qty_out INTEGER NOT NULL DEFAULT 0,
-      non_exchangeable_qty INTEGER NOT NULL DEFAULT 0,
-      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
-      translogica_transferred BOOLEAN NOT NULL DEFAULT FALSE,
-      receipt_no TEXT,
-      claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      claimed_at TIMESTAMPTZ,
-      submitted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      submitted_at TIMESTAMPTZ,
-      approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      approved_at TIMESTAMPTZ,
-      employee_code TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-
     CREATE INDEX IF NOT EXISTS idx_booking_cases_loc_status
       ON booking_cases(location_id, status);
   `);
