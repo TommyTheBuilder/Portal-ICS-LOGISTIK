@@ -61,7 +61,7 @@ async function loadMe() {
   const r = await api("/api/me", { method: "GET", headers: {} });
   if (!r.ok) { localStorage.removeItem("token"); window.location.href = "/login.html"; return; }
   const me = await r.json();
-  $("me").textContent = `${me.username} • ${me.role}`;
+  $("me").textContent = `${me.username} • ${me.business_role_name || "-"}`;
   IS_ADMIN = me.role === "admin";
 }
 

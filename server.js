@@ -424,8 +424,16 @@ app.post("/api/login", async (req, res) => {
 
 app.get("/api/me", authRequired, async (req, res) => {
   const r = await q(
-    `SELECT id, username, role, location_id, role_id, is_active
-     FROM users WHERE id=$1`,
+    `SELECT u.id,
+            u.username,
+            u.role,
+            u.location_id,
+            u.role_id,
+            u.is_active,
+            ro.name AS business_role_name
+     FROM users u
+     LEFT JOIN roles ro ON ro.id = u.role_id
+     WHERE u.id=$1`,
     [req.user.id]
   );
   const user = r.rows[0];

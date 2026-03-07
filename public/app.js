@@ -166,7 +166,7 @@ async function loadMe() {
   const r = await api("/api/me", { method: "GET", headers: {} });
   if (!r.ok) { localStorage.removeItem("token"); window.location.href = "/login.html"; return; }
   ME = await r.json();
-  $("me").textContent = `${ME.username} • ${ME.role}`;
+  $("me").textContent = `${ME.username} • ${ME.business_role_name || "-"}`;
   $("adminBtn").style.display = "none";
   socket.emit("joinUser", ME.id);
 }
