@@ -28,6 +28,12 @@ let EDIT_ENTREPRENEUR_ID = null;
 let IS_ADMIN = false;
 let PERMS = {};
 
+const USER_FILTERS = {
+  username: "",
+  departmentId: "",
+  locationId: ""
+};
+
 // ---------------- Tabs ----------------
 function bindTabs() {
   document.querySelectorAll(".tabs button").forEach(btn => {
@@ -104,6 +110,9 @@ async function loadLocations() {
       editLocSel.appendChild(o);
     });
   }
+
+  populateUserFilters();
+  renderUsersTable();
 
   // bind delete
   document.querySelectorAll("[data-del-loc]").forEach(btn => {
@@ -200,6 +209,9 @@ async function loadDepartments() {
       editSelect.appendChild(o);
     });
   }
+
+  populateUserFilters();
+  renderUsersTable();
 }
 
 async function loadEntrepreneurs() {
@@ -292,10 +304,20 @@ async function loadRoles() {
   if (sel && sel.value) applyRoleToCheckboxes(Number(sel.value));
 }
 
-async function loadUsers() {
-  const r = await api("/api/admin/users", { method: "GET", headers: {} });
-  USERS = r.ok ? await r.json() : [];
+function getFilteredUsers() {
+  const usernameFilter = USER_FILTERS.username.trim().toLowerCase();
+  return USERS.filter(u => {
+    const usernameMatches = !usernameFilter
+      || String(u.username || "").toLowerCase().includes(usernameFilter);
+    const departmentMatches = !USER_FILTERS.departmentId
+      || String(u.fixed_department_id || "") === String(USER_FILTERS.departmentId);
+    const locationMatches = !USER_FILTERS.locationId
+      || String(u.location_id || "") === String(USER_FILTERS.locationId);
+    return usernameMatches && departmentMatches && locationMatches;
+  });
+}
 
+function renderUsersTable() {
   const body = $("usersBody");
   if (!body) return;
   body.innerHTML = "";
@@ -304,7 +326,7 @@ async function loadUsers() {
   const roleName = (id) => ROLES.find(x => String(x.id) === String(id))?.name || "-";
   const depName = (id) => DEPARTMENTS.find(x => String(x.id) === String(id))?.name || "-";
 
-  USERS.forEach(u => {
+  getFilteredUsers().forEach(u => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><b>${u.username}</b></td>
@@ -321,7 +343,7 @@ async function loadUsers() {
     body.appendChild(tr);
   });
 
-  document.querySelectorAll("[data-reset]").forEach(btn => {
+  body.querySelectorAll("[data-reset]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-reset");
       const pw = prompt("Neues Passwort eingeben:");
@@ -336,7 +358,7 @@ async function loadUsers() {
     });
   });
 
-  document.querySelectorAll("[data-disable]").forEach(btn => {
+  body.querySelectorAll("[data-disable]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-disable");
       if (!confirm("Benutzer wirklich löschen?")) return;
@@ -347,6 +369,39 @@ async function loadUsers() {
       await loadUsers();
     });
   });
+}
+
+function populateUserFilters() {
+  const depSel = $("usersFilterDepartment");
+  if (depSel) {
+    depSel.innerHTML = `<option value="">(alle Abteilungen)</option>`;
+    DEPARTMENTS.forEach(d => {
+      const o = document.createElement("option");
+      o.value = d.id;
+      o.textContent = d.name;
+      depSel.appendChild(o);
+    });
+    depSel.value = USER_FILTERS.departmentId;
+  }
+
+  const locSel = $("usersFilterLocation");
+  if (locSel) {
+    locSel.innerHTML = `<option value="">(alle Standorte)</option>`;
+    LOCATIONS.forEach(l => {
+      const o = document.createElement("option");
+      o.value = l.id;
+      o.textContent = l.name;
+      locSel.appendChild(o);
+    });
+    locSel.value = USER_FILTERS.locationId;
+  }
+}
+
+async function loadUsers() {
+  const r = await api("/api/admin/users", { method: "GET", headers: {} });
+  USERS = r.ok ? await r.json() : [];
+
+  renderUsersTable();
 
   const editSelect = $("editUserSelect");
   if (editSelect) {
@@ -647,6 +702,18 @@ $("createUserBtn")?.addEventListener("click", async () => {
 });
 
 $("reloadUsersBtn")?.addEventListener("click", loadUsers);
+$("usersFilterUsername")?.addEventListener("input", (e) => {
+  USER_FILTERS.username = e.target.value || "";
+  renderUsersTable();
+});
+$("usersFilterDepartment")?.addEventListener("change", (e) => {
+  USER_FILTERS.departmentId = e.target.value || "";
+  renderUsersTable();
+});
+$("usersFilterLocation")?.addEventListener("change", (e) => {
+  USER_FILTERS.locationId = e.target.value || "";
+  renderUsersTable();
+});
 $("uRole")?.addEventListener("change", applyRoleLocationHint);
 $("editUserRole")?.addEventListener("change", applyEditRoleLocationHint);
 
