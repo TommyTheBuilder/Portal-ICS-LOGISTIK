@@ -129,35 +129,6 @@ async function loadLocations() {
   });
 }
 
-function applyRoleLocationHint() {
-  const roleSel = $("uRole");
-  const locSel = $("uLocation");
-  const hint = $("roleLocationHint");
-  if (!roleSel || !locSel || !hint) return;
-  const isLager = roleSel.value === "lager";
-  if (isLager) {
-    locSel.setAttribute("required", "required");
-    hint.style.display = "";
-  } else {
-    locSel.removeAttribute("required");
-    hint.style.display = "none";
-  }
-}
-
-function applyEditRoleLocationHint() {
-  const roleSel = $("editUserRole");
-  const locSel = $("editUserLocation");
-  const hint = $("editRoleLocationHint");
-  if (!roleSel || !locSel || !hint) return;
-  const isLager = roleSel.value === "lager";
-  if (isLager) {
-    locSel.setAttribute("required", "required");
-    hint.style.display = "";
-  } else {
-    locSel.removeAttribute("required");
-    hint.style.display = "none";
-  }
-}
 
 async function loadDepartments() {
   const r = await api("/api/departments", { method: "GET", headers: {} });
@@ -300,6 +271,17 @@ async function loadRoles() {
     });
   }
 
+  const editUserRoleSel = $("editUserRoleId");
+  if (editUserRoleSel) {
+    editUserRoleSel.innerHTML = `<option value="">(keine)</option>`;
+    ROLES.forEach(role => {
+      const o = document.createElement("option");
+      o.value = role.id;
+      o.textContent = role.name;
+      editUserRoleSel.appendChild(o);
+    });
+  }
+
   // apply permissions for currently selected
   if (sel && sel.value) applyRoleToCheckboxes(Number(sel.value));
 }
@@ -330,7 +312,6 @@ function renderUsersTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><b>${u.username}</b></td>
-      <td>${u.role}</td>
       <td>${locName(u.location_id)}</td>
       <td>${roleName(u.role_id)}</td>
       <td>${depName(u.fixed_department_id)}</td>
@@ -422,12 +403,11 @@ function applyUserEditSelection() {
   if (!sel) return;
   const id = sel.value;
   const user = USERS.find(u => String(u.id) === String(id));
-  if ($("editUserRole")) $("editUserRole").value = user?.role || "disponent";
   if ($("editUserLocation")) {
     $("editUserLocation").value = user?.location_id ? String(user.location_id) : "";
   }
+  $("editUserRoleId").value = user?.role_id ? String(user.role_id) : "";
   $("editUserDepartment").value = user?.fixed_department_id ? String(user.fixed_department_id) : "";
-  applyEditRoleLocationHint();
 }
 
 // ---------------- Role permission UI ----------------
@@ -677,19 +657,16 @@ $("createUserBtn")?.addEventListener("click", async () => {
   setMsg("userMsg", "");
   const username = ($("uName").value || "").trim();
   const password = ($("uPass").value || "").trim();
-  const role = $("uRole").value;
   const location_id = $("uLocation").value || null;
   const role_id = $("uRoleId").value || null;
   const fixed_department_id = $("uFixedDepartment").value || null;
 
   if (!username || !password) return setMsg("userMsg", "Username und Passwort sind Pflicht");
-  if (role === "lager" && !location_id) {
-    return setMsg("userMsg", "Für die Rolle Lager ist ein Standort Pflicht");
-  }
+  if (!role_id) return setMsg("userMsg", "Bitte Business-Rolle auswählen");
 
   const rr = await api("/api/admin/users", {
     method: "POST",
-    body: JSON.stringify({ username, password, role, location_id, role_id, fixed_department_id })
+    body: JSON.stringify({ username, password, role: "disponent", location_id, role_id, fixed_department_id })
   });
   const data = await rr.json().catch(() => ({}));
   if (!rr.ok) return setMsg("userMsg", data.error || "User konnte nicht angelegt werden");
@@ -714,9 +691,6 @@ $("usersFilterLocation")?.addEventListener("change", (e) => {
   USER_FILTERS.locationId = e.target.value || "";
   renderUsersTable();
 });
-$("uRole")?.addEventListener("change", applyRoleLocationHint);
-$("editUserRole")?.addEventListener("change", applyEditRoleLocationHint);
-
 $("editUserSelect")?.addEventListener("change", applyUserEditSelection);
 
 $("printReceiptDriverBtn")?.addEventListener("click", () => {
@@ -736,16 +710,14 @@ $("saveUserBtn")?.addEventListener("click", async () => {
   const id = $("editUserSelect").value;
   if (!id) return setMsg("userEditMsg", "Bitte Benutzer auswählen");
 
-  const role = $("editUserRole").value;
   const location_id = $("editUserLocation").value || null;
+  const role_id = $("editUserRoleId").value || null;
   const fixed_department_id = $("editUserDepartment").value || null;
-  if (role === "lager" && !location_id) {
-    return setMsg("userEditMsg", "Für die Rolle Lager ist ein Standort Pflicht");
-  }
+  if (!role_id) return setMsg("userEditMsg", "Bitte Business-Rolle auswählen");
 
   const rr = await api(`/api/admin/users/${encodeURIComponent(id)}`, {
     method: "PUT",
-    body: JSON.stringify({ role, location_id, fixed_department_id })
+    body: JSON.stringify({ location_id, role_id, fixed_department_id })
   });
   const data = await rr.json().catch(() => ({}));
   if (!rr.ok) return setMsg("userEditMsg", data.error || "Speichern fehlgeschlagen");
@@ -786,7 +758,6 @@ $("saveUserBtn")?.addEventListener("click", async () => {
       await loadDepartments();
       await loadEntrepreneurs();
       await loadUsers();
-      applyRoleLocationHint();
     } else {
       await loadLocations();
       await loadDepartments();

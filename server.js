@@ -777,14 +777,12 @@ app.post("/api/admin/users", authRequired, adminRequired, async (req, res) => {
   const {
     username,
     password,
-    role = "disponent",
     location_id = null,
     role_id = null,
     email,
     fixed_department_id = null
   } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: "username + password required" });
-  if (!["admin", "disponent", "lager"].includes(role)) return res.status(400).json({ error: "invalid role" });
 
   const name = String(username).trim();
   if (name.length < 3) return res.status(400).json({ error: "username too short" });
@@ -792,9 +790,11 @@ app.post("/api/admin/users", authRequired, adminRequired, async (req, res) => {
   const hash = await bcrypt.hash(String(password), 10);
   const emailCheck = normalizeEmail(email);
   if (emailCheck && emailCheck.ok === false) return res.status(400).json({ error: emailCheck.msg });
-  if (role === "lager" && (location_id === null || location_id === undefined || location_id === "")) {
-    return res.status(400).json({ error: "Standort ist für Rolle Lager Pflicht" });
-  }
+  const roleId = (role_id === null || role_id === undefined || role_id === "") ? null : Number(role_id);
+  if (!roleId) return res.status(400).json({ error: "business role required" });
+  const roleExists = await q(`SELECT 1 FROM roles WHERE id=$1`, [roleId]);
+  if (roleExists.rowCount === 0) return res.status(400).json({ error: "Business-Rolle nicht gefunden" });
+
   const fixedDepartmentId = (fixed_department_id === null || fixed_department_id === undefined || fixed_department_id === "")
     ? null
     : Number(fixed_department_id);
@@ -811,9 +811,9 @@ app.post("/api/admin/users", authRequired, adminRequired, async (req, res) => {
       [
         name,
         hash,
-        role,
+        "disponent",
         (location_id === null || location_id === undefined || location_id === "") ? null : Number(location_id),
-        (role_id === null || role_id === undefined || role_id === "") ? null : Number(role_id),
+        roleId,
         emailCheck?.email || null,
         fixedDepartmentId
       ]
@@ -829,30 +829,12 @@ app.put("/api/admin/users/:id", authRequired, adminRequired, async (req, res) =>
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ error: "invalid id" });
 
-  const { role, location_id, is_active, role_id, email, fixed_department_id } = req.body || {};
-  if (role && !["admin", "disponent", "lager"].includes(role)) return res.status(400).json({ error: "invalid role" });
-
-  if (role !== undefined || Object.prototype.hasOwnProperty.call(req.body || {}, "location_id")) {
-    const existing = await q(`SELECT role, location_id FROM users WHERE id=$1`, [id]);
-    if (existing.rowCount === 0) return res.status(404).json({ error: "Not found" });
-    const current = existing.rows[0];
-    const nextRole = role !== undefined ? role : current.role;
-    const nextLocation = Object.prototype.hasOwnProperty.call(req.body || {}, "location_id")
-      ? ((location_id === null || location_id === undefined || location_id === "") ? null : Number(location_id))
-      : current.location_id;
-    if (nextRole === "lager" && !nextLocation) {
-      return res.status(400).json({ error: "Standort ist für Rolle Lager Pflicht" });
-    }
-  }
+  const { location_id, is_active, role_id, email, fixed_department_id } = req.body || {};
 
   const updates = [];
   const values = [];
   let idx = 1;
 
-  if (role !== undefined) {
-    updates.push(`role=$${idx++}`);
-    values.push(role ?? null);
-  }
 
   if (Object.prototype.hasOwnProperty.call(req.body || {}, "location_id")) {
     const locValue = (location_id === null || location_id === undefined || location_id === "") ? null : Number(location_id);
@@ -868,6 +850,9 @@ app.put("/api/admin/users/:id", authRequired, adminRequired, async (req, res) =>
 
   if (Object.prototype.hasOwnProperty.call(req.body || {}, "role_id")) {
     const roleValue = (role_id === null || role_id === undefined || role_id === "") ? null : Number(role_id);
+    if (!roleValue) return res.status(400).json({ error: "business role required" });
+    const roleExists = await q(`SELECT 1 FROM roles WHERE id=$1`, [roleValue]);
+    if (roleExists.rowCount === 0) return res.status(400).json({ error: "Business-Rolle nicht gefunden" });
     updates.push(`role_id=$${idx++}`);
     values.push(roleValue);
   }

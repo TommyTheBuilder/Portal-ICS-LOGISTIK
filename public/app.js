@@ -21,6 +21,13 @@ function setMsg(elId, text, ok = false) {
   el.textContent = text || "";
 }
 
+function formatDate(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+}
+
 function showApproveConfirmModal(show) {
   const back = $("approveConfirmBack");
   if (!back) return;
@@ -519,7 +526,7 @@ function renderNotifications() {
     <div class="notification-item ${n.is_read ? "" : "unread"}" data-notification-id="${n.id}" data-case-id="${n.case_id || ""}">
       <div><b>${n.title}</b></div>
       <div>${n.message}</div>
-      <div class="muted">${new Date(n.created_at).toLocaleString("de-DE")}</div>
+      <div class="muted">${formatDate(n.created_at)}</div>
     </div>
   `).join("");
 
@@ -629,7 +636,7 @@ function renderCasesTable() {
             <td>${c.translogica_transferred ? "Ja" : "Nein"}</td>
             <td>${PRODUCT_TYPE_LABELS[c.product_type] || c.product_type || "-"}</td>
             <td>${c.qty_in}/${c.qty_out}</td>
-            <td>${new Date(c.created_at).toLocaleString("de-DE")}</td>
+            <td>${formatDate(c.created_at)}</td>
             <td>
               <button class="secondary" data-open-case="${c.id}">Öffnen</button>
               ${(PERMS?.bookings?.receipt && Number(c.status) === 3) ? `<button class="secondary" data-print-case="${c.id}">Vorl. Druck</button>` : ""}
@@ -1131,7 +1138,7 @@ function renderHistory() {
           <div class="rollcard-grid">
             <div class="rollcard-item">
               <label>Datum</label>
-              <div>${new Date(h.created_at).toLocaleString("de-DE")}</div>
+              <div>${formatDate(h.created_at)}</div>
             </div>
             <div class="rollcard-item">
               <label>Beleg</label>
@@ -1221,7 +1228,7 @@ function renderEntrepreneurHistory() {
           <div class="rollcard-grid">
             <div class="rollcard-item">
               <label>Letzte Aktivität</label>
-              <div>${new Date(h.last_seen || h.created_at).toLocaleString("de-DE")}</div>
+              <div>${formatDate(h.last_seen || h.created_at)}</div>
             </div>
             <div class="rollcard-item">
               <label>Frachtführer</label>

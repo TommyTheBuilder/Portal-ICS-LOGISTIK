@@ -232,22 +232,13 @@
           <input id="uPass" placeholder="Passwort" type="password">
         </div>
         <div>
-          <label>Rolle (Admin/Disponent/Lager)</label>
-          <select id="uRole">
-            <option value="disponent">Disponent</option>
-            <option value="lager">Lager</option>
-            <option value="admin">Admin</option>
-          </select>
-          <small class="muted" id="roleLocationHint">Für Lager ist ein Standort Pflicht.</small>
-        </div>
-        <div>
           <label>Standort</label>
           <select id="uLocation"></select>
         </div>
         <div>
-          <label>Business-Rolle</label>
+          <label>Business-Rolle (Rechte)</label>
           <select id="uRoleId"></select>
-          <small class="muted">Optional (für Berechtigungen)</small>
+          <small class="muted">Pflichtfeld für Berechtigungen</small>
         </div>
         <div>
           <label>Fixe Abteilung</label>
@@ -269,17 +260,12 @@
           <select id="editUserSelect"></select>
         </div>
         <div>
-          <label>Rolle</label>
-          <select id="editUserRole">
-            <option value="disponent">Disponent</option>
-            <option value="lager">Lager</option>
-            <option value="admin">Admin</option>
-          </select>
-          <small class="muted" id="editRoleLocationHint">Für Lager ist ein Standort Pflicht.</small>
-        </div>
-        <div>
           <label>Standort</label>
           <select id="editUserLocation"></select>
+        </div>
+        <div>
+          <label>Business-Rolle (Rechte)</label>
+          <select id="editUserRoleId"></select>
         </div>
         <div>
           <label>Fixe Abteilung</label>
@@ -316,7 +302,6 @@
           <thead>
             <tr>
               <th>Benutzer</th>
-              <th>Rolle</th>
               <th>Standort</th>
               <th>Business-Rolle</th>
               <th>Fixe Abteilung</th>
