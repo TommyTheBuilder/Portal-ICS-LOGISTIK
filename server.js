@@ -307,54 +307,31 @@ async function deleteNotificationsForCaseByTitle(caseId, title) {
 }
 
 async function getMyPermissions(user) {
+  const fullAccessPerms = {
+    bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true, translogica: true },
+    stock: { view: true, overall: true },
+    cases: {
+      create: true,
+      internal_transfer: true,
+      claim: true,
+      edit: true,
+      submit: true,
+      approve: true,
+      cancel: true,
+      delete: true,
+      require_employee_code: false
+    },
+    filters: { all_locations: true },
+    masterdata: { manage: true, entrepreneurs_manage: true },
+    users: { manage: true, view_department: true },
+    roles: { manage: true },
+    admin: { full_access: true }
+  };
+
   if (user.role === "admin") {
-    return {
-      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true, translogica: true },
-      stock: { view: true, overall: true },
-      cases: {
-        create: true,
-        internal_transfer: true,
-        claim: true,
-        edit: true,
-        submit: true,
-        approve: true,
-        cancel: true,
-        delete: true,
-        require_employee_code: false
-      },
-      filters: { all_locations: true },
-      masterdata: { manage: true, entrepreneurs_manage: true },
-      users: { manage: true, view_department: true },
-      roles: { manage: true }
-    };
+    return fullAccessPerms;
   }
 
-  if (!user.role_id) {
-    return {
-      bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
-      stock: { view: true, overall: true },
-      cases: {
-        create: true,
-        internal_transfer: false,
-        claim: false,
-        edit: false,
-        submit: false,
-        approve: false,
-        cancel: false,
-        delete: false,
-        require_employee_code: false
-      },
-      filters: { all_locations: false },
-      masterdata: { manage: false, entrepreneurs_manage: false },
-      users: { manage: false, view_department: false },
-      roles: { manage: false }
-    };
-  }
-
-  const r = await q(`SELECT permissions FROM roles WHERE id=$1`, [user.role_id]);
-  const raw = (r.rowCount ? r.rows[0].permissions : {}) || {};
-
-  // Fehlende Schalter mit Defaults auffüllen, damit bestehende Rollen nicht "plötzlich" Features verlieren.
   const defaults = {
     bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
     stock: { view: true, overall: true },
@@ -372,8 +349,16 @@ async function getMyPermissions(user) {
     filters: { all_locations: false },
     masterdata: { manage: false, entrepreneurs_manage: false },
     users: { manage: false, view_department: false },
-    roles: { manage: false }
+    roles: { manage: false },
+    admin: { full_access: false }
   };
+
+  if (!user.role_id) {
+    return defaults;
+  }
+
+  const r = await q(`SELECT permissions FROM roles WHERE id=$1`, [user.role_id]);
+  const raw = (r.rowCount ? r.rows[0].permissions : {}) || {};
 
   function merge(b, o) {
     const out = { ...b };
@@ -385,6 +370,7 @@ async function getMyPermissions(user) {
   }
 
   const p = merge(defaults, raw);
+  if (p?.admin?.full_access) return fullAccessPerms;
   return p;
 }
 

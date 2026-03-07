@@ -167,7 +167,7 @@ async function loadMe() {
   if (!r.ok) { localStorage.removeItem("token"); window.location.href = "/login.html"; return; }
   ME = await r.json();
   $("me").textContent = `${ME.username} • ${ME.role}`;
-  $("adminBtn").style.display = (ME.role === "admin") ? "" : "none";
+  $("adminBtn").style.display = "none";
   socket.emit("joinUser", ME.id);
 }
 
@@ -223,6 +223,9 @@ function applyPermsToUI() {
 
   if ($("entrepreneursMasterBtn")) {
     $("entrepreneursMasterBtn").style.display = PERMS?.masterdata?.entrepreneurs_manage ? "" : "none";
+  }
+  if ($("adminBtn")) {
+    $("adminBtn").style.display = PERMS?.admin?.full_access ? "" : "none";
   }
 
   if ($("internalTransferCard")) {

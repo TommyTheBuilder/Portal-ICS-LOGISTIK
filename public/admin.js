@@ -448,7 +448,8 @@ function getPermCheckboxes() {
       manage: $("p_users_manage")?.checked || false,
       view_department: $("p_users_view_department")?.checked || false
     },
-    roles: { manage: $("p_roles_manage")?.checked || false }
+    roles: { manage: $("p_roles_manage")?.checked || false },
+    admin: { full_access: $("p_admin_full_access")?.checked || false }
   };
 }
 
@@ -493,6 +494,9 @@ function setPermCheckboxes(perms) {
     $("p_users_view_department").checked = !!p?.users?.view_department;
   }
   $("p_roles_manage").checked = !!p?.roles?.manage;
+  if ($("p_admin_full_access")) {
+    $("p_admin_full_access").checked = !!p?.admin?.full_access;
+  }
 }
 
 function applyRoleToCheckboxes(roleId) {
@@ -526,8 +530,9 @@ $("createRoleBtn")?.addEventListener("click", async () => {
       },
       filters: { all_locations: false },
       masterdata: { manage:false, entrepreneurs_manage:false },
-      users: { manage:false },
-      roles: { manage:false }
+      users: { manage:false, view_department:false },
+      roles: { manage:false },
+      admin: { full_access:false }
     }})
   });
   const data = await rr.json().catch(() => ({}));
@@ -737,13 +742,15 @@ $("saveUserBtn")?.addEventListener("click", async () => {
     await loadMe();
     await loadPerms();
 
-    if (!IS_ADMIN && !PERMS?.users?.view_department) {
+    const hasFullAdminAccess = !!PERMS?.admin?.full_access || IS_ADMIN;
+
+    if (!hasFullAdminAccess && !PERMS?.users?.view_department) {
       window.location.href = "/app.html";
       return;
     }
 
     const tabBtn = (name) => document.querySelector(`.tabs button[data-tab="${name}"]`);
-    if (!IS_ADMIN) {
+    if (!hasFullAdminAccess) {
       if (tabBtn("roles")) tabBtn("roles").style.display = "none";
       if (tabBtn("master")) tabBtn("master").style.display = "none";
       if (tabBtn("users")) {
@@ -752,7 +759,7 @@ $("saveUserBtn")?.addEventListener("click", async () => {
       }
     }
 
-    if (IS_ADMIN) {
+    if (hasFullAdminAccess) {
       await loadRoles();
       await loadLocations();
       await loadDepartments();

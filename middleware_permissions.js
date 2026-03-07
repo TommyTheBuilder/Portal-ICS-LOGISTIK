@@ -9,7 +9,8 @@ const DEFAULTS = {
   filters: { all_locations: false },
   masterdata: { manage: false, entrepreneurs_manage: false },
   users: { manage: false, view_department: false },
-  roles: { manage: false }
+  roles: { manage: false },
+  admin: { full_access: false }
 };
 
 function isObject(x) {
@@ -26,6 +27,7 @@ function deepMerge(base, override) {
 }
 
 function hasPerm(perms, permPath) {
+  if (perms?.admin?.full_access) return true;
   const parts = String(permPath || "").split(".");
   let cur = perms;
   for (const p of parts) {
@@ -44,8 +46,9 @@ async function loadPermissionsForUser(user) {
       cases: { create: true, internal_transfer: true, claim: true, edit: true, submit: true, approve: true, cancel: true, delete: true, require_employee_code: false },
       filters: { all_locations: true },
       masterdata: { manage: true, entrepreneurs_manage: true },
-      users: { manage: true },
-      roles: { manage: true }
+      users: { manage: true, view_department: true },
+      roles: { manage: true },
+      admin: { full_access: true }
     };
   }
 
