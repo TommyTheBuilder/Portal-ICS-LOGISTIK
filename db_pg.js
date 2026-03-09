@@ -1,8 +1,8 @@
 const { Pool } = require("pg");
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.NEW_DATABASE_URL || process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set");
+  throw new Error("NEW_DATABASE_URL or DATABASE_URL is not set");
 }
 
 // Falls du irgendwann die EXTERNAL URL nutzt und SSL braucht:
