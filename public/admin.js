@@ -1,3 +1,4 @@
+const tt = (window.I18N && window.I18N.tt) ? window.I18N.tt : (v) => v;
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/login.html";
 
@@ -16,7 +17,7 @@ function setMsg(id, text, ok = false) {
   const el = $(id);
   if (!el) return;
   el.style.color = ok ? "#0a7a2f" : "#b00020";
-  el.textContent = text || "";
+  el.textContent = tt(text || "");
 }
 
 function showPasswordModal(show) {

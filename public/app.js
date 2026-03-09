@@ -1,3 +1,4 @@
+const tt = (window.I18N && window.I18N.tt) ? window.I18N.tt : (v) => v;
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/login.html";
 
@@ -18,14 +19,15 @@ function setMsg(elId, text, ok = false) {
   const el = $(elId);
   if (!el) return;
   el.style.color = ok ? "#0a7a2f" : "#b00020";
-  el.textContent = text || "";
+  el.textContent = tt(text || "");
 }
 
 function formatDate(value) {
   if (!value) return "-";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+  const locale = (window.I18N && window.I18N.getLanguage && window.I18N.getLanguage() === "en") ? "en-GB" : "de-DE";
+  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
 }
 
 function showApproveConfirmModal(show) {
@@ -42,7 +44,7 @@ function askApproveConfirmation() {
     const closeBtn = $("closeApproveConfirmBtn");
     const back = $("approveConfirmBack");
     if (!approveBtn || !cancelBtn || !closeBtn || !back) {
-      resolve(confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich)."));
+      resolve(confirm(tt("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich).")));
       return;
     }
 
@@ -87,7 +89,7 @@ function showWrapError(wrapId, msg) {
   if (!wrap) return;
   wrap.innerHTML = `
     <div style="padding:10px 12px;border:1px solid #fca5a5;background:#fee2e2;border-radius:10px;">
-      <b>Fehler:</b> ${String(msg || "Unbekannter Fehler")}
+      <b>${tt("Fehler")}:</b> ${tt(String(msg || "Unbekannter Fehler"))}
     </div>
   `;
 }
@@ -1110,7 +1112,7 @@ function setEntrepreneurModalMsg(text, ok = false) {
   const el = $("entrepreneurModalMsg");
   if (!el) return;
   el.style.color = ok ? "#0a7a2f" : "#b00020";
-  el.textContent = text || "";
+  el.textContent = tt(text || "");
 }
 
 function clearEntrepreneurModal() {
@@ -1557,3 +1559,7 @@ socket.on("bookingsUpdated", async (payload) => {
   await loadEntrepreneurHistoryPlates();
   await loadEntrepreneurHistory();
 })();
+
+window.addEventListener("i18n:changed", () => {
+  try { renderStock(); renderCasesDashboard(); renderCasesTable(); renderHistory(); renderEntrepreneurHistory(); } catch {}
+});

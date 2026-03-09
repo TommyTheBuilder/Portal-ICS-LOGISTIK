@@ -1,3 +1,4 @@
+const tt = (window.I18N && window.I18N.tt) ? window.I18N.tt : (v) => v;
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/login.html";
 
@@ -18,7 +19,7 @@ function setMsg(text, ok = false) {
   const el = $("msg");
   if (!el) return;
   el.style.color = ok ? "#0a7a2f" : "#b00020";
-  el.textContent = text || "";
+  el.textContent = tt(text || "");
 }
 
 let editId = null;

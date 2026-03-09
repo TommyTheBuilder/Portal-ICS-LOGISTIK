@@ -1,3 +1,4 @@
+const tt = (window.I18N && window.I18N.tt) ? window.I18N.tt : (v) => v;
 const err = document.getElementById("err");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
