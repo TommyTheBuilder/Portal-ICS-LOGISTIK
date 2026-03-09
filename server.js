@@ -444,6 +444,36 @@ app.get("/api/me", authRequired, async (req, res) => {
   res.json(user);
 });
 
+app.post("/api/change-password", authRequired, async (req, res) => {
+  const currentPassword = String(req.body?.current_password || "").trim();
+  const newPassword = String(req.body?.new_password || "").trim();
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "current_password und new_password erforderlich" });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "Neues Passwort muss mindestens 8 Zeichen lang sein" });
+  }
+
+  const userResult = await q(
+    `SELECT id, password_hash FROM users WHERE id=$1 LIMIT 1`,
+    [req.user.id]
+  );
+  const user = userResult.rows[0];
+  if (!user) return res.status(404).json({ error: "Benutzer nicht gefunden" });
+
+  const ok = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!ok) return res.status(400).json({ error: "Aktuelles Passwort ist nicht korrekt" });
+
+  if (currentPassword === newPassword) {
+    return res.status(400).json({ error: "Neues Passwort muss sich vom alten Passwort unterscheiden" });
+  }
+
+  const hash = await bcrypt.hash(newPassword, 10);
+  await q(`UPDATE users SET password_hash=$1 WHERE id=$2`, [hash, req.user.id]);
+  res.json({ ok: true });
+});
+
 app.get("/api/theme", async (req, res) => {
   const ipAddress = String(req.ip || req.headers["x-forwarded-for"] || "unknown");
   const pref = await q(

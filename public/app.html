@@ -18,8 +18,16 @@
       <div class="notification-panel" id="notificationPanel"></div>
     </div>
     <button class="secondary" id="entrepreneursMasterBtn" style="display:none;">Frachtführerstammdaten</button>
-    <button class="secondary" id="adminBtn" style="display:none;">Admin</button>
-    <button class="secondary" id="logoutBtn">Logout</button>
+    <div class="settings-menu-wrap" id="settingsMenuWrap">
+      <button class="secondary settings-trigger" id="settingsTriggerBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Einstellungen öffnen">⚙️</button>
+      <div class="settings-menu" id="settingsMenu" role="menu" aria-label="Einstellungen">
+        <button class="secondary" id="adminBtn" style="display:none;" role="menuitem">Admin</button>
+        <button class="secondary" id="openChangePasswordBtn" role="menuitem">Passwort ändern</button>
+        <button class="secondary" id="menuDarkmodeBtn" role="menuitem">Darkmode umschalten</button>
+        <button class="secondary" id="logoutBtn" role="menuitem">Logout</button>
+      </div>
+    </div>
+    <div id="themeToggleMount" style="display:none;"></div>
   </div>
 </header>
 
@@ -438,6 +446,35 @@
     <div class="row" style="justify-content:flex-end; margin-top:16px;">
       <button class="secondary" id="approveConfirmCancelBtn">Abbrechen</button>
       <button class="primary" id="approveConfirmBtn">Ja, verbindlich buchen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modalBack" id="passwordModalBack" aria-hidden="true">
+  <div class="modal password-modal" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+    <div class="password-modal-head">
+      <h3 id="passwordModalTitle">Passwort ändern</h3>
+      <button class="secondary" id="closePasswordModalBtn" type="button">Schließen</button>
+    </div>
+    <p class="muted" style="margin-top:0;">Verwenden Sie ein sicheres Passwort mit mindestens 8 Zeichen.</p>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>Aktuelles Passwort</label>
+        <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Aktuelles Passwort">
+      </div>
+      <div>
+        <label>Neues Passwort</label>
+        <input id="newPassword" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen">
+      </div>
+      <div>
+        <label>Neues Passwort wiederholen</label>
+        <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Passwort bestätigen">
+      </div>
+    </div>
+    <p id="passwordModalMsg"></p>
+    <div class="row" style="justify-content:flex-end; margin-top:8px;">
+      <button class="secondary" id="cancelPasswordBtn" type="button">Abbrechen</button>
+      <button class="primary" id="savePasswordBtn" type="button">Passwort speichern</button>
     </div>
   </div>
 </div>

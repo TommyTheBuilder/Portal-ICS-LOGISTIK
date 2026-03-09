@@ -19,6 +19,124 @@ function setMsg(id, text, ok = false) {
   el.textContent = text || "";
 }
 
+function showPasswordModal(show) {
+  const back = $("passwordModalBack");
+  if (!back) return;
+  back.style.display = show ? "flex" : "none";
+  back.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function closeSettingsMenu() {
+  const menu = $("settingsMenu");
+  const trigger = $("settingsTriggerBtn");
+  if (!menu || !trigger) return;
+  menu.classList.remove("open");
+  trigger.setAttribute("aria-expanded", "false");
+}
+
+function openSettingsMenu() {
+  const menu = $("settingsMenu");
+  const trigger = $("settingsTriggerBtn");
+  if (!menu || !trigger) return;
+  menu.classList.add("open");
+  trigger.setAttribute("aria-expanded", "true");
+}
+
+function bindSettingsMenu() {
+  const trigger = $("settingsTriggerBtn");
+  const wrap = $("settingsMenuWrap");
+  const menu = $("settingsMenu");
+  const darkmodeBtn = $("menuDarkmodeBtn");
+  const openPasswordBtn = $("openChangePasswordBtn");
+  if (!trigger || !wrap || !menu) return;
+
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (menu.classList.contains("open")) closeSettingsMenu();
+    else openSettingsMenu();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!wrap.contains(event.target)) closeSettingsMenu();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeSettingsMenu();
+      showPasswordModal(false);
+    }
+  });
+
+  darkmodeBtn?.addEventListener("click", () => {
+    const themeToggleBtn = $("themeToggleBtn");
+    if (themeToggleBtn) themeToggleBtn.click();
+    closeSettingsMenu();
+  });
+
+  openPasswordBtn?.addEventListener("click", () => {
+    closeSettingsMenu();
+    setMsg("passwordModalMsg", "", true);
+    $("currentPassword").value = "";
+    $("newPassword").value = "";
+    $("confirmPassword").value = "";
+    showPasswordModal(true);
+  });
+}
+
+function bindPasswordModal() {
+  const back = $("passwordModalBack");
+  const closeBtn = $("closePasswordModalBtn");
+  const cancelBtn = $("cancelPasswordBtn");
+  const saveBtn = $("savePasswordBtn");
+  if (!back || !closeBtn || !cancelBtn || !saveBtn) return;
+
+  const close = () => showPasswordModal(false);
+  closeBtn.addEventListener("click", close);
+  cancelBtn.addEventListener("click", close);
+  back.addEventListener("click", (event) => {
+    if (event.target === back) close();
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const current_password = String($("currentPassword").value || "").trim();
+    const new_password = String($("newPassword").value || "").trim();
+    const confirm_password = String($("confirmPassword").value || "").trim();
+
+    if (!current_password || !new_password || !confirm_password) {
+      setMsg("passwordModalMsg", "Bitte alle Felder ausfüllen.");
+      return;
+    }
+    if (new_password.length < 8) {
+      setMsg("passwordModalMsg", "Das neue Passwort muss mindestens 8 Zeichen lang sein.");
+      return;
+    }
+    if (new_password !== confirm_password) {
+      setMsg("passwordModalMsg", "Die neuen Passwörter stimmen nicht überein.");
+      return;
+    }
+
+    saveBtn.disabled = true;
+    setMsg("passwordModalMsg", "Passwort wird gespeichert ...", true);
+    try {
+      const r = await api("/api/change-password", {
+        method: "POST",
+        body: JSON.stringify({ current_password, new_password })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setMsg("passwordModalMsg", data?.error || "Passwort konnte nicht geändert werden.");
+        return;
+      }
+      setMsg("passwordModalMsg", "Passwort erfolgreich geändert.", true);
+      setTimeout(() => showPasswordModal(false), 700);
+    } catch {
+      setMsg("passwordModalMsg", "Netzwerkfehler. Bitte erneut versuchen.");
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+}
+
 let LOCATIONS = [];
 let DEPARTMENTS = [];
 let ENTREPRENEURS = [];
@@ -51,10 +169,14 @@ function bindTabs() {
 
 // ---------------- Auth UI ----------------
 $("logoutBtn")?.addEventListener("click", () => {
+  closeSettingsMenu();
   localStorage.removeItem("token");
   window.location.href = "/login.html";
 });
-$("backBtn")?.addEventListener("click", () => window.location.href = "/app.html");
+$("backBtn")?.addEventListener("click", () => {
+  closeSettingsMenu();
+  window.location.href = "/app.html";
+});
 
 // ---------------- Loaders ----------------
 async function loadMe() {
@@ -739,6 +861,8 @@ $("saveUserBtn")?.addEventListener("click", async () => {
 (async function init() {
   try {
     bindTabs();
+    bindSettingsMenu();
+    bindPasswordModal();
     await loadMe();
     await loadPerms();
 
