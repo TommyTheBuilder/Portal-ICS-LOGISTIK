@@ -1,5 +1,6 @@
 :root { font-family: Arial, sans-serif; }
-body { margin: 0; background: #f6f7f9; color: #111; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: #f6f7f9; color: #111; overflow-x: hidden; }
 .system-logo-wrap { display:flex; justify-content:center; padding: 12px 16px 0; position: relative; }
 .system-logo-home {
   position: absolute;
@@ -11,7 +12,7 @@ body { margin: 0; background: #f6f7f9; color: #111; }
 .system-logo { width: min(240px, 70vw); height: auto; display:block; }
 header { background: #0b2a4a; color: #fff; padding: 12px 16px; display:flex; justify-content:space-between; align-items:center; }
 header .right { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+main { padding: 16px; max-width: 1100px; margin: 0 auto; width: 100%; }
 .card { background:#fff; border-radius: 10px; padding: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 12px; }
 .row { display:flex; gap:12px; flex-wrap:wrap; }
 .row > * { flex: 1; min-width: 220px; }
@@ -723,5 +724,221 @@ body.darkmode .permBox input[type="checkbox"]:checked {
 
   .topbar-modern .topbar-actions button {
     width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  main,
+  .dashboard-main {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .card,
+  .admin-card,
+  .rollcard,
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .topbar-modern {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .topbar-modern .system-logo-wrap {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .topbar-modern .system-logo {
+    max-height: 44px;
+    max-width: min(170px, 48vw);
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .topbar-actions > * {
+    min-width: 0;
+  }
+
+  .topbar-modern .settings-menu {
+    right: 0;
+    left: auto;
+    width: min(320px, 92vw);
+  }
+
+  .dashboard-title-row {
+    flex-wrap: wrap;
+    font-size: clamp(28px, 7.8vw, 34px);
+    margin: 10px 0 12px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .filter-row,
+  .row {
+    gap: 10px;
+  }
+
+  .row > * {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .filter-field {
+    min-width: 0;
+  }
+
+  .dashboard-nav,
+  .admin-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 10px 0 16px;
+  }
+
+  .dashboard-nav::before {
+    display: none;
+  }
+
+  .nav-button {
+    width: 100%;
+    min-height: 50px;
+    height: auto;
+    padding: 10px;
+    text-align: center;
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  .nav-icon {
+    font-size: 20px;
+  }
+
+  .rights-controls,
+  .modern-perm-grid,
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .rollcard-grid,
+  .history-filters .rollcard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+
+  button.primary,
+  button.secondary,
+  .inline-field button {
+    min-height: 44px;
+  }
+
+  .inline-field {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .inline-field .grow,
+  .inline-field button {
+    flex: 1 1 100%;
+  }
+
+  [style*="min-width:260px"],
+  [style*="min-width: 260px"],
+  [style*="min-width:140px"],
+  [style*="min-width: 140px"],
+  [style*="min-width:170px"],
+  [style*="min-width: 170px"] {
+    min-width: 0 !important;
+  }
+
+  [style*="grid-template-columns: repeat(2, minmax(190px, 1fr))"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  #stockTableWrap,
+  #casesDashWrap,
+  #historyWrap,
+  #casesWrap,
+  #exportPreview,
+  #locBody,
+  #depBody,
+  #entBody {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .card > div[style*="overflow:auto"],
+  .card > div[style*="overflow: auto"] {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-main {
+    padding: 10px;
+  }
+
+  .topbar-modern {
+    padding: 8px 10px;
+  }
+
+  .topbar-modern .system-logo {
+    max-height: 38px;
+    max-width: 140px;
+  }
+
+  .dashboard-title-row {
+    font-size: clamp(24px, 8vw, 30px);
+  }
+
+  .dashboard-nav,
+  .admin-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .card,
+  .admin-card,
+  .rollcard {
+    padding: 10px;
+  }
+
+  th,
+  td {
+    font-size: 13px;
+    padding: 7px 6px;
+  }
+
+  .settings-menu {
+    width: min(300px, calc(100vw - 20px));
+    right: 0;
+  }
+
+  .password-modal,
+  .confirm-modal {
+    padding: 12px;
   }
 }
