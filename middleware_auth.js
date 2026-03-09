@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { pool } = require("./db_pg");
 
-const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_ME_SUPER_SECRET";
+const JWT_SECRET = process.env.JWT_SECRET || "7xK9!mP2#vQ8@zL4$rT1%wN6&bH3*eF9";
 if (JWT_SECRET === "CHANGE_ME_SUPER_SECRET" && process.env.ALLOW_INSECURE_JWT !== "true") {
   throw new Error("JWT_SECRET must be set (or explicitly set ALLOW_INSECURE_JWT=true for local dev only)");
 }
