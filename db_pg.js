@@ -1,6 +1,6 @@
 const { Pool } = require("pg");
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.postgresql://palettenuser:DEIN_STARKES_PASSWORT@localhost:5432/palettenmanagement;
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is not set");
 }
