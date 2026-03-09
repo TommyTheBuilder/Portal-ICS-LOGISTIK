@@ -382,12 +382,15 @@ app.post("/api/login", async (req, res) => {
   }
 
   const { username, password } = req.body || {};
-  if (!username || !password) return res.status(400).json({ error: "username/password required" });
+  const normalizedUsername = String(username || "").trim();
+  if (!normalizedUsername || !password) return res.status(400).json({ error: "username/password required" });
 
   const r = await q(
     `SELECT id, username, password_hash, role, location_id, role_id, is_active
-     FROM users WHERE username=$1`,
-    [username]
+     FROM users
+     WHERE LOWER(username)=LOWER($1)
+     LIMIT 1`,
+    [normalizedUsername]
   );
 
   const user = r.rows[0];

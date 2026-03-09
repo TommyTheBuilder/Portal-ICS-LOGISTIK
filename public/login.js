@@ -1,9 +1,12 @@
 const err = document.getElementById("err");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
 
-document.getElementById("loginBtn").addEventListener("click", async () => {
+async function submitLogin() {
   err.textContent = "";
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value;
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
 
   try {
     const r = await fetch("/api/login", {
@@ -20,4 +23,15 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   } catch (e) {
     err.textContent = e.message;
   }
+}
+
+loginBtn.addEventListener("click", submitLogin);
+
+[usernameInput, passwordInput].forEach((input) => {
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitLogin();
+    }
+  });
 });
