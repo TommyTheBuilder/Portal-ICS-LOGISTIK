@@ -13,15 +13,27 @@ const { authRequired, adminRequired, JWT_SECRET } = require("./middleware_auth")
 const { requirePermission } = require("./middleware_permissions");
 
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
+const ALWAYS_ALLOWED_ORIGINS = [
+  "https://571188521.swh.strato-hosting.eu",
+  "http://571188521.swh.strato-hosting.eu"
+];
 const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
 const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 15 * 60 * 1000);
 const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
 
+function getAllowedOrigins() {
+  if (CORS_ORIGIN === "*") return "*";
+  return Array.from(new Set([
+    ...CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean),
+    ...ALWAYS_ALLOWED_ORIGINS
+  ]));
+}
+
 function corsOriginResolver(origin, callback) {
-  if (CORS_ORIGIN === "*") return callback(null, true);
-  const allowed = CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean);
-  if (!origin || allowed.includes(origin)) return callback(null, true);
+  const allowedOrigins = getAllowedOrigins();
+  if (allowedOrigins === "*") return callback(null, true);
+  if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
   return callback(new Error("Not allowed by CORS"));
 }
 
@@ -34,9 +46,10 @@ app.use(express.json({ limit: MAX_BODY_SIZE }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const httpServer = require("http").createServer(app);
+const allowedOrigins = getAllowedOrigins();
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean)
+    origin: allowedOrigins === "*" ? true : allowedOrigins
   }
 });
 
