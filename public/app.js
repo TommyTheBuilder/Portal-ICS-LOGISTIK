@@ -1457,17 +1457,15 @@ $("departmentSelect").addEventListener("change", async () => {
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
-$("caseSearch").addEventListener("keydown", () => {
-  CASE_SEARCH_MANUAL_INPUT = true;
-});
-$("caseSearch").addEventListener("paste", () => {
-  CASE_SEARCH_MANUAL_INPUT = true;
-});
 $("caseSearch").addEventListener("input", () => {
-  CASE_SEARCH_USER_TOUCHED = true;
   CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
-  clearTimeout(window.__caseSearchT);
-  window.__caseSearchT = setTimeout(loadCases, 250);
+  CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
+});
+$("caseSearch").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
+  CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
+  loadCases();
 });
 $("reloadHistoryBtn").addEventListener("click", () => loadHistory({ resetPage: true }));
 if ($("histEntrepreneur")) {
