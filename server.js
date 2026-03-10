@@ -45,6 +45,9 @@ app.use(cors({ origin: corsOriginResolver }));
 app.use(express.json({ limit: MAX_BODY_SIZE }));
 app.get("/", (req, res) => res.redirect("/login.html"));
 app.get("/login", (req, res) => res.redirect("/login.html"));
+// Backward compatibility: some deployments still open pages via /public/*.html.
+// Mount static assets on both / and /public so relative links keep working.
+app.use("/public", express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname, "public")));
 
 const httpServer = require("http").createServer(app);
