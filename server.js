@@ -1118,7 +1118,7 @@ app.post("/api/cases", authRequired, async (req, res) => {
     const availableStock = await getLocationProductStock(q, locId, productTypeCheck.productType);
     if (outQty > availableStock) {
       return res.status(400).json({
-        error: `Nicht genügend ${getProductTypeLabel(productTypeCheck.productType)} in diesem Lager zur Verfügung`
+        error: "Nicht genügen von diesem Produkt auf Lager"
       });
     }
   }
@@ -1418,7 +1418,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         if ((availableStock + bookedInQty - bookedOutQty) < 0) {
           await client.query("ROLLBACK");
           return res.status(400).json({
-            error: `Nicht genügend ${getProductTypeLabel(c.product_type || "euro")} in diesem Lager zur Verfügung`
+            error: "Nicht genügen von diesem Produkt auf Lager"
           });
         }
       }
