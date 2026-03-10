@@ -634,6 +634,7 @@ let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
 let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
+let CASE_SEARCH_MANUAL_INPUT = false;
 
 function renderNotifications() {
   const panel = $("notificationPanel");
@@ -1458,7 +1459,25 @@ $("departmentSelect").addEventListener("change", async () => {
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
+$("caseSearch").addEventListener("keydown", () => {
+  CASE_SEARCH_MANUAL_INPUT = true;
+});
+$("caseSearch").addEventListener("paste", () => {
+  CASE_SEARCH_MANUAL_INPUT = true;
+});
 $("caseSearch").addEventListener("input", () => {
+  const searchEl = $("caseSearch");
+  const manualInputNow = CASE_SEARCH_MANUAL_INPUT && document.activeElement === searchEl;
+  CASE_SEARCH_MANUAL_INPUT = false;
+
+  if (!manualInputNow) {
+    // Desktop-Browser können Felder automatisch befüllen (Autofill) und input-events auslösen.
+    // Das darf nicht als explizite Benutzersuche gelten.
+    return;
+  }
+
+  CASE_SEARCH_USER_TOUCHED = true;
+  CASE_SEARCH_TERM = (searchEl.value || "").trim();
   CASE_SEARCH_USER_TOUCHED = true;
   CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
   clearTimeout(window.__caseSearchT);
@@ -1563,6 +1582,7 @@ socket.on("bookingsUpdated", async (payload) => {
   }
   CASE_SEARCH_USER_TOUCHED = false;
   CASE_SEARCH_TERM = "";
+  CASE_SEARCH_MANUAL_INPUT = false;
 
   await loadStock();
   await loadCases();
