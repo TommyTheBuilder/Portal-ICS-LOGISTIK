@@ -1457,6 +1457,12 @@ $("departmentSelect").addEventListener("change", async () => {
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
+$("caseSearch").addEventListener("keydown", () => {
+  CASE_SEARCH_MANUAL_INPUT = true;
+});
+$("caseSearch").addEventListener("paste", () => {
+  CASE_SEARCH_MANUAL_INPUT = true;
+});
 $("caseSearch").addEventListener("input", () => {
   CASE_SEARCH_USER_TOUCHED = true;
   CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
