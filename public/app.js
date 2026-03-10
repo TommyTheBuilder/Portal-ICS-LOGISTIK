@@ -524,10 +524,6 @@ function statusLabel(s) {
   })[Number(s)] || String(s);
 }
 
-function canSeeAllCases() {
-  return !!(PERMS?.cases?.claim || PERMS?.cases?.edit || PERMS?.cases?.submit || PERMS?.cases?.approve || PERMS?.cases?.cancel || PERMS?.cases?.delete);
-}
-
 // ---------- Stock ----------
 function updateStockHint() {
   const hint = $("stockHint");
@@ -636,6 +632,9 @@ let CASES = [];
 let ACTIVE_CASE_ID = null;
 let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
+let CASE_SEARCH_USER_TOUCHED = false;
+let CASE_SEARCH_TERM = "";
+let CASE_SEARCH_MANUAL_INPUT = false;
 
 function renderNotifications() {
   const panel = $("notificationPanel");
@@ -703,22 +702,29 @@ async function loadCases() {
 
   const f = $("caseStatusFilter").value;
   const translogicaTransferred = $("caseTranslogicaFilter").value;
-  const search = ($("caseSearch").value || "").trim();
-  const mine = canSeeAllCases() ? "0" : "1";
-
+  const search = CASE_SEARCH_USER_TOUCHED ? CASE_SEARCH_TERM : "";
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
     ...(translogicaTransferred !== "" ? { translogica_transferred: translogicaTransferred } : {}),
-    ...(search ? { search } : {}),
-    ...(mine === "1" ? { mine: "1" } : {})
+    ...(search ? { search } : {})
   });
 
-  const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
-  CASES = r.ok ? await r.json() : [];
+  try {
+    const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
+    if (!r.ok) {
+      const data = await readJsonSafe(r);
+      setMsg("caseModalMsg", data?.error || `Vorgänge konnten nicht geladen werden (HTTP ${r.status})`);
+      return;
+    }
 
-  renderCasesTable();
-  renderCasesDashboard();
+    const nextCases = await r.json().catch(() => []);
+    CASES = Array.isArray(nextCases) ? nextCases : [];
+    renderCasesTable();
+    renderCasesDashboard();
+  } catch {
+    setMsg("caseModalMsg", "Netzwerkfehler beim Laden der Vorgänge");
+  }
 }
 
 function renderCasesDashboard() {
@@ -1452,7 +1458,25 @@ $("departmentSelect").addEventListener("change", async () => {
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
+$("caseSearch").addEventListener("keydown", () => {
+  CASE_SEARCH_MANUAL_INPUT = true;
+});
+$("caseSearch").addEventListener("paste", () => {
+  CASE_SEARCH_MANUAL_INPUT = true;
+});
 $("caseSearch").addEventListener("input", () => {
+  const searchEl = $("caseSearch");
+  const manualInputNow = CASE_SEARCH_MANUAL_INPUT && document.activeElement === searchEl;
+  CASE_SEARCH_MANUAL_INPUT = false;
+
+  if (!manualInputNow) {
+    // Desktop-Browser können Felder automatisch befüllen (Autofill) und input-events auslösen.
+    // Das darf nicht als explizite Benutzersuche gelten.
+    return;
+  }
+
+  CASE_SEARCH_USER_TOUCHED = true;
+  CASE_SEARCH_TERM = (searchEl.value || "").trim();
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);
 });
@@ -1549,6 +1573,13 @@ socket.on("bookingsUpdated", async (payload) => {
     ensureOverallOption();
     updateStockHint();
   }
+
+  if ($("caseSearch")) {
+    $("caseSearch").value = "";
+  }
+  CASE_SEARCH_USER_TOUCHED = false;
+  CASE_SEARCH_TERM = "";
+  CASE_SEARCH_MANUAL_INPUT = false;
 
   await loadStock();
   await loadCases();
