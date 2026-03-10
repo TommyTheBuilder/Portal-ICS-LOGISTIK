@@ -21,6 +21,11 @@ const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
 const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 15 * 60 * 1000);
 const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
+const PRODUCT_TYPE_LABELS = {
+  euro: "Euro-Paletten",
+  h1: "H1-Paletten",
+  gitterbox: "Gitterboxen"
+};
 
 function getAllowedOrigins() {
   if (CORS_ORIGIN === "*") return "*";
@@ -96,6 +101,22 @@ function normalizeProductType(value) {
     return { ok: false, msg: "product_type invalid" };
   }
   return { ok: true, productType: normalized };
+}
+
+function getProductTypeLabel(productType) {
+  return PRODUCT_TYPE_LABELS[productType] || productType;
+}
+
+async function getLocationProductStock(db, locationId, productType) {
+  const stockRes = await db.query(
+    `
+    SELECT COALESCE(SUM(CASE WHEN type='IN' THEN quantity WHEN type='OUT' THEN -quantity ELSE 0 END), 0) AS stock
+    FROM bookings
+    WHERE location_id=$1 AND COALESCE(product_type, 'euro')=$2
+    `,
+    [locationId, productType]
+  );
+  return Number(stockRes.rows[0]?.stock || 0);
 }
 
 // ---------- Helpers ----------
@@ -1093,6 +1114,15 @@ app.post("/api/cases", authRequired, async (req, res) => {
   const productTypeCheck = normalizeProductType(product_type);
   if (!productTypeCheck.ok) return res.status(400).json({ error: productTypeCheck.msg });
 
+  if (outQty > 0) {
+    const availableStock = await getLocationProductStock(q, locId, productTypeCheck.productType);
+    if (outQty > availableStock) {
+      return res.status(400).json({
+        error: `Nicht genügend ${getProductTypeLabel(productTypeCheck.productType)} in diesem Lager zur Verfügung`
+      });
+    }
+  }
+
   const employeeCodeCheck = normalizeEmployeeCode(employee_code);
   if (employeeCodeCheck && employeeCodeCheck.ok === false) {
     return res.status(400).json({ error: employeeCodeCheck.msg });
@@ -1381,6 +1411,17 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
 
       const nonExchangeableQty = Number(c.non_exchangeable_qty || 0);
       const bookedInQty = Math.max(Number(c.qty_in || 0) - nonExchangeableQty, 0);
+      const bookedOutQty = Number(c.qty_out || 0);
+
+      if (bookedOutQty > 0) {
+        const availableStock = await getLocationProductStock(client, c.location_id, c.product_type || "euro");
+        if ((availableStock + bookedInQty - bookedOutQty) < 0) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({
+            error: `Nicht genügend ${getProductTypeLabel(c.product_type || "euro")} in diesem Lager zur Verfügung`
+          });
+        }
+      }
 
       if (bookedInQty > 0) {
         await client.query(
