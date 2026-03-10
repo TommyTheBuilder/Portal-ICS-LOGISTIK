@@ -43,6 +43,8 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(cors({ origin: corsOriginResolver }));
 app.use(express.json({ limit: MAX_BODY_SIZE }));
+app.get("/", (req, res) => res.redirect("/login.html"));
+app.get("/login", (req, res) => res.redirect("/login.html"));
 app.use(express.static(path.join(__dirname, "public")));
 
 const httpServer = require("http").createServer(app);
