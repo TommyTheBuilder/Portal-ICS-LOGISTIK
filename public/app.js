@@ -714,11 +714,21 @@ async function loadCases() {
     ...(mine === "1" ? { mine: "1" } : {})
   });
 
-  const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
-  CASES = r.ok ? await r.json() : [];
+  try {
+    const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
+    if (!r.ok) {
+      const data = await readJsonSafe(r);
+      setMsg("caseModalMsg", data?.error || `Vorgänge konnten nicht geladen werden (HTTP ${r.status})`);
+      return;
+    }
 
-  renderCasesTable();
-  renderCasesDashboard();
+    const nextCases = await r.json().catch(() => []);
+    CASES = Array.isArray(nextCases) ? nextCases : [];
+    renderCasesTable();
+    renderCasesDashboard();
+  } catch {
+    setMsg("caseModalMsg", "Netzwerkfehler beim Laden der Vorgänge");
+  }
 }
 
 function renderCasesDashboard() {
