@@ -634,7 +634,7 @@ let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
 let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
-let CASE_SEARCH_HAS_USER_INTENT = false;
+let CASE_SEARCH_LAST_USER_INTENT_AT = 0;
 
 function renderNotifications() {
   const panel = $("notificationPanel");
@@ -1457,21 +1457,23 @@ $("departmentSelect").addEventListener("change", async () => {
 
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
+const CASE_SEARCH_INTENT_WINDOW_MS = 1500;
 const markCaseSearchIntent = () => {
-  CASE_SEARCH_HAS_USER_INTENT = true;
+  CASE_SEARCH_LAST_USER_INTENT_AT = Date.now();
 };
 
+$("caseSearch").addEventListener("beforeinput", markCaseSearchIntent);
 $("caseSearch").addEventListener("keydown", markCaseSearchIntent);
 $("caseSearch").addEventListener("paste", markCaseSearchIntent);
 $("caseSearch").addEventListener("drop", markCaseSearchIntent);
 $("caseSearch").addEventListener("input", () => {
   const caseSearchEl = $("caseSearch");
-  const isFocused = document.activeElement === caseSearchEl;
-  if (!CASE_SEARCH_HAS_USER_INTENT && !isFocused) return;
+  const hasRecentUserIntent = Date.now() - CASE_SEARCH_LAST_USER_INTENT_AT <= CASE_SEARCH_INTENT_WINDOW_MS;
+  if (!hasRecentUserIntent) return;
 
   CASE_SEARCH_USER_TOUCHED = true;
   CASE_SEARCH_TERM = (caseSearchEl.value || "").trim();
-  CASE_SEARCH_HAS_USER_INTENT = false;
+  CASE_SEARCH_LAST_USER_INTENT_AT = 0;
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);
 });
