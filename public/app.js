@@ -634,6 +634,7 @@ let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
 let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
+let CASE_SEARCH_MANUAL_INPUT = false;
 
 function renderNotifications() {
   const panel = $("notificationPanel");
@@ -1464,8 +1465,11 @@ $("caseSearch").addEventListener("paste", () => {
   CASE_SEARCH_MANUAL_INPUT = true;
 });
 $("caseSearch").addEventListener("input", () => {
+  const caseSearchEl = $("caseSearch");
+  if (!CASE_SEARCH_MANUAL_INPUT && document.activeElement !== caseSearchEl) return;
   CASE_SEARCH_USER_TOUCHED = true;
-  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
+  CASE_SEARCH_TERM = (caseSearchEl.value || "").trim();
+  CASE_SEARCH_MANUAL_INPUT = false;
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);
 });
