@@ -19,6 +19,19 @@ function setMsg(id, text, ok = false) {
   el.textContent = text || "";
 }
 
+function formatDateTime(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(d);
+}
+
 function showPasswordModal(show) {
   const back = $("passwordModalBack");
   if (!back) return;
@@ -145,6 +158,10 @@ let USERS = [];
 let EDIT_ENTREPRENEUR_ID = null;
 let IS_ADMIN = false;
 let PERMS = {};
+let ADMIN_HISTORY = [];
+const ADMIN_HISTORY_PAGE_SIZE = 20;
+let ADMIN_HISTORY_PAGE = 0;
+let ADMIN_HISTORY_HAS_MORE = false;
 
 const USER_FILTERS = {
   username: "",
@@ -159,7 +176,7 @@ function bindTabs() {
       document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       const tab = btn.dataset.tab;
-      ["roles","master","users"].forEach(t => {
+      ["roles","master","users","history"].forEach(t => {
         const sec = document.getElementById("tab-" + t);
         if (sec) sec.style.display = (t === tab) ? "" : "none";
       });
@@ -233,6 +250,23 @@ async function loadLocations() {
     });
   }
 
+  const histLocSel = $("adminHistLocation");
+  if (histLocSel) {
+    histLocSel.innerHTML = `<option value="">Bitte wählen</option>`;
+    if (PERMS?.filters?.all_locations) {
+      const allOpt = document.createElement("option");
+      allOpt.value = "-1";
+      allOpt.textContent = "Alle Standorte";
+      histLocSel.appendChild(allOpt);
+    }
+    LOCATIONS.forEach(l => {
+      const o = document.createElement("option");
+      o.value = l.id;
+      o.textContent = l.name;
+      histLocSel.appendChild(o);
+    });
+  }
+
   populateUserFilters();
   renderUsersTable();
 
@@ -303,8 +337,144 @@ async function loadDepartments() {
     });
   }
 
+  const histDepSel = $("adminHistDepartment");
+  if (histDepSel) {
+    histDepSel.innerHTML = `<option value="">Bitte wählen</option>`;
+    DEPARTMENTS.forEach(d => {
+      const o = document.createElement("option");
+      o.value = d.id;
+      o.textContent = d.name;
+      histDepSel.appendChild(o);
+    });
+  }
+
   populateUserFilters();
   renderUsersTable();
+}
+
+async function loadAdminHistory({ resetPage = false } = {}) {
+  if (resetPage) ADMIN_HISTORY_PAGE = 0;
+
+  const location_id = Number($("adminHistLocation")?.value || 0);
+  const department_id = Number($("adminHistDepartment")?.value || 0);
+  if (!location_id || !department_id) {
+    const wrap = $("adminHistoryWrap");
+    if (wrap) wrap.innerHTML = `<div class="muted">Bitte Standort und Abteilung auswählen.</div>`;
+    return;
+  }
+
+  const qs = new URLSearchParams({
+    location_id: String(location_id),
+    department_id: String(department_id),
+    limit: String(ADMIN_HISTORY_PAGE_SIZE),
+    offset: String(ADMIN_HISTORY_PAGE * ADMIN_HISTORY_PAGE_SIZE),
+    ...(($("adminHistFrom")?.value || "") ? { date_from: $("adminHistFrom").value } : {}),
+    ...(($("adminHistTo")?.value || "") ? { date_to: $("adminHistTo").value } : {}),
+    ...((($("adminHistEntrepreneur")?.value || "").trim()) ? { entrepreneur: ($("adminHistEntrepreneur").value || "").trim() } : {}),
+    ...((($("adminHistPlate")?.value || "").trim()) ? { license_plate: ($("adminHistPlate").value || "").trim() } : {}),
+    ...((($("adminHistReceipt")?.value || "").trim()) ? { receipt_no: ($("adminHistReceipt").value || "").trim() } : {})
+  }).toString();
+
+  const r = await api(`/api/bookings?${qs}`, { method: "GET", headers: {} });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const wrap = $("adminHistoryWrap");
+    if (wrap) wrap.innerHTML = `<div class="muted">${data?.error || "Historie konnte nicht geladen werden."}</div>`;
+    return;
+  }
+
+  ADMIN_HISTORY = Array.isArray(data?.items) ? data.items : [];
+  ADMIN_HISTORY_HAS_MORE = !!data?.has_more;
+  renderAdminHistory();
+}
+
+function renderChangeDetails(changes) {
+  if (!Array.isArray(changes) || changes.length === 0) return "<span class='muted'>Keine Details</span>";
+  return `<ul style="margin:0; padding-left:18px;">${changes.map(c => {
+    const field = c?.field || "Feld";
+    const from = (c?.from ?? "-");
+    const to = (c?.to ?? "-");
+    return `<li><b>${field}</b>: ${from} → ${to}</li>`;
+  }).join("")}</ul>`;
+}
+
+async function openCaseHistory(caseId) {
+  const back = $("adminCaseHistoryModalBack");
+  const body = $("adminCaseHistoryBody");
+  if (!back || !body) return;
+  back.style.display = "flex";
+  back.setAttribute("aria-hidden", "false");
+  body.innerHTML = "<div class='muted'>Lade Änderungshistorie ...</div>";
+
+  const r = await api(`/api/cases/${encodeURIComponent(caseId)}/history`, { method: "GET", headers: {} });
+  const data = await r.json().catch(() => []);
+  if (!r.ok) {
+    body.innerHTML = `<div class='muted'>${data?.error || "Historie konnte nicht geladen werden."}</div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="rollcard-list">
+      ${(data || []).map(entry => `
+        <div class="rollcard" style="margin-bottom:8px;">
+          <div><b>${formatDateTime(entry.created_at)}</b> · ${entry.changed_by || "-"}</div>
+          <div style="margin-top:6px;"><b>Aktion:</b> ${entry.action || "-"}</div>
+          <div style="margin-top:6px;"><b>Änderung:</b> ${renderChangeDetails(entry.changes)}</div>
+        </div>
+      `).join("")}
+      ${(data || []).length === 0 ? `<div class="muted">Keine Änderungen gefunden.</div>` : ""}
+    </div>
+  `;
+}
+
+function closeCaseHistoryModal() {
+  const back = $("adminCaseHistoryModalBack");
+  if (!back) return;
+  back.style.display = "none";
+  back.setAttribute("aria-hidden", "true");
+}
+
+function renderAdminHistory() {
+  const wrap = $("adminHistoryWrap");
+  if (!wrap) return;
+
+  wrap.innerHTML = `
+    <div class="rollcard-list">
+      ${ADMIN_HISTORY.map(h => `
+        <div class="rollcard">
+          <div class="rollcard-grid">
+            <div class="rollcard-item"><label>Datum</label><div>${formatDateTime(h.created_at)}</div></div>
+            <div class="rollcard-item"><label>Beleg</label><div>${h.receipt_no || "-"}</div></div>
+            <div class="rollcard-item"><label>Kennzeichen</label><div>${h.license_plate || "-"}</div></div>
+            <div class="rollcard-item"><label>Frachtführer</label><div>${h.entrepreneur || "-"}</div></div>
+            <div class="rollcard-item"><label>IN</label><div>${h.qty_in ?? 0}</div></div>
+            <div class="rollcard-item"><label>OUT</label><div>${h.qty_out ?? 0}</div></div>
+            <div class="rollcard-item"><label>Historie</label><div>${h.case_id ? `<button class="secondary" data-admin-case-history="${h.case_id}">Änderungshistorie</button>` : "-"}</div></div>
+          </div>
+        </div>
+      `).join("")}
+      ${ADMIN_HISTORY.length === 0 ? `<div class="muted">Keine Buchungen gefunden.</div>` : ""}
+    </div>
+    <div class="row" style="margin-top:10px; align-items:center; gap:10px;">
+      <button class="secondary" id="adminHistoryPrevBtn" ${ADMIN_HISTORY_PAGE === 0 ? "disabled" : ""}>Zurück</button>
+      <button class="secondary" id="adminHistoryNextBtn" ${!ADMIN_HISTORY_HAS_MORE ? "disabled" : ""}>Weiter</button>
+      <span class="muted">Seite ${ADMIN_HISTORY_PAGE + 1} · max. ${ADMIN_HISTORY_PAGE_SIZE} Buchungen pro Seite</span>
+    </div>
+  `;
+
+  $("adminHistoryPrevBtn")?.addEventListener("click", async () => {
+    if (ADMIN_HISTORY_PAGE === 0) return;
+    ADMIN_HISTORY_PAGE -= 1;
+    await loadAdminHistory();
+  });
+  $("adminHistoryNextBtn")?.addEventListener("click", async () => {
+    if (!ADMIN_HISTORY_HAS_MORE) return;
+    ADMIN_HISTORY_PAGE += 1;
+    await loadAdminHistory();
+  });
+  document.querySelectorAll("[data-admin-case-history]").forEach(btn => {
+    btn.addEventListener("click", () => openCaseHistory(btn.getAttribute("data-admin-case-history")));
+  });
 }
 
 async function loadEntrepreneurs() {
@@ -832,6 +1002,29 @@ $("printReceiptWarehouseBtn")?.addEventListener("click", () => {
   setMsg("printReceiptMsg", "Lager Palettenschein geöffnet", true);
 });
 
+$("adminReloadHistoryBtn")?.addEventListener("click", () => loadAdminHistory({ resetPage: true }));
+$("adminHistLocation")?.addEventListener("change", () => loadAdminHistory({ resetPage: true }));
+$("adminHistDepartment")?.addEventListener("change", () => loadAdminHistory({ resetPage: true }));
+$("adminHistFrom")?.addEventListener("change", () => loadAdminHistory({ resetPage: true }));
+$("adminHistTo")?.addEventListener("change", () => loadAdminHistory({ resetPage: true }));
+$("adminHistEntrepreneur")?.addEventListener("input", () => {
+  clearTimeout(window.__adminHistEntT);
+  window.__adminHistEntT = setTimeout(() => loadAdminHistory({ resetPage: true }), 250);
+});
+$("adminHistPlate")?.addEventListener("input", () => {
+  clearTimeout(window.__adminHistPlateT);
+  window.__adminHistPlateT = setTimeout(() => loadAdminHistory({ resetPage: true }), 250);
+});
+$("adminHistReceipt")?.addEventListener("input", () => {
+  clearTimeout(window.__adminHistRecT);
+  window.__adminHistRecT = setTimeout(() => loadAdminHistory({ resetPage: true }), 250);
+});
+
+$("closeAdminCaseHistoryBtn")?.addEventListener("click", closeCaseHistoryModal);
+$("adminCaseHistoryModalBack")?.addEventListener("click", (event) => {
+  if (event.target === $("adminCaseHistoryModalBack")) closeCaseHistoryModal();
+});
+
 $("saveUserBtn")?.addEventListener("click", async () => {
   setMsg("userEditMsg", "");
   const id = $("editUserSelect").value;
@@ -881,6 +1074,7 @@ $("saveUserBtn")?.addEventListener("click", async () => {
         tabBtn("users").classList.add("active");
         tabBtn("users").click();
       }
+      if (tabBtn("history")) tabBtn("history").style.display = "none";
     }
 
     if (hasFullAdminAccess) {
@@ -889,6 +1083,7 @@ $("saveUserBtn")?.addEventListener("click", async () => {
       await loadDepartments();
       await loadEntrepreneurs();
       await loadUsers();
+      await loadAdminHistory({ resetPage: true });
     } else {
       await loadLocations();
       await loadDepartments();
