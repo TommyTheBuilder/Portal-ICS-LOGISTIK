@@ -524,10 +524,6 @@ function statusLabel(s) {
   })[Number(s)] || String(s);
 }
 
-function canSeeAllCases() {
-  return !!(PERMS?.cases?.claim || PERMS?.cases?.edit || PERMS?.cases?.submit || PERMS?.cases?.approve || PERMS?.cases?.cancel || PERMS?.cases?.delete);
-}
-
 // ---------- Stock ----------
 function updateStockHint() {
   const hint = $("stockHint");
@@ -704,14 +700,11 @@ async function loadCases() {
   const f = $("caseStatusFilter").value;
   const translogicaTransferred = $("caseTranslogicaFilter").value;
   const search = ($("caseSearch").value || "").trim();
-  const mine = canSeeAllCases() ? "0" : "1";
-
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
     ...(translogicaTransferred !== "" ? { translogica_transferred: translogicaTransferred } : {}),
-    ...(search ? { search } : {}),
-    ...(mine === "1" ? { mine: "1" } : {})
+    ...(search ? { search } : {})
   });
 
   try {
