@@ -1455,7 +1455,6 @@ $("departmentSelect").addEventListener("change", async () => {
   await loadHistory({ resetPage: true });
 });
 
-$("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
 const CASE_SEARCH_INTENT_WINDOW_MS = 1500;
