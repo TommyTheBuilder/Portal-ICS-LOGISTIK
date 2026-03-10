@@ -634,6 +634,7 @@ let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
 let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
+let CASE_SEARCH_LAST_USER_INTENT_AT = 0;
 
 function renderNotifications() {
   const panel = $("notificationPanel");
@@ -1454,7 +1455,6 @@ $("departmentSelect").addEventListener("change", async () => {
   await loadHistory({ resetPage: true });
 });
 
-$("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
 $("caseSearch").addEventListener("input", () => {
