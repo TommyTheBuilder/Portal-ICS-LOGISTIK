@@ -524,10 +524,6 @@ function statusLabel(s) {
   })[Number(s)] || String(s);
 }
 
-function canSeeAllCases() {
-  return !!(PERMS?.cases?.claim || PERMS?.cases?.edit || PERMS?.cases?.submit || PERMS?.cases?.approve || PERMS?.cases?.cancel || PERMS?.cases?.delete);
-}
-
 // ---------- Stock ----------
 function updateStockHint() {
   const hint = $("stockHint");
@@ -704,21 +700,28 @@ async function loadCases() {
   const f = $("caseStatusFilter").value;
   const translogicaTransferred = $("caseTranslogicaFilter").value;
   const search = ($("caseSearch").value || "").trim();
-  const mine = canSeeAllCases() ? "0" : "1";
-
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
     ...(translogicaTransferred !== "" ? { translogica_transferred: translogicaTransferred } : {}),
-    ...(search ? { search } : {}),
-    ...(mine === "1" ? { mine: "1" } : {})
+    ...(search ? { search } : {})
   });
 
-  const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
-  CASES = r.ok ? await r.json() : [];
+  try {
+    const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
+    if (!r.ok) {
+      const data = await readJsonSafe(r);
+      setMsg("caseModalMsg", data?.error || `Vorgänge konnten nicht geladen werden (HTTP ${r.status})`);
+      return;
+    }
 
-  renderCasesTable();
-  renderCasesDashboard();
+    const nextCases = await r.json().catch(() => []);
+    CASES = Array.isArray(nextCases) ? nextCases : [];
+    renderCasesTable();
+    renderCasesDashboard();
+  } catch {
+    setMsg("caseModalMsg", "Netzwerkfehler beim Laden der Vorgänge");
+  }
 }
 
 function renderCasesDashboard() {
