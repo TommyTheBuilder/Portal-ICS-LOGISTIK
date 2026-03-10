@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { Parser } = require("json2csv");
 const ExcelJS = require("exceljs");
-const path = require("path");
+const path = require('path');
 const { randomUUID } = require("crypto");
 
 const { pool } = require("./db_pg");
@@ -48,7 +48,7 @@ app.get("/login", (req, res) => res.redirect("/login.html"));
 // Backward compatibility: some deployments still open pages via /public/*.html.
 // Mount static assets on both / and /public so relative links keep working.
 app.use("/public", express.static(path.join(__dirname, "public")));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const httpServer = require("http").createServer(app);
 const allowedOrigins = getAllowedOrigins();
