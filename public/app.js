@@ -635,6 +635,15 @@ let NOTIFICATIONS = [];
 let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
 
+function clearCaseSearchFilter() {
+  const caseSearchEl = $("caseSearch");
+  if (caseSearchEl) {
+    caseSearchEl.value = "";
+  }
+  CASE_SEARCH_USER_TOUCHED = false;
+  CASE_SEARCH_TERM = "";
+}
+
 function renderNotifications() {
   const panel = $("notificationPanel");
   const badge = $("notificationBadge");
@@ -1457,17 +1466,18 @@ $("departmentSelect").addEventListener("change", async () => {
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
-$("caseSearch").addEventListener("keydown", () => {
-  CASE_SEARCH_MANUAL_INPUT = true;
-});
-$("caseSearch").addEventListener("paste", () => {
-  CASE_SEARCH_MANUAL_INPUT = true;
-});
 $("caseSearch").addEventListener("input", () => {
-  CASE_SEARCH_USER_TOUCHED = true;
   CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
-  clearTimeout(window.__caseSearchT);
-  window.__caseSearchT = setTimeout(loadCases, 250);
+  CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
+});
+$("caseSearch").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
+  CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
+  loadCases();
+});
+window.addEventListener("pageshow", () => {
+  clearCaseSearchFilter();
 });
 $("reloadHistoryBtn").addEventListener("click", () => loadHistory({ resetPage: true }));
 if ($("histEntrepreneur")) {
@@ -1563,11 +1573,7 @@ socket.on("bookingsUpdated", async (payload) => {
     updateStockHint();
   }
 
-  if ($("caseSearch")) {
-    $("caseSearch").value = "";
-  }
-  CASE_SEARCH_USER_TOUCHED = false;
-  CASE_SEARCH_TERM = "";
+  clearCaseSearchFilter();
 
   await loadStock();
   await loadCases();
