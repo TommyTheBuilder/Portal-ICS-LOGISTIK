@@ -34,6 +34,7 @@
       <button data-tab="roles" class="active nav-button"><span class="nav-icon">🔐</span>Rollen & Rechte</button>
       <button data-tab="master" class="nav-button"><span class="nav-icon">🏷️</span>Stammdaten</button>
       <button data-tab="users" class="nav-button"><span class="nav-icon">👥</span>Benutzer</button>
+      <button data-tab="history" class="nav-button"><span class="nav-icon">📅</span>Historie</button>
     </div>
   </section>
 
@@ -324,7 +325,57 @@
       </div>
     </div>
   </section>
+
+  <section id="tab-history" style="display:none;">
+    <div class="card admin-card">
+      <h3 style="margin-top:0;">Buchungshistorie</h3>
+      <div class="row">
+        <div>
+          <label>Standort</label>
+          <select id="adminHistLocation"></select>
+        </div>
+        <div>
+          <label>Abteilung</label>
+          <select id="adminHistDepartment"></select>
+        </div>
+        <div>
+          <label>Von</label>
+          <input id="adminHistFrom" type="date">
+        </div>
+        <div>
+          <label>Bis</label>
+          <input id="adminHistTo" type="date">
+        </div>
+        <div>
+          <label>Frachtführer</label>
+          <input id="adminHistEntrepreneur" placeholder="Name">
+        </div>
+        <div>
+          <label>Kennzeichen</label>
+          <input id="adminHistPlate" placeholder="z.B. W123AB">
+        </div>
+        <div>
+          <label>Belegnummer</label>
+          <input id="adminHistReceipt" placeholder="z.B. ICS...">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="secondary" id="adminReloadHistoryBtn">Neu laden</button>
+      </div>
+      <div id="adminHistoryWrap" style="overflow:auto; margin-top:10px;"></div>
+    </div>
+  </section>
 </main>
+
+<div id="adminCaseHistoryModalBack" class="modal-backdrop" style="display:none;" aria-hidden="true">
+  <div class="modal" style="max-width:900px; width:min(900px,95vw);">
+    <div class="modal-head">
+      <h3 style="margin:0;">Änderungshistorie</h3>
+      <button type="button" class="icon-button" id="closeAdminCaseHistoryBtn" aria-label="Schließen">✕</button>
+    </div>
+    <div id="adminCaseHistoryBody" style="max-height:65vh; overflow:auto; margin-top:10px;"></div>
+  </div>
+</div>
 
 <script src="/public/theme.js"></script>
 <div class="modalBack" id="passwordModalBack" aria-hidden="true">

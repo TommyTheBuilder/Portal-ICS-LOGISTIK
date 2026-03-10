@@ -177,6 +177,24 @@ function safeTrim(v) {
   return t ? t : null;
 }
 
+async function logCaseHistory({ caseId, locationId, departmentId, receiptNo = null, changedBy, action, changes = [] }) {
+  await q(
+    `
+    INSERT INTO booking_case_history (case_id, location_id, department_id, receipt_no, changed_by, action, changes)
+    VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)
+    `,
+    [
+      Number(caseId),
+      Number(locationId),
+      Number(departmentId),
+      receiptNo || null,
+      Number(changedBy),
+      String(action || "change"),
+      JSON.stringify(Array.isArray(changes) ? changes : [])
+    ]
+  );
+}
+
 function normalizeEmail(emailRaw) {
   const email = safeTrim(emailRaw);
   if (!email) return null;
@@ -1116,6 +1134,24 @@ app.post("/api/cases", authRequired, async (req, res) => {
   }
 
   const caseId = Number(r.rows[0].id);
+  await logCaseHistory({
+    caseId,
+    locationId: locId,
+    departmentId: depId,
+    changedBy: req.user.id,
+    action: "create",
+    changes: [
+      { field: "status", from: null, to: 1 },
+      { field: "license_plate", from: null, to: plateCheck.plate || null },
+      { field: "entrepreneur", from: null, to: safeTrim(entrepreneur) },
+      { field: "note", from: null, to: safeTrim(note) },
+      { field: "qty_in", from: null, to: inQty },
+      { field: "qty_out", from: null, to: outQty },
+      { field: "product_type", from: null, to: productTypeCheck.productType },
+      { field: "employee_code", from: null, to: employeeCodeCheck?.code || null }
+    ]
+  });
+
   io.to(`loc:${locId}`).emit("casesUpdated", { location_id: locId });
   void createLocationStatus1Notifications({
     id: caseId,
@@ -1279,6 +1315,29 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       ]
     );
 
+    const editChanges = [];
+    if (department_id !== undefined && Number(department_id) !== Number(c.department_id)) editChanges.push({ field: "department_id", from: Number(c.department_id), to: Number(department_id) });
+    if (license_plate !== undefined && plate !== c.license_plate) editChanges.push({ field: "license_plate", from: c.license_plate || null, to: plate || null });
+    if (entrepreneur !== undefined && safeTrim(entrepreneur) !== (c.entrepreneur || null)) editChanges.push({ field: "entrepreneur", from: c.entrepreneur || null, to: safeTrim(entrepreneur) });
+    if (note !== undefined && safeTrim(note) !== (c.note || null)) editChanges.push({ field: "note", from: c.note || null, to: safeTrim(note) });
+    if (inQty !== null && Number(inQty) !== Number(c.qty_in)) editChanges.push({ field: "qty_in", from: Number(c.qty_in), to: Number(inQty) });
+    if (outQty !== null && Number(outQty) !== Number(c.qty_out)) editChanges.push({ field: "qty_out", from: Number(c.qty_out), to: Number(outQty) });
+    if (productTypeCheck?.productType && productTypeCheck.productType !== (c.product_type || "euro")) editChanges.push({ field: "product_type", from: c.product_type || "euro", to: productTypeCheck.productType });
+    if (nonExchangeableQty !== null && Number(nonExchangeableQty) !== Number(c.non_exchangeable_qty)) editChanges.push({ field: "non_exchangeable_qty", from: Number(c.non_exchangeable_qty || 0), to: Number(nonExchangeableQty) });
+    if (employeeCode !== undefined && (employeeCode || null) !== (c.employee_code || null)) editChanges.push({ field: "employee_code", from: c.employee_code || null, to: employeeCode || null });
+
+    if (editChanges.length > 0) {
+      await logCaseHistory({
+        caseId: id,
+        locationId: c.location_id,
+        departmentId: Number(department_id) || Number(c.department_id),
+        receiptNo: c.receipt_no || null,
+        changedBy: req.user.id,
+        action: "edit",
+        changes: editChanges
+      });
+    }
+
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
   }
@@ -1291,6 +1350,16 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       `UPDATE booking_cases SET status=2, claimed_by=$1, claimed_at=now(), updated_at=now() WHERE id=$2`,
       [req.user.id, id]
     );
+
+    await logCaseHistory({
+      caseId: id,
+      locationId: c.location_id,
+      departmentId: c.department_id,
+      receiptNo: c.receipt_no || null,
+      changedBy: req.user.id,
+      action: "claim",
+      changes: [{ field: "status", from: Number(c.status), to: 2 }]
+    });
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
@@ -1333,6 +1402,23 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       [req.user.id, nonExchangeableQty, employeeCode, id]
     );
 
+    const submitChanges = [{ field: "status", from: Number(c.status), to: 3 }];
+    if (nonExchangeableQty !== null && Number(nonExchangeableQty) !== Number(c.non_exchangeable_qty || 0)) {
+      submitChanges.push({ field: "non_exchangeable_qty", from: Number(c.non_exchangeable_qty || 0), to: Number(nonExchangeableQty) });
+    }
+    if ((employeeCode || null) !== (c.employee_code || null)) {
+      submitChanges.push({ field: "employee_code", from: c.employee_code || null, to: employeeCode || null });
+    }
+    await logCaseHistory({
+      caseId: id,
+      locationId: c.location_id,
+      departmentId: c.department_id,
+      receiptNo: c.receipt_no || null,
+      changedBy: req.user.id,
+      action: "submit",
+      changes: submitChanges
+    });
+
     await deleteNotificationsForCaseByTitle(id, "Aviso Standort (Status 1)");
     void createDepartmentStatus3Notifications({
       id,
@@ -1358,6 +1444,17 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
          SET status=4, approved_by=$1, approved_at=now(), receipt_no=$2, updated_at=now()
          WHERE id=$3`,
         [req.user.id, receipt_no, id]
+      );
+
+      await client.query(
+        `
+        INSERT INTO booking_case_history (case_id, location_id, department_id, receipt_no, changed_by, action, changes)
+        VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)
+        `,
+        [id, c.location_id, c.department_id, receipt_no, req.user.id, "approve", JSON.stringify([
+          { field: "status", from: Number(c.status), to: 4 },
+          { field: "receipt_no", from: c.receipt_no || null, to: receipt_no }
+        ])]
       );
 
       const groupId = randomUUID();
@@ -1422,6 +1519,16 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       [translogica_transferred, id]
     );
 
+    await logCaseHistory({
+      caseId: id,
+      locationId: c.location_id,
+      departmentId: c.department_id,
+      receiptNo: c.receipt_no || null,
+      changedBy: req.user.id,
+      action: "set_translogica",
+      changes: [{ field: "translogica_transferred", from: !!c.translogica_transferred, to: !!translogica_transferred }]
+    });
+
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
   }
@@ -1435,6 +1542,16 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       `UPDATE booking_cases SET status=0, updated_at=now() WHERE id=$1`,
       [id]
     );
+
+    await logCaseHistory({
+      caseId: id,
+      locationId: c.location_id,
+      departmentId: c.department_id,
+      receiptNo: c.receipt_no || null,
+      changedBy: req.user.id,
+      action: "cancel",
+      changes: [{ field: "status", from: Number(c.status), to: 0 }]
+    });
 
     await deleteNotificationsForCase(id);
 
@@ -1692,6 +1809,7 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
     `
     SELECT
       MIN(b.id) AS id,
+      MAX(bc.id) AS case_id,
       MIN(b.created_at) AS created_at,
       b.receipt_no,
       MAX(b.license_plate) AS license_plate,
@@ -1819,6 +1937,41 @@ app.get("/api/entrepreneur-history/plates", authRequired, requirePermission("boo
     ORDER BY eh.license_plate
     `,
     params
+  )).rows;
+
+  res.json(rows);
+});
+
+app.get("/api/cases/:id/history", authRequired, requirePermission("bookings.view"), async (req, res) => {
+  const id = Number(req.params.id || 0);
+  if (!id) return res.status(400).json({ error: "invalid id" });
+
+  const base = await q(`SELECT id, location_id FROM booking_cases WHERE id=$1`, [id]);
+  if (base.rowCount === 0) return res.status(404).json({ error: "Not found" });
+  const caseRow = base.rows[0];
+
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  if (req.user.role !== "admin" && req.user.location_id && Number(req.user.location_id) !== Number(caseRow.location_id) && !canUseAllLocations) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const rows = (await q(
+    `
+    SELECT
+      h.id,
+      h.case_id,
+      h.receipt_no,
+      h.action,
+      h.changes,
+      h.created_at,
+      COALESCE(u.username, '(gelöscht)') AS changed_by
+    FROM booking_case_history h
+    LEFT JOIN users u ON u.id=h.changed_by
+    WHERE h.case_id=$1
+    ORDER BY h.created_at DESC, h.id DESC
+    `,
+    [id]
   )).rows;
 
   res.json(rows);
@@ -2054,6 +2207,21 @@ async function ensureRuntimeTables() {
   await q(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC);`);
 
   await q(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS non_exchangeable_qty INTEGER NOT NULL DEFAULT 0;`);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS booking_case_history (
+      id SERIAL PRIMARY KEY,
+      case_id INTEGER NOT NULL REFERENCES booking_cases(id) ON DELETE CASCADE,
+      location_id INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+      department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+      receipt_no TEXT,
+      changed_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+      action TEXT NOT NULL,
+      changes JSONB NOT NULL DEFAULT '[]'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_booking_case_history_case_created ON booking_case_history(case_id, created_at DESC);`);
 }
 
 const PORT = process.env.PORT || 3000;
