@@ -645,6 +645,15 @@ let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
 let CASE_SEARCH_LAST_USER_INTENT_AT = 0;
 
+function clearCaseSearchFilter() {
+  const caseSearchEl = $("caseSearch");
+  if (caseSearchEl) {
+    caseSearchEl.value = "";
+  }
+  CASE_SEARCH_USER_TOUCHED = false;
+  CASE_SEARCH_TERM = "";
+}
+
 function renderNotifications() {
   const panel = $("notificationPanel");
   const badge = $("notificationBadge");
@@ -1482,6 +1491,9 @@ $("caseSearch").addEventListener("keydown", (event) => {
   CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
   loadCases();
 });
+window.addEventListener("pageshow", () => {
+  clearCaseSearchFilter();
+});
 $("reloadHistoryBtn").addEventListener("click", () => loadHistory({ resetPage: true }));
 if ($("histEntrepreneur")) {
   $("histEntrepreneur").addEventListener("input", () => {
@@ -1576,11 +1588,7 @@ socket.on("bookingsUpdated", async (payload) => {
     updateStockHint();
   }
 
-  if ($("caseSearch")) {
-    $("caseSearch").value = "";
-  }
-  CASE_SEARCH_USER_TOUCHED = false;
-  CASE_SEARCH_TERM = "";
+  clearCaseSearchFilter();
 
   await loadStock();
   await loadCases();
