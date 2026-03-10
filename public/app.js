@@ -258,6 +258,12 @@ const PRODUCT_TYPE_LABELS = {
 };
 
 const socket = io();
+
+function parseLocationValue(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
 function joinLocationRoom() {
   if (CURRENT_LOCATION > 0) socket.emit("joinLocation", CURRENT_LOCATION);
 }
@@ -404,28 +410,31 @@ async function loadLocations() {
   if (transferFromSel) transferFromSel.innerHTML = `<option value="">Kein Absender (nur Zugang)</option>`;
   if (transferToSel) transferToSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   LOCATIONS.forEach(l => {
+    const locationId = parseLocationValue(l.id);
+    if (locationId === null) return;
+
     const o = document.createElement("option");
-    o.value = l.id;
+    o.value = String(locationId);
     o.textContent = l.name;
     sel.appendChild(o);
 
     if (avisoSel) {
       const o2 = document.createElement("option");
-      o2.value = l.id;
+      o2.value = String(locationId);
       o2.textContent = l.name;
       avisoSel.appendChild(o2);
     }
 
     if (transferFromSel) {
       const o3 = document.createElement("option");
-      o3.value = l.id;
+      o3.value = String(locationId);
       o3.textContent = l.name;
       transferFromSel.appendChild(o3);
     }
 
     if (transferToSel) {
       const o4 = document.createElement("option");
-      o4.value = l.id;
+      o4.value = String(locationId);
       o4.textContent = l.name;
       transferToSel.appendChild(o4);
     }
@@ -440,7 +449,7 @@ async function loadLocations() {
   if (transferFromSel) transferFromSel.value = locked || "";
   if (transferToSel) transferToSel.value = locked || "";
 
-  CURRENT_LOCATION = Number(sel.value || 0);
+  CURRENT_LOCATION = parseLocationValue(sel.value) ?? 0;
   joinLocationRoom();
 }
 
@@ -1442,7 +1451,13 @@ $("xlsxBtn").addEventListener("click", async () => {
 
 // ---------- Events ----------
 $("locationSelect").addEventListener("change", async () => {
-  CURRENT_LOCATION = Number($("locationSelect").value || 0);
+  const nextLocation = parseLocationValue($("locationSelect").value);
+  if (nextLocation === null) {
+    showWrapError("casesTableWrap", "Ungültiger Standortfilter. Bitte erneut auswählen.");
+    return;
+  }
+
+  CURRENT_LOCATION = nextLocation;
   joinLocationRoom();
   await loadCases();
   await loadHistory({ resetPage: true });
