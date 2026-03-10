@@ -184,6 +184,15 @@ function normalizeEmail(emailRaw) {
   return { ok: true, email: normalized };
 }
 
+async function recordCaseHistory(caseId, changedBy, action, changeSummary) {
+  if (!caseId || !changedBy || !action) return;
+  await q(
+    `INSERT INTO booking_case_history (case_id, changed_by, action, change_summary)
+     VALUES ($1,$2,$3,$4)`,
+    [caseId, changedBy, action, safeTrim(changeSummary) || null]
+  );
+}
+
 async function createLocationStatus1Notifications(caseRow) {
   try {
     const locationInfo = await q(
@@ -1113,6 +1122,7 @@ app.post("/api/cases", authRequired, async (req, res) => {
   }
 
   const caseId = Number(r.rows[0].id);
+  await recordCaseHistory(caseId, req.user.id, "create", "Aviso erstellt");
   io.to(`loc:${locId}`).emit("casesUpdated", { location_id: locId });
   void createLocationStatus1Notifications({
     id: caseId,
@@ -1276,6 +1286,8 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       ]
     );
 
+    await recordCaseHistory(id, req.user.id, "edit", "Vorgangsdaten geändert");
+
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
   }
@@ -1288,6 +1300,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       `UPDATE booking_cases SET status=2, claimed_by=$1, claimed_at=now(), updated_at=now() WHERE id=$2`,
       [req.user.id, id]
     );
+    await recordCaseHistory(id, req.user.id, "claim", "Vorgang übernommen (Status 2)");
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
@@ -1329,6 +1342,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
        WHERE id=$4`,
       [req.user.id, nonExchangeableQty, employeeCode, id]
     );
+    await recordCaseHistory(id, req.user.id, "submit", "Zur Prüfung gesendet (Status 3)");
 
     await deleteNotificationsForCaseByTitle(id, "Aviso Standort (Status 1)");
     void createDepartmentStatus3Notifications({
@@ -1355,6 +1369,11 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
          SET status=4, approved_by=$1, approved_at=now(), receipt_no=$2, updated_at=now()
          WHERE id=$3`,
         [req.user.id, receipt_no, id]
+      );
+      await client.query(
+        `INSERT INTO booking_case_history (case_id, changed_by, action, change_summary)
+         VALUES ($1,$2,$3,$4)`,
+        [id, req.user.id, "approve", `Gebucht/abgeschlossen (Status 4, Beleg ${receipt_no})`]
       );
 
       const groupId = randomUUID();
@@ -1418,6 +1437,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       `UPDATE booking_cases SET translogica_transferred=$1, updated_at=now() WHERE id=$2`,
       [translogica_transferred, id]
     );
+    await recordCaseHistory(id, req.user.id, "set_translogica", `Translogica gesetzt: ${translogica_transferred ? "Ja" : "Nein"}`);
 
     io.to(`loc:${c.location_id}`).emit("casesUpdated", { location_id: c.location_id });
     return res.json({ ok: true });
@@ -1432,6 +1452,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       `UPDATE booking_cases SET status=0, updated_at=now() WHERE id=$1`,
       [id]
     );
+    await recordCaseHistory(id, req.user.id, "cancel", "Vorgang storniert (Status 0)");
 
     await deleteNotificationsForCase(id);
 
@@ -1456,6 +1477,7 @@ app.delete("/api/cases/:id", authRequired, async (req, res) => {
 
   const perms = await getMyPermissions(req.user);
   if (!perms?.cases?.delete) return res.status(403).json({ error: "Keine Berechtigung" });
+  await recordCaseHistory(id, req.user.id, "delete", "Vorgang gelöscht");
   await q(`DELETE FROM booking_cases WHERE id=$1`, [id]);
   await deleteNotificationsForCase(id);
 
@@ -1527,6 +1549,45 @@ app.get("/api/cases/:id/receipt", authRequired, requirePermission("bookings.rece
     product_type: row.product_type || "euro",
     lines
   });
+});
+
+app.get("/api/cases/:id/history", authRequired, requirePermission("bookings.view"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: "invalid id" });
+
+  const caseRes = await q(`SELECT id, location_id FROM booking_cases WHERE id=$1`, [id]);
+  if (caseRes.rowCount === 0) return res.status(404).json({ error: "Not found" });
+  const caseRow = caseRes.rows[0];
+
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  if (
+    req.user.role !== "admin"
+    && req.user.location_id
+    && Number(req.user.location_id) !== Number(caseRow.location_id)
+    && !canUseAllLocations
+  ) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const historyRows = (await q(
+    `
+    SELECT
+      h.id,
+      h.case_id,
+      h.changed_at,
+      h.action,
+      h.change_summary,
+      COALESCE(u.username, '(gelöscht)') AS changed_by
+    FROM booking_case_history h
+    LEFT JOIN users u ON u.id=h.changed_by
+    WHERE h.case_id=$1
+    ORDER BY h.changed_at DESC, h.id DESC
+    `,
+    [id]
+  )).rows;
+
+  res.json(historyRows);
 });
 
 // ---------- STOCK ----------
@@ -1689,6 +1750,7 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
     `
     SELECT
       MIN(b.id) AS id,
+      MAX(bc.id) AS case_id,
       MIN(b.created_at) AS created_at,
       b.receipt_no,
       MAX(b.license_plate) AS license_plate,
@@ -2051,6 +2113,18 @@ async function ensureRuntimeTables() {
   await q(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC);`);
 
   await q(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS non_exchangeable_qty INTEGER NOT NULL DEFAULT 0;`);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS booking_case_history (
+      id SERIAL PRIMARY KEY,
+      case_id INTEGER NOT NULL REFERENCES booking_cases(id) ON DELETE CASCADE,
+      changed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      action TEXT NOT NULL,
+      change_summary TEXT,
+      changed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_booking_case_history_case_changed ON booking_case_history(case_id, changed_at DESC);`);
 }
 
 const PORT = process.env.PORT || 3000;

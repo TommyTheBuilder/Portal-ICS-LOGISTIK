@@ -33,6 +33,7 @@
       <button data-tab="roles" class="active nav-button"><span class="nav-icon">🔐</span>Rollen & Rechte</button>
       <button data-tab="master" class="nav-button"><span class="nav-icon">🏷️</span>Stammdaten</button>
       <button data-tab="users" class="nav-button"><span class="nav-icon">👥</span>Benutzer</button>
+      <button data-tab="history" class="nav-button"><span class="nav-icon">📅</span>Historie</button>
     </div>
   </section>
 
@@ -323,7 +324,60 @@
       </div>
     </div>
   </section>
+
+  <section id="tab-history" style="display:none;">
+    <div class="card admin-card">
+      <h3 style="margin-top:0;">Historie</h3>
+      <div class="rollcard history-filters" style="margin-bottom:10px;">
+        <div class="rollcard-grid">
+          <div class="rollcard-item">
+            <label>Von</label>
+            <input id="adminHistFrom" type="date">
+          </div>
+          <div class="rollcard-item">
+            <label>Bis</label>
+            <input id="adminHistTo" type="date">
+          </div>
+          <div class="rollcard-item">
+            <label>Frachtführer</label>
+            <input id="adminHistEntrepreneur" placeholder="optional">
+          </div>
+          <div class="rollcard-item">
+            <label>Kennzeichen</label>
+            <input id="adminHistPlate" placeholder="optional">
+          </div>
+          <div class="rollcard-item">
+            <label>Beleg</label>
+            <input id="adminHistReceipt" placeholder="optional">
+          </div>
+          <div class="rollcard-item">
+            <label>Standort</label>
+            <select id="adminHistLocation"></select>
+          </div>
+          <div class="rollcard-item">
+            <label>Abteilung</label>
+            <select id="adminHistDepartment"></select>
+          </div>
+          <div class="rollcard-item">
+            <label>&nbsp;</label>
+            <button class="secondary" id="reloadAdminHistoryBtn">Neu laden</button>
+          </div>
+        </div>
+      </div>
+      <div id="adminHistoryWrap" style="overflow:auto; margin-top:10px;"></div>
+    </div>
+  </section>
 </main>
+
+<div class="modalBack" id="changeHistoryModalBack" aria-hidden="true">
+  <div class="modal" style="max-width:960px; width:100%;">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <h3 id="changeHistoryModalTitle" style="margin:0;">Änderungshistorie</h3>
+      <button class="secondary" id="closeChangeHistoryModalBtn" type="button">Schließen</button>
+    </div>
+    <div id="changeHistoryWrap" style="overflow:auto; margin-top:10px;"></div>
+  </div>
+</div>
 
 <script src="theme.js"></script>
 <div class="modalBack" id="passwordModalBack" aria-hidden="true">
