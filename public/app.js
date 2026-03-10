@@ -632,6 +632,8 @@ let CASES = [];
 let ACTIVE_CASE_ID = null;
 let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
+let CASE_SEARCH_USER_TOUCHED = false;
+let CASE_SEARCH_TERM = "";
 
 function renderNotifications() {
   const panel = $("notificationPanel");
@@ -699,6 +701,7 @@ async function loadCases() {
 
   const f = $("caseStatusFilter").value;
   const translogicaTransferred = $("caseTranslogicaFilter").value;
+  const search = CASE_SEARCH_USER_TOUCHED ? CASE_SEARCH_TERM : "";
   const search = ($("caseSearch").value || "").trim();
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
@@ -1456,6 +1459,8 @@ $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
 $("caseSearch").addEventListener("input", () => {
+  CASE_SEARCH_USER_TOUCHED = true;
+  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);
 });
@@ -1552,6 +1557,12 @@ socket.on("bookingsUpdated", async (payload) => {
     ensureOverallOption();
     updateStockHint();
   }
+
+  if ($("caseSearch")) {
+    $("caseSearch").value = "";
+  }
+  CASE_SEARCH_USER_TOUCHED = false;
+  CASE_SEARCH_TERM = "";
 
   await loadStock();
   await loadCases();
