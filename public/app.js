@@ -703,6 +703,7 @@ async function loadCases() {
   const f = $("caseStatusFilter").value;
   const translogicaTransferred = $("caseTranslogicaFilter").value;
   const search = CASE_SEARCH_USER_TOUCHED ? CASE_SEARCH_TERM : "";
+  const search = ($("caseSearch").value || "").trim();
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
@@ -1477,6 +1478,8 @@ $("caseSearch").addEventListener("input", () => {
 
   CASE_SEARCH_USER_TOUCHED = true;
   CASE_SEARCH_TERM = (searchEl.value || "").trim();
+  CASE_SEARCH_USER_TOUCHED = true;
+  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
   clearTimeout(window.__caseSearchT);
   window.__caseSearchT = setTimeout(loadCases, 250);
 });
