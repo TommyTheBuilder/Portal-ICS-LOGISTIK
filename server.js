@@ -1008,12 +1008,33 @@ app.get("/api/cases", authRequired, async (req, res) => {
     const like = `%${search}%`;
     const isNum = /^\d+$/.test(search);
     if (isNum) {
-      where.push(`(c.id=$${idx} OR c.license_plate ILIKE $${idx + 1} OR COALESCE(c.entrepreneur,'') ILIKE $${idx + 1} OR COALESCE(c.note,'') ILIKE $${idx + 1})`);
+      where.push(`(
+        c.id=$${idx}
+        OR c.license_plate ILIKE $${idx + 1}
+        OR COALESCE(c.entrepreneur,'') ILIKE $${idx + 1}
+        OR COALESCE(c.note,'') ILIKE $${idx + 1}
+        OR EXISTS (SELECT 1 FROM users u1 WHERE u1.id=c.created_by AND u1.username ILIKE $${idx + 1})
+        OR EXISTS (SELECT 1 FROM users u2 WHERE u2.id=c.claimed_by AND u2.username ILIKE $${idx + 1})
+        OR EXISTS (SELECT 1 FROM users u3 WHERE u3.id=c.submitted_by AND u3.username ILIKE $${idx + 1})
+        OR EXISTS (SELECT 1 FROM users u4 WHERE u4.id=c.approved_by AND u4.username ILIKE $${idx + 1})
+        OR EXISTS (SELECT 1 FROM departments d1 WHERE d1.id=c.department_id AND d1.name ILIKE $${idx + 1})
+        OR EXISTS (SELECT 1 FROM locations l1 WHERE l1.id=c.location_id AND l1.name ILIKE $${idx + 1})
+      )`);
       params.push(Number(search));
       params.push(like);
       idx += 2;
     } else {
-      where.push(`(c.license_plate ILIKE $${idx} OR COALESCE(c.entrepreneur,'') ILIKE $${idx} OR COALESCE(c.note,'') ILIKE $${idx})`);
+      where.push(`(
+        c.license_plate ILIKE $${idx}
+        OR COALESCE(c.entrepreneur,'') ILIKE $${idx}
+        OR COALESCE(c.note,'') ILIKE $${idx}
+        OR EXISTS (SELECT 1 FROM users u1 WHERE u1.id=c.created_by AND u1.username ILIKE $${idx})
+        OR EXISTS (SELECT 1 FROM users u2 WHERE u2.id=c.claimed_by AND u2.username ILIKE $${idx})
+        OR EXISTS (SELECT 1 FROM users u3 WHERE u3.id=c.submitted_by AND u3.username ILIKE $${idx})
+        OR EXISTS (SELECT 1 FROM users u4 WHERE u4.id=c.approved_by AND u4.username ILIKE $${idx})
+        OR EXISTS (SELECT 1 FROM departments d1 WHERE d1.id=c.department_id AND d1.name ILIKE $${idx})
+        OR EXISTS (SELECT 1 FROM locations l1 WHERE l1.id=c.location_id AND l1.name ILIKE $${idx})
+      )`);
       params.push(like);
       idx += 1;
     }
