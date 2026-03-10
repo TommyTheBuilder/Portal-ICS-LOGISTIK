@@ -976,7 +976,6 @@ app.get("/api/cases", authRequired, async (req, res) => {
   const status = req.query.status ? Number(req.query.status) : null;
   const translogicaRaw = req.query.translogica_transferred;
   const translogicaFilter = translogicaRaw === "1" ? true : translogicaRaw === "0" ? false : null;
-  const mine = String(req.query.mine || "") === "1";
   const search = (req.query.search || "").trim();
 
   if (!location_id) return res.status(400).json({ error: "location_id required" });
@@ -1002,18 +1001,30 @@ app.get("/api/cases", authRequired, async (req, res) => {
 
   if (status) { where.push(`c.status=$${idx}`); params.push(status); idx++; }
   if (translogicaFilter !== null) { where.push(`c.translogica_transferred=$${idx}`); params.push(translogicaFilter); idx++; }
-  if (mine) { where.push(`c.created_by=$${idx}`); params.push(req.user.id); idx++; }
 
   if (search) {
     const like = `%${search}%`;
     const isNum = /^\d+$/.test(search);
     if (isNum) {
-      where.push(`(c.id=$${idx} OR c.license_plate ILIKE $${idx + 1} OR COALESCE(c.entrepreneur,'') ILIKE $${idx + 1} OR COALESCE(c.note,'') ILIKE $${idx + 1})`);
+      where.push(`(
+        c.id=$${idx}
+        OR c.license_plate ILIKE $${idx + 1}
+        OR COALESCE(c.entrepreneur,'') ILIKE $${idx + 1}
+        OR COALESCE(c.note,'') ILIKE $${idx + 1}
+        OR EXISTS (SELECT 1 FROM departments d1 WHERE d1.id=c.department_id AND d1.name ILIKE $${idx + 1})
+        OR EXISTS (SELECT 1 FROM locations l1 WHERE l1.id=c.location_id AND l1.name ILIKE $${idx + 1})
+      )`);
       params.push(Number(search));
       params.push(like);
       idx += 2;
     } else {
-      where.push(`(c.license_plate ILIKE $${idx} OR COALESCE(c.entrepreneur,'') ILIKE $${idx} OR COALESCE(c.note,'') ILIKE $${idx})`);
+      where.push(`(
+        c.license_plate ILIKE $${idx}
+        OR COALESCE(c.entrepreneur,'') ILIKE $${idx}
+        OR COALESCE(c.note,'') ILIKE $${idx}
+        OR EXISTS (SELECT 1 FROM departments d1 WHERE d1.id=c.department_id AND d1.name ILIKE $${idx})
+        OR EXISTS (SELECT 1 FROM locations l1 WHERE l1.id=c.location_id AND l1.name ILIKE $${idx})
+      )`);
       params.push(like);
       idx += 1;
     }
@@ -1254,6 +1265,10 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
     if (nonExchangeableQty !== null && (!Number.isInteger(nonExchangeableQty) || nonExchangeableQty < 0)) {
       return res.status(400).json({ error: "non_exchangeable_qty invalid" });
     }
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "department_id")) {
+      const depId = Number(department_id || 0);
+      if (!depId) return res.status(400).json({ error: "department_id invalid" });
+    }
 
     const nextInQty = inQty !== null ? inQty : Number(c.qty_in || 0);
     const nextOutQty = outQty !== null ? outQty : Number(c.qty_out || 0);
@@ -1282,31 +1297,46 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
       }
     }
 
+    const hasDepartmentId = Object.prototype.hasOwnProperty.call(req.body || {}, "department_id");
+    const hasLicensePlate = Object.prototype.hasOwnProperty.call(req.body || {}, "license_plate");
+    const hasEntrepreneur = Object.prototype.hasOwnProperty.call(req.body || {}, "entrepreneur");
+    const hasNote = Object.prototype.hasOwnProperty.call(req.body || {}, "note");
+    const hasQtyIn = Object.prototype.hasOwnProperty.call(req.body || {}, "qty_in");
+    const hasQtyOut = Object.prototype.hasOwnProperty.call(req.body || {}, "qty_out");
+    const hasProductType = Object.prototype.hasOwnProperty.call(req.body || {}, "product_type");
+
     await q(
       `
       UPDATE booking_cases
-      SET department_id = COALESCE($1, department_id),
-          license_plate = COALESCE($2, license_plate),
-          entrepreneur = COALESCE($3, entrepreneur),
-          note = COALESCE($4, note),
-          qty_in = COALESCE($5, qty_in),
-          qty_out = COALESCE($6, qty_out),
-          product_type = COALESCE($7, product_type),
-          non_exchangeable_qty = CASE WHEN status = 2 THEN COALESCE($8, non_exchangeable_qty) ELSE non_exchangeable_qty END,
+      SET department_id = CASE WHEN $1::boolean THEN $2 ELSE department_id END,
+          license_plate = CASE WHEN $3::boolean THEN $4 ELSE license_plate END,
+          entrepreneur = CASE WHEN $5::boolean THEN $6 ELSE entrepreneur END,
+          note = CASE WHEN $7::boolean THEN $8 ELSE note END,
+          qty_in = CASE WHEN $9::boolean THEN $10 ELSE qty_in END,
+          qty_out = CASE WHEN $11::boolean THEN $12 ELSE qty_out END,
+          product_type = CASE WHEN $13::boolean THEN $14 ELSE product_type END,
+          non_exchangeable_qty = CASE WHEN status = 2 THEN COALESCE($15, non_exchangeable_qty) ELSE non_exchangeable_qty END,
           employee_code = CASE
-            WHEN status = 2 AND $9::boolean THEN $10
+            WHEN status = 2 AND $16::boolean THEN $17
             ELSE employee_code
           END,
           updated_at = now()
-      WHERE id=$11
+      WHERE id=$18
       `,
       [
+        hasDepartmentId,
         department_id ? Number(department_id) : null,
+        hasLicensePlate,
         plate,
+        hasEntrepreneur,
         safeTrim(entrepreneur),
+        hasNote,
         safeTrim(note),
+        hasQtyIn,
         inQty,
+        hasQtyOut,
         outQty,
+        hasProductType,
         productTypeCheck?.productType || null,
         nonExchangeableQty,
         employeeCode !== undefined,
