@@ -258,12 +258,6 @@ const PRODUCT_TYPE_LABELS = {
 };
 
 const socket = io();
-
-function parseLocationValue(value) {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) ? parsed : null;
-}
-
 function joinLocationRoom() {
   if (CURRENT_LOCATION > 0) socket.emit("joinLocation", CURRENT_LOCATION);
 }
@@ -315,14 +309,12 @@ function ensureOverallOption() {
 
   let optOverall = stockSel.querySelector('option[value="overall"]');
   if (!optOverall && PERMS?.stock?.overall) {
-    // ✅ Falls die Option im HTML fehlt: dynamisch hinzufügen
     optOverall = document.createElement("option");
     optOverall.value = "overall";
     optOverall.textContent = "Komplett-Bestand (alle Standorte)";
     stockSel.appendChild(optOverall);
   }
 
-  // Sichtbarkeit/Reset
   if (optOverall) optOverall.style.display = PERMS?.stock?.overall ? "" : "none";
 
   if (!PERMS?.stock?.overall && stockSel.value === "overall") {
@@ -410,31 +402,28 @@ async function loadLocations() {
   if (transferFromSel) transferFromSel.innerHTML = `<option value="">Kein Absender (nur Zugang)</option>`;
   if (transferToSel) transferToSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   LOCATIONS.forEach(l => {
-    const locationId = parseLocationValue(l.id);
-    if (locationId === null) return;
-
     const o = document.createElement("option");
-    o.value = String(locationId);
+    o.value = l.id;
     o.textContent = l.name;
     sel.appendChild(o);
 
     if (avisoSel) {
       const o2 = document.createElement("option");
-      o2.value = String(locationId);
+      o2.value = l.id;
       o2.textContent = l.name;
       avisoSel.appendChild(o2);
     }
 
     if (transferFromSel) {
       const o3 = document.createElement("option");
-      o3.value = String(locationId);
+      o3.value = l.id;
       o3.textContent = l.name;
       transferFromSel.appendChild(o3);
     }
 
     if (transferToSel) {
       const o4 = document.createElement("option");
-      o4.value = String(locationId);
+      o4.value = l.id;
       o4.textContent = l.name;
       transferToSel.appendChild(o4);
     }
@@ -449,7 +438,7 @@ async function loadLocations() {
   if (transferFromSel) transferFromSel.value = locked || "";
   if (transferToSel) transferToSel.value = locked || "";
 
-  CURRENT_LOCATION = parseLocationValue(sel.value) ?? 0;
+  CURRENT_LOCATION = Number(sel.value || 0);
   joinLocationRoom();
 }
 
@@ -576,7 +565,7 @@ async function loadStock() {
     ? `<tr><th>Frachtführer</th><th>Soll</th></tr>`
     : isLocationTotal
       ? `<tr><th>Standort</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`
-    : `<tr><th>Abteilung</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`;
+      : `<tr><th>Abteilung</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`;
   const body = (rows || []).map(x => {
     if (isEntrepreneur) {
       return `
@@ -643,7 +632,6 @@ let ACTIVE_CASE_STATUS = null;
 let NOTIFICATIONS = [];
 let CASE_SEARCH_USER_TOUCHED = false;
 let CASE_SEARCH_TERM = "";
-let CASE_SEARCH_LAST_USER_INTENT_AT = 0;
 
 function clearCaseSearchFilter() {
   const caseSearchEl = $("caseSearch");
@@ -652,6 +640,11 @@ function clearCaseSearchFilter() {
   }
   CASE_SEARCH_USER_TOUCHED = false;
   CASE_SEARCH_TERM = "";
+}
+
+function syncCaseSearchFromInput() {
+  const caseSearchEl = $("caseSearch");
+  CASE_SEARCH_TERM = (caseSearchEl?.value || "").trim();
 }
 
 function renderNotifications() {
@@ -715,12 +708,12 @@ function bindNotificationPanel() {
 }
 
 async function loadCases() {
-
   if (!CURRENT_LOCATION) return;
 
   const f = $("caseStatusFilter").value;
   const translogicaTransferred = $("caseTranslogicaFilter").value;
-  const search = CASE_SEARCH_USER_TOUCHED ? CASE_SEARCH_TERM : "";
+  const search = CASE_SEARCH_USER_TOUCHED ? CASE_SEARCH_TERM.trim() : "";
+
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
@@ -1196,7 +1189,6 @@ async function loadHistory({ resetPage = false } = {}) {
   if (!CURRENT_LOCATION) return;
   if (resetPage) HISTORY_PAGE = 0;
 
-  // ✅ falls CURRENT_DEPARTMENT nicht gesetzt ist: aus Select holen
   if (!CURRENT_DEPARTMENT) {
     CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || 0);
   }
@@ -1423,8 +1415,6 @@ async function downloadWithAuth(url, fallbackFilename) {
     }
 
     const blob = await r.blob();
-
-    // Dateiname aus Content-Disposition holen (server.js setzt das bereits)
     const cd = r.headers.get("Content-Disposition") || "";
     let filename = fallbackFilename;
     const m = cd.match(/filename="([^"]+)"/i);
@@ -1457,16 +1447,10 @@ $("xlsxBtn").addEventListener("click", async () => {
   await downloadWithAuth(url, "buchungen.xlsx");
 });
 
-
 // ---------- Events ----------
 $("locationSelect").addEventListener("change", async () => {
-  const nextLocation = parseLocationValue($("locationSelect").value);
-  if (nextLocation === null) {
-    showWrapError("casesTableWrap", "Ungültiger Standortfilter. Bitte erneut auswählen.");
-    return;
-  }
-
-  CURRENT_LOCATION = nextLocation;
+  CURRENT_LOCATION = Number($("locationSelect").value || 0);
+  clearCaseSearchFilter();
   joinLocationRoom();
   await loadCases();
   await loadHistory({ resetPage: true });
@@ -1479,22 +1463,30 @@ $("departmentSelect").addEventListener("change", async () => {
   await loadHistory({ resetPage: true });
 });
 
+$("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
 $("caseTranslogicaFilter").addEventListener("change", loadCases);
-$("caseSearch").addEventListener("input", () => {
-  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
-  CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
+
+$("caseSearch").addEventListener("input", (event) => {
+  if (!event.isTrusted) return;
+  CASE_SEARCH_USER_TOUCHED = true;
+  syncCaseSearchFromInput();
 });
+
 $("caseSearch").addEventListener("keydown", (event) => {
+  if (!event.isTrusted) return;
   if (event.key !== "Enter") return;
-  CASE_SEARCH_TERM = ($("caseSearch").value || "").trim();
-  CASE_SEARCH_USER_TOUCHED = CASE_SEARCH_TERM.length > 0;
+  CASE_SEARCH_USER_TOUCHED = true;
+  syncCaseSearchFromInput();
   loadCases();
 });
+
 window.addEventListener("pageshow", () => {
   clearCaseSearchFilter();
 });
+
 $("reloadHistoryBtn").addEventListener("click", () => loadHistory({ resetPage: true }));
+
 if ($("histEntrepreneur")) {
   $("histEntrepreneur").addEventListener("input", () => {
     clearTimeout(window.__histEntrepreneurT);
@@ -1534,11 +1526,13 @@ socket.on("stockUpdated", async (payload) => {
   if (payload?.to_location_id && Number(payload.to_location_id) === Number(CURRENT_LOCATION)) return loadStock();
   if (!payload?.location_id && !payload?.from_location_id && !payload?.to_location_id) return loadStock();
 });
+
 socket.on("casesUpdated", async (payload) => {
   if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) {
     await loadCases();
   }
 });
+
 socket.on("notificationCreated", async () => {
   await loadNotifications();
 });
@@ -1561,7 +1555,6 @@ socket.on("notificationsDeleted", async (payload) => {
 socket.on("bookingsUpdated", async (payload) => {
   if (!payload?.location_id) return;
   if (Number(payload.location_id) !== Number(CURRENT_LOCATION)) return;
-  // Wenn Department gefiltert ist, nur dann auto-reload, wenn es passt
   if (payload.department_id && CURRENT_DEPARTMENT && Number(payload.department_id) !== Number(CURRENT_DEPARTMENT)) return;
   await loadHistory({ resetPage: true });
   await loadStock();
