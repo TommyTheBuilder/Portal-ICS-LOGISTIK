@@ -146,6 +146,7 @@ function bindSettingsMenu() {
   const menu = $("settingsMenu");
   const darkmodeBtn = $("menuDarkmodeBtn");
   const openPasswordBtn = $("openChangePasswordBtn");
+  const moduleDashboardBtn = $("moduleDashboardBtn");
   if (!trigger || !wrap || !menu) return;
 
   trigger.addEventListener("click", (event) => {
@@ -181,6 +182,13 @@ function bindSettingsMenu() {
       $("newPassword").value = "";
       $("confirmPassword").value = "";
       showPasswordModal(true);
+    });
+  }
+
+  if (moduleDashboardBtn) {
+    moduleDashboardBtn.addEventListener("click", () => {
+      closeSettingsMenu();
+      window.location.href = "/public/dashboard.html";
     });
   }
 }
