@@ -456,6 +456,11 @@ async function loadDepartments() {
   caseSel.innerHTML = "";
   if (entHistDept) entHistDept.innerHTML = `<option value="">Alle</option>`;
 
+  const allDepartmentsOpt = document.createElement("option");
+  allDepartmentsOpt.value = "-1";
+  allDepartmentsOpt.textContent = "Alle Abteilungen";
+  sel.appendChild(allDepartmentsOpt);
+
   DEPARTMENTS.forEach(d => {
     const o1 = document.createElement("option");
     o1.value = d.id; o1.textContent = d.name;
@@ -476,7 +481,7 @@ async function loadDepartments() {
     }
   });
 
-  CURRENT_DEPARTMENT = Number(sel.value || 0);
+  CURRENT_DEPARTMENT = Number(sel.value || -1);
 }
 
 async function loadEntrepreneurs(selectedName = "") {
@@ -1189,12 +1194,11 @@ async function loadHistory({ resetPage = false } = {}) {
   if (!CURRENT_LOCATION) return;
   if (resetPage) HISTORY_PAGE = 0;
 
-  if (!CURRENT_DEPARTMENT) {
-    CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || 0);
+  if (CURRENT_DEPARTMENT === null || CURRENT_DEPARTMENT === undefined) {
+    CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || -1);
   }
-  if (!CURRENT_DEPARTMENT) {
-    return showWrapError("historyWrap", "Bitte eine Abteilung auswählen (für Historie/Export).");
-  }
+
+  const hasDepartmentFilter = Number(CURRENT_DEPARTMENT) > 0;
 
   const from = $("histFrom")?.value || "";
   const to = $("histTo")?.value || "";
@@ -1204,7 +1208,7 @@ async function loadHistory({ resetPage = false } = {}) {
 
   const qs = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
-    department_id: String(CURRENT_DEPARTMENT),
+    ...(hasDepartmentFilter ? { department_id: String(CURRENT_DEPARTMENT) } : {}),
     limit: String(HISTORY_PAGE_SIZE),
     offset: String(HISTORY_PAGE * HISTORY_PAGE_SIZE),
     ...(from ? { date_from: from } : {}),
@@ -1434,16 +1438,22 @@ async function downloadWithAuth(url, fallbackFilename) {
 }
 
 $("csvBtn").addEventListener("click", async () => {
-  if (!CURRENT_LOCATION || !CURRENT_DEPARTMENT) return;
+  if (!CURRENT_LOCATION) return;
 
-  const url = `/api/export/csv?location_id=${encodeURIComponent(CURRENT_LOCATION)}&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`;
+  const depQuery = Number(CURRENT_DEPARTMENT) > 0
+    ? `&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`
+    : "";
+  const url = `/api/export/csv?location_id=${encodeURIComponent(CURRENT_LOCATION)}${depQuery}`;
   await downloadWithAuth(url, "buchungen.csv");
 });
 
 $("xlsxBtn").addEventListener("click", async () => {
-  if (!CURRENT_LOCATION || !CURRENT_DEPARTMENT) return;
+  if (!CURRENT_LOCATION) return;
 
-  const url = `/api/export/xlsx?location_id=${encodeURIComponent(CURRENT_LOCATION)}&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`;
+  const depQuery = Number(CURRENT_DEPARTMENT) > 0
+    ? `&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`
+    : "";
+  const url = `/api/export/xlsx?location_id=${encodeURIComponent(CURRENT_LOCATION)}${depQuery}`;
   await downloadWithAuth(url, "buchungen.xlsx");
 });
 
@@ -1459,7 +1469,7 @@ $("locationSelect").addEventListener("change", async () => {
 });
 
 $("departmentSelect").addEventListener("change", async () => {
-  CURRENT_DEPARTMENT = Number($("departmentSelect").value || 0);
+  CURRENT_DEPARTMENT = Number($("departmentSelect").value || -1);
   await loadHistory({ resetPage: true });
 });
 
@@ -1555,7 +1565,7 @@ socket.on("notificationsDeleted", async (payload) => {
 socket.on("bookingsUpdated", async (payload) => {
   if (!payload?.location_id) return;
   if (Number(payload.location_id) !== Number(CURRENT_LOCATION)) return;
-  if (payload.department_id && CURRENT_DEPARTMENT && Number(payload.department_id) !== Number(CURRENT_DEPARTMENT)) return;
+  if (payload.department_id && Number(CURRENT_DEPARTMENT) > 0 && Number(payload.department_id) !== Number(CURRENT_DEPARTMENT)) return;
   await loadHistory({ resetPage: true });
   await loadStock();
 });
@@ -1573,7 +1583,7 @@ socket.on("bookingsUpdated", async (payload) => {
   await loadDepartments();
   await loadEntrepreneurs();
 
-  CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || 0);
+  CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || -1);
 
   if ($("stockMode")) {
     $("stockMode").value = STOCK_MODE;
