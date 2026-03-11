@@ -295,6 +295,11 @@ body.light {
   min-width: 48px;
   height: 48px;
   border-radius: 12px;
+  background: var(--surface-glass);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, transform 0.2s ease;
   font-size: 22px;
   display: inline-flex;
   align-items: center;
