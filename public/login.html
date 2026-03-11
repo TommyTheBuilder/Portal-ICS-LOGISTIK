@@ -31,7 +31,16 @@
         </div>
         <div>
           <label>Passwort</label>
-          <input id="password" type="password" autocomplete="current-password">
+          <div class="password-field">
+            <input id="password" type="password" autocomplete="current-password">
+            <button
+              id="togglePassword"
+              type="button"
+              class="password-visibility-toggle"
+              aria-label="Passwort anzeigen"
+              aria-pressed="false"
+            >👁</button>
+          </div>
         </div>
       </div>
       <div style="margin-top:12px;">

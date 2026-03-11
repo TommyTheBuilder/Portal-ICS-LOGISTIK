@@ -2,6 +2,7 @@ const err = document.getElementById("err");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
+const togglePasswordBtn = document.getElementById("togglePassword");
 
 async function submitLogin() {
   err.textContent = "";
@@ -26,6 +27,18 @@ async function submitLogin() {
 }
 
 loginBtn.addEventListener("click", submitLogin);
+
+
+if (togglePasswordBtn) {
+  togglePasswordBtn.addEventListener("click", () => {
+    const isHidden = passwordInput.type === "password";
+    passwordInput.type = isHidden ? "text" : "password";
+    togglePasswordBtn.setAttribute("aria-pressed", String(isHidden));
+    togglePasswordBtn.setAttribute("aria-label", isHidden ? "Passwort verbergen" : "Passwort anzeigen");
+    togglePasswordBtn.textContent = isHidden ? "🙈" : "👁";
+    passwordInput.focus();
+  });
+}
 
 [usernameInput, passwordInput].forEach((input) => {
   input.addEventListener("keydown", (event) => {
