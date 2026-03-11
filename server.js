@@ -1805,7 +1805,7 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20;
   const offset = Number.isInteger(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
 
-  if (!location_id || !department_id) return res.status(400).json({ error: "location_id + department_id required" });
+  if (!location_id) return res.status(400).json({ error: "location_id required" });
 
   const perms = await getMyPermissions(req.user);
   const canUseAllLocations = !!perms?.filters?.all_locations;
@@ -1817,9 +1817,15 @@ app.get("/api/bookings", authRequired, requirePermission("bookings.view"), async
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const where = [`b.department_id=$1`];
-  const params = [department_id];
-  let idx = 2;
+  const where = ["1=1"];
+  const params = [];
+  let idx = 1;
+
+  if (department_id > 0) {
+    where.push(`b.department_id=$${idx}`);
+    params.push(department_id);
+    idx += 1;
+  }
 
   if (!isAllLocations) {
     where.push(`b.location_id=$${idx}`);
@@ -2141,55 +2147,119 @@ app.get("/api/receipt/:bookingId", authRequired, requirePermission("bookings.rec
 app.get("/api/export/csv", authRequired, requirePermission("bookings.export"), async (req, res) => {
   const location_id = Number(req.query.location_id || 0);
   const department_id = Number(req.query.department_id || 0);
-  if (!location_id || !department_id) return res.status(400).json({ error: "location_id + department_id required" });
+  if (!location_id) return res.status(400).json({ error: "location_id required" });
 
-  if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id)) {
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  const isAllLocations = location_id === -1;
+
+  if (isAllLocations) {
+    if (!canUseAllLocations) return res.status(403).json({ error: "Keine Berechtigung für Alle Standorte" });
+  } else if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id) && !canUseAllLocations) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const loc = await q(`SELECT name FROM locations WHERE id=$1`, [location_id]);
-  const dep = await q(`SELECT name FROM departments WHERE id=$1`, [department_id]);
-  if (loc.rowCount === 0 || dep.rowCount === 0) return res.status(404).json({ error: "location/department not found" });
+  let locLabel = "Alle Standorte";
+  if (!isAllLocations) {
+    const loc = await q(`SELECT name FROM locations WHERE id=$1`, [location_id]);
+    if (loc.rowCount === 0) return res.status(404).json({ error: "location not found" });
+    locLabel = loc.rows[0].name;
+  }
+
+  let depLabel = "Alle Abteilungen";
+  if (department_id > 0) {
+    const dep = await q(`SELECT name FROM departments WHERE id=$1`, [department_id]);
+    if (dep.rowCount === 0) return res.status(404).json({ error: "department not found" });
+    depLabel = dep.rows[0].name;
+  }
+
+  const where = ["1=1"];
+  const params = [];
+  let idx = 1;
+
+  if (!isAllLocations) {
+    where.push(`b.location_id=$${idx}`);
+    params.push(location_id);
+    idx += 1;
+  }
+
+  if (department_id > 0) {
+    where.push(`b.department_id=$${idx}`);
+    params.push(department_id);
+    idx += 1;
+  }
 
   const rows = (await q(
     `
     SELECT b.created_at, b.receipt_no, b.license_plate, b.entrepreneur, COALESCE(u.username, '(gelöscht)') AS username, b.type, b.quantity, b.note
     FROM bookings b LEFT JOIN users u ON u.id=b.user_id
-    WHERE b.location_id=$1 AND b.department_id=$2
+    WHERE ${where.join(" AND ")}
     ORDER BY b.id ASC
     `,
-    [location_id, department_id]
+    params
   )).rows;
 
   const parser = new Parser({ fields: ["created_at","receipt_no","license_plate","entrepreneur","username","type","quantity","note"] });
   const csv = parser.parse(rows);
 
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="${loc.rows[0].name}-${dep.rows[0].name}-buchungen.csv"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${locLabel}-${depLabel}-buchungen.csv"`);
   res.send(csv);
 });
 
 app.get("/api/export/xlsx", authRequired, requirePermission("bookings.export"), async (req, res) => {
   const location_id = Number(req.query.location_id || 0);
   const department_id = Number(req.query.department_id || 0);
-  if (!location_id || !department_id) return res.status(400).json({ error: "location_id + department_id required" });
+  if (!location_id) return res.status(400).json({ error: "location_id required" });
 
-  if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id)) {
+  const perms = await getMyPermissions(req.user);
+  const canUseAllLocations = !!perms?.filters?.all_locations;
+  const isAllLocations = location_id === -1;
+
+  if (isAllLocations) {
+    if (!canUseAllLocations) return res.status(403).json({ error: "Keine Berechtigung für Alle Standorte" });
+  } else if (req.user.role !== "admin" && req.user.location_id && location_id !== Number(req.user.location_id) && !canUseAllLocations) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const loc = await q(`SELECT name FROM locations WHERE id=$1`, [location_id]);
-  const dep = await q(`SELECT name FROM departments WHERE id=$1`, [department_id]);
-  if (loc.rowCount === 0 || dep.rowCount === 0) return res.status(404).json({ error: "location/department not found" });
+  let locLabel = "Alle Standorte";
+  if (!isAllLocations) {
+    const loc = await q(`SELECT name FROM locations WHERE id=$1`, [location_id]);
+    if (loc.rowCount === 0) return res.status(404).json({ error: "location not found" });
+    locLabel = loc.rows[0].name;
+  }
+
+  let depLabel = "Alle Abteilungen";
+  if (department_id > 0) {
+    const dep = await q(`SELECT name FROM departments WHERE id=$1`, [department_id]);
+    if (dep.rowCount === 0) return res.status(404).json({ error: "department not found" });
+    depLabel = dep.rows[0].name;
+  }
+
+  const where = ["1=1"];
+  const params = [];
+  let idx = 1;
+
+  if (!isAllLocations) {
+    where.push(`b.location_id=$${idx}`);
+    params.push(location_id);
+    idx += 1;
+  }
+
+  if (department_id > 0) {
+    where.push(`b.department_id=$${idx}`);
+    params.push(department_id);
+    idx += 1;
+  }
 
   const rows = (await q(
     `
     SELECT b.created_at, b.receipt_no, b.license_plate, b.entrepreneur, COALESCE(u.username, '(gelöscht)') AS username, b.type, b.quantity, b.note
     FROM bookings b LEFT JOIN users u ON u.id=b.user_id
-    WHERE b.location_id=$1 AND b.department_id=$2
+    WHERE ${where.join(" AND ")}
     ORDER BY b.id ASC
     `,
-    [location_id, department_id]
+    params
   )).rows;
 
   const wb = new ExcelJS.Workbook();
@@ -2207,7 +2277,7 @@ app.get("/api/export/xlsx", authRequired, requirePermission("bookings.export"), 
   ws.addRows(rows);
 
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  res.setHeader("Content-Disposition", `attachment; filename="${loc.rows[0].name}-${dep.rows[0].name}-buchungen.xlsx"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${locLabel}-${depLabel}-buchungen.xlsx"`);
   await wb.xlsx.write(res);
   res.end();
 });
