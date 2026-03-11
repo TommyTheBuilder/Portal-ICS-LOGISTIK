@@ -981,3 +981,47 @@ body.darkmode .permBox input[type="checkbox"]:checked {
 body.darkmode .site-copyright {
   color: #cbd5e1;
 }
+
+.module-dashboard-card {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.module-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  border-radius: 14px;
+  border: 1px solid #dbe3f0;
+  background: linear-gradient(135deg, #2f5fd0, #1c3f94);
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 10px 20px rgba(29, 78, 216, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.module-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(29, 78, 216, 0.28);
+  filter: brightness(1.03);
+}
+
+.module-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+body.darkmode .module-button {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.45);
+}
