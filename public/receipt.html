@@ -116,6 +116,23 @@
       object-fit: contain;
     }
 
+
+    .page-copyright {
+      text-align: center;
+      font-size: 11px;
+      color: #4b5563;
+      padding: 8px 0 14px;
+    }
+    @media print {
+      .page-copyright {
+        position: fixed;
+        bottom: 4mm;
+        left: 0;
+        right: 0;
+        padding: 0;
+      }
+    }
+
     .title {
       text-align: center;
       font-size: 6.2mm;
@@ -625,6 +642,8 @@ BANKVERB.: Volksbank, BLZ: 71090000, Kto.-Nr.:2330, S.W.I.F.T./BIC: GENODEF1BGL,
     </div>
   </div>
 </div>
+
+<div class="page-copyright">© 2026 / CTSH Systems</div>
 
 <script src="/public/theme.js"></script>
 <script src="/public/receipt.js"></script>
