@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+<header class="topbar topbar-modern admin-topbar">
+  <div class="system-logo-wrap">
+    <img src="/public/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="dashboard.html" class="system-logo-home" aria-label="Zum Dashboard"></a>
+    <a href="/public/dashboard.html" class="system-logo-home" aria-label="Zum Dashboard"></a>
+  </div>
+  <div class="row topbar-actions" style="align-items:center;">
+    <div class="settings-menu-wrap" id="settingsMenuWrap">
+      <button class="secondary settings-trigger" id="settingsTriggerBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Einstellungen öffnen">⚙️</button>
+      <div class="settings-menu" id="settingsMenu" role="menu" aria-label="Einstellungen">
+        <button class="secondary" id="openChangePasswordBtn" role="menuitem">Passwort ändern</button>
+        <button class="secondary" id="menuDarkmodeBtn" role="menuitem">Darkmode umschalten</button>
+        <button class="secondary" id="logoutBtn" role="menuitem">Logout</button>
+      </div>
+    </div>
+    <div id="themeToggleMount" style="display:none;"></div>
+  </div>
+</header>
+
+<main class="dashboard-main module-dashboard-main">
+  <section class="dashboard-header admin-header">
+    <div class="dashboard-title-row"><b>Modul-Dashboard</b> <span class="pill" id="me">-</span></div>
+    <p class="muted" style="margin:8px 0 0;">Bitte wählen Sie ein Modul aus.</p>
+  </section>
+
+  <section class="card module-dashboard-card">
+    <div class="module-grid">
+      <a class="module-button" href="/app.html">Paletten</a>
+      <a class="module-button" href="https://container.paletten-ms.de/admin.html?key=333" target="_blank" rel="noopener noreferrer">Container Anmeldung</a>
+      <a class="module-button" href="#" data-module="Containerplanung">Containerplanung</a>
+      <a class="module-button" href="#" data-module="Modul 4">Modul 4</a>
+      <a class="module-button" href="#" data-module="Modul 5">Modul 5</a>
+      <a class="module-button" href="#" data-module="Modul 6">Modul 6</a>
+    </div>
+    <p id="moduleMsg" style="margin:12px 0 0;"></p>
+  </section>
+</main>
+
+<div class="modalBack" id="passwordModalBack" aria-hidden="true">
+  <div class="modal" style="max-width:520px; width:100%; box-shadow:0 18px 45px rgba(15,23,42,.3); border:1px solid #e5e7eb;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0;">Passwort ändern</h3>
+      <button class="secondary" type="button" id="closePasswordModalBtn" style="width:auto;">✕</button>
+    </div>
+    <div class="row">
+      <div>
+        <label>Aktuelles Passwort</label>
+        <input id="currentPassword" type="password" autocomplete="new-password" placeholder="Aktuelles Passwort">
+      </div>
+      <div>
+        <label>Neues Passwort</label>
+        <input id="newPassword" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen">
+      </div>
+      <div>
+        <label>Neues Passwort wiederholen</label>
+        <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Passwort wiederholen">
+      </div>
+    </div>
+    <p id="passwordModalMsg" style="margin:10px 0 0;"></p>
+    <div class="row" style="justify-content:flex-end; margin-top:10px;">
+      <button class="secondary" type="button" id="cancelPasswordBtn" style="min-width:140px;">Abbrechen</button>
+      <button class="primary" id="savePasswordBtn" type="button">Passwort speichern</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-copyright">© 2026 / CTSH Systems</footer>
+<script src="/public/theme.js"></script>
+<script src="/public/dashboard.js"></script>
+</body>
+</html>
