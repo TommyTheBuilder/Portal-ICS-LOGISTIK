@@ -942,3 +942,14 @@ body.darkmode .permBox input[type="checkbox"]:checked {
     padding: 12px;
   }
 }
+
+
+.site-copyright {
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+  padding: 8px 12px 16px;
+}
+body.darkmode .site-copyright {
+  color: #cbd5e1;
+}
