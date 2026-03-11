@@ -20,7 +20,7 @@ async function submitLogin() {
     if (!r.ok) throw new Error(data.error || "Login fehlgeschlagen");
 
     localStorage.setItem("token", data.token);
-    window.location.href = "/app.html";
+    window.location.href = "/dashboard.html";
   } catch (e) {
     err.textContent = e.message;
   }
