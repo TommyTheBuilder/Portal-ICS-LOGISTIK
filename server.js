@@ -7,6 +7,7 @@ const { Parser } = require("json2csv");
 const ExcelJS = require("exceljs");
 const path = require('path');
 const { randomUUID, createHmac } = require("crypto");
+const { randomUUID, createHmac, timingSafeEqual } = require("crypto");
 
 const { pool } = require("./db_pg");
 const { authRequired, adminRequired, JWT_SECRET } = require("./middleware_auth");
@@ -23,6 +24,7 @@ const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
 const SHARED_AUTH_SECRET = String(process.env.SHARED_AUTH_SECRET || "").trim();
 const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
+const ADMIN_ROLE = String(process.env.ADMIN_ROLE || "container_admin").trim();
 
 function getAllowedOrigins() {
   if (CORS_ORIGIN === "*") return "*";
@@ -201,6 +203,86 @@ function buildContainerSessionToken(payload) {
     .update(payloadEncoded)
     .digest("base64url");
   return `${payloadEncoded}.${signatureEncoded}`;
+function parseExternalSessionToken(sessionToken) {
+  if (!sessionToken || typeof sessionToken !== "string") {
+    return { ok: false, error: "session required" };
+  }
+
+  const parts = sessionToken.split(".");
+  if (parts.length !== 2) {
+    return { ok: false, error: "invalid session format" };
+  }
+
+  if (!SHARED_AUTH_SECRET) {
+    return { ok: false, error: "SHARED_AUTH_SECRET missing" };
+  }
+
+  const [payloadEncoded, signatureEncoded] = parts;
+  const expectedEncoded = createHmac("sha256", SHARED_AUTH_SECRET)
+    .update(payloadEncoded)
+    .digest("base64url");
+
+  const providedSignature = Buffer.from(signatureEncoded);
+  const expectedSignature = Buffer.from(expectedEncoded);
+  if (
+    providedSignature.length !== expectedSignature.length ||
+    !timingSafeEqual(providedSignature, expectedSignature)
+  ) {
+    return { ok: false, error: "invalid session signature" };
+  }
+
+  let payload;
+  try {
+    const payloadRaw = Buffer.from(payloadEncoded, "base64url").toString("utf8");
+    payload = JSON.parse(payloadRaw);
+  } catch {
+    return { ok: false, error: "invalid session payload" };
+  }
+
+  const username = String(payload?.user || "").trim();
+  const roles = Array.isArray(payload?.roles)
+    ? payload.roles.map((x) => String(x || "").trim()).filter(Boolean)
+    : [];
+  const exp = Number(payload?.exp || 0);
+  const now = Math.floor(Date.now() / 1000);
+
+  if (!username) return { ok: false, error: "session user missing" };
+  if (!Number.isFinite(exp) || exp <= now) return { ok: false, error: "session expired" };
+  if (!roles.includes(ADMIN_ROLE)) {
+    return { ok: false, error: "required admin role missing" };
+  }
+
+  return { ok: true, username, payload };
+}
+
+async function ensureSsoAdminUser(username) {
+  const existing = await q(
+    `SELECT id, username, role, location_id, role_id
+     FROM users
+     WHERE LOWER(username)=LOWER($1)
+     LIMIT 1`,
+    [username]
+  );
+
+  if (existing.rowCount) {
+    const user = existing.rows[0];
+    if (user.role !== "admin") {
+      await q(`UPDATE users SET role='admin', is_active=TRUE WHERE id=$1`, [user.id]);
+      user.role = "admin";
+    } else {
+      await q(`UPDATE users SET is_active=TRUE WHERE id=$1`, [user.id]);
+    }
+    return user;
+  }
+
+  const pwHash = await bcrypt.hash(randomUUID(), 10);
+  const created = await q(
+    `INSERT INTO users (username, password_hash, role, is_active)
+     VALUES ($1,$2,'admin',TRUE)
+     RETURNING id, username, role, location_id, role_id`,
+    [username, pwHash]
+  );
+  return created.rows[0];
 }
 
 async function logCaseHistory({ caseId, locationId, departmentId, receiptNo = null, changedBy, action, changes = [] }) {
@@ -487,6 +569,43 @@ app.post("/api/login", async (req, res) => {
       role_id: user.role_id || null
     }
   });
+});
+
+app.post("/api/sso/exchange", async (req, res) => {
+  try {
+    const sessionToken = String(req.body?.session || "").trim();
+    const parsed = parseExternalSessionToken(sessionToken);
+    if (!parsed.ok) {
+      return res.status(401).json({ error: parsed.error });
+    }
+
+    const user = await ensureSsoAdminUser(parsed.username);
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        role: "admin",
+        location_id: user.location_id,
+        role_id: user.role_id || null
+      },
+      JWT_SECRET,
+      { expiresIn: "12h" }
+    );
+
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: "admin",
+        location_id: user.location_id,
+        role_id: user.role_id || null
+      }
+    });
+  } catch (e) {
+    console.error("SSO exchange failed:", e);
+    return res.status(500).json({ error: "SSO exchange failed" });
+  }
 });
 
 app.get("/api/me", authRequired, async (req, res) => {

@@ -13,6 +13,35 @@ function api(path, opts = {}) {
   });
 }
 
+async function bootstrapSsoIfPresent() {
+  const params = new URLSearchParams(window.location.search);
+  const session = String(params.get("session") || "").trim();
+  if (!session) return true;
+
+  try {
+    const r = await fetch("/api/sso/exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data?.token) {
+      setMsg("moduleMsg", data?.error || "SSO-Anmeldung fehlgeschlagen.");
+      return false;
+    }
+
+    localStorage.setItem("token", data.token);
+    token = data.token;
+
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+    return true;
+  } catch {
+    setMsg("moduleMsg", "SSO-Anmeldung konnte nicht durchgeführt werden.");
+    return false;
+  }
+}
+
 function setMsg(elId, text, ok = false) {
   const el = $(elId);
   if (!el) return;
@@ -190,6 +219,9 @@ async function loadMe() {
   bindSettingsMenu();
   bindPasswordModal();
   bindModuleButtons();
+
+  const ssoOk = await bootstrapSsoIfPresent();
+  if (!ssoOk) return;
 
   if (!token) {
     window.location.href = "/login.html";
