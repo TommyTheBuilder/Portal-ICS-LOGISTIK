@@ -11,6 +11,7 @@ const crypto = require("crypto");
 const { pool } = require("./db_pg");
 const { authRequired, adminRequired, JWT_SECRET } = require("./middleware_auth");
 const { requirePermission } = require("./middleware_permissions");
+const { checkIpBlocked, registerFailedLogin, clearFailedLogin } = require("./security/loginRateLimit");
 
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 const ALWAYS_ALLOWED_ORIGINS = [
@@ -18,8 +19,6 @@ const ALWAYS_ALLOWED_ORIGINS = [
   "http://571188521.swh.strato-hosting.eu"
 ];
 const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
-const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 15 * 60 * 1000);
-const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
 const SHARED_AUTH_SECRET = String(process.env.SHARED_AUTH_SECRET || "13215489156189421598412").trim();
 const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
@@ -40,7 +39,7 @@ function corsOriginResolver(origin, callback) {
 }
 
 const app = express();
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 app.disable("x-powered-by");
 app.use(helmet());
 app.use(cors({ origin: corsOriginResolver }));
@@ -448,6 +447,8 @@ async function getMyPermissions(user) {
 }
 
 // ---------- AUTH ----------
+async function loginHandler(req, res) {
+  const clientIp = req.clientIp || "unknown";
 app.post("/api/login", async (req, res) => {
   const forwardedIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
   const clientIp = String(forwardedIp || req.ip || req.socket?.remoteAddress || "unknown");
@@ -470,17 +471,19 @@ app.post("/api/login", async (req, res) => {
 
   const user = r.rows[0];
   if (!user || user.is_active !== true) {
+    registerFailedLogin(clientIp);
     registerFailedLoginAttempt(clientIp);
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) {
+    registerFailedLogin(clientIp);
     registerFailedLoginAttempt(clientIp);
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  clearLoginAttempts(clientIp);
+  clearFailedLogin(clientIp);
 
   const token = jwt.sign(
     {
@@ -494,7 +497,7 @@ app.post("/api/login", async (req, res) => {
     { expiresIn: "12h" }
   );
 
-  res.json({
+  return res.json({
     token,
     user: {
       id: user.id,
@@ -504,8 +507,11 @@ app.post("/api/login", async (req, res) => {
       role_id: user.role_id || null
     }
   });
-});
+}
 
+// Brute-force protection applies only to login routes.
+app.post("/login", checkIpBlocked, loginHandler);
+app.post("/api/login", checkIpBlocked, loginHandler);
 app.get("/api/me", authRequired, async (req, res) => {
   const r = await q(
     `SELECT u.id,
