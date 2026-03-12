@@ -277,6 +277,28 @@ function bindTabs() {
   });
 }
 
+function bindModuleDashboardLinkOverride() {
+  const containerAdminPrefix = "https://container.paletten-ms.de/admin.html";
+
+  document.addEventListener("click", (event) => {
+    const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (!link) return;
+
+    let url;
+    try {
+      url = new URL(link.href, window.location.origin);
+    } catch {
+      return;
+    }
+
+    if (!url.href.startsWith(containerAdminPrefix)) return;
+    if (url.searchParams.get("key") !== "333") return;
+
+    event.preventDefault();
+    window.location.assign(url.href);
+  });
+}
+
 $("logoutBtn").addEventListener("click", () => {
   closeSettingsMenu();
   localStorage.removeItem("token");
@@ -1573,6 +1595,7 @@ socket.on("bookingsUpdated", async (payload) => {
 // Init
 (async function init() {
   bindTabs();
+  bindModuleDashboardLinkOverride();
   bindLiveToggles();
   bindNotificationPanel();
   bindSettingsMenu();
