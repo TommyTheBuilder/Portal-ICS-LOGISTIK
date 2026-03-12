@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const { Parser } = require("json2csv");
 const ExcelJS = require("exceljs");
 const path = require('path');
-const { randomUUID } = require("crypto");
+const crypto = require("crypto");
 
 const { pool } = require("./db_pg");
 const { authRequired, adminRequired, JWT_SECRET } = require("./middleware_auth");
@@ -21,6 +21,8 @@ const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
 const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 15 * 60 * 1000);
 const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
+const SHARED_AUTH_SECRET = String(process.env.SHARED_AUTH_SECRET || "").trim();
+const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
 
 function getAllowedOrigins() {
   if (CORS_ORIGIN === "*") return "*";
@@ -175,6 +177,30 @@ function safeTrim(v) {
   const s = (v === undefined || v === null) ? "" : String(v);
   const t = s.trim();
   return t ? t : null;
+}
+
+function flattenPermissionRoles(perms, prefix = "") {
+  const roles = [];
+  if (!perms || typeof perms !== "object") return roles;
+  for (const [key, value] of Object.entries(perms)) {
+    const nextKey = prefix ? `${prefix}.${key}` : key;
+    if (value === true) {
+      roles.push(nextKey);
+      continue;
+    }
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      roles.push(...flattenPermissionRoles(value, nextKey));
+    }
+  }
+  return roles;
+}
+
+function buildContainerSessionToken(payload) {
+  const payloadEncoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const signatureEncoded = crypto.createHmac("sha256", SHARED_AUTH_SECRET)
+    .update(payloadEncoded)
+    .digest("base64url");
+  return `${payloadEncoded}.${signatureEncoded}`;
 }
 
 async function logCaseHistory({ caseId, locationId, departmentId, receiptNo = null, changedBy, action, changes = [] }) {
@@ -361,6 +387,7 @@ async function getMyPermissions(user) {
     masterdata: { manage: true, entrepreneurs_manage: true },
     users: { manage: true, view_department: true },
     roles: { manage: true },
+    integrations: { container_registration: true },
     admin: { full_access: true }
   };
 
@@ -386,6 +413,7 @@ async function getMyPermissions(user) {
     masterdata: { manage: false, entrepreneurs_manage: false },
     users: { manage: false, view_department: false },
     roles: { manage: false },
+    integrations: { container_registration: false },
     admin: { full_access: false }
   };
 
@@ -538,6 +566,33 @@ app.put("/api/theme", async (req, res) => {
 app.get("/api/my-permissions", authRequired, async (req, res) => {
   const perms = await getMyPermissions(req.user);
   res.json(perms);
+});
+
+app.get("/api/sso/container-session", authRequired, async (req, res) => {
+  if (!SHARED_AUTH_SECRET) {
+    return res.status(500).json({ error: "SHARED_AUTH_SECRET missing" });
+  }
+
+  const perms = await getMyPermissions(req.user);
+  const roles = Array.from(new Set([
+    ...flattenPermissionRoles(perms),
+    req.user.role === "admin" ? "admin" : null,
+    perms?.integrations?.container_registration ? "ContainerAnmeldung" : null
+  ].filter(Boolean)));
+
+  if (!roles.includes("ContainerAnmeldung")) {
+    return res.status(403).json({ error: "No Permissions" });
+  }
+
+  const payload = {
+    user: req.user.username,
+    roles,
+    exp: Math.floor(Date.now() / 1000) + 300
+  };
+
+  const session = buildContainerSessionToken(payload);
+  const url = `${CONTAINER_APP_URL}?session=${encodeURIComponent(session)}`;
+  return res.json({ session, url, exp: payload.exp });
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
@@ -1198,7 +1253,7 @@ app.post("/api/internal-transfers", authRequired, async (req, res) => {
     if (fromLocationId && fromLocationId !== userLocationLock) return res.status(403).json({ error: "Forbidden" });
   }
 
-  const groupId = randomUUID();
+  const groupId = crypto.randomUUID();
   let line = 1;
 
   if (fromLocationId) {
@@ -1487,7 +1542,7 @@ app.put("/api/cases/:id", authRequired, async (req, res) => {
         ])]
       );
 
-      const groupId = randomUUID();
+      const groupId = crypto.randomUUID();
       let line = 1;
 
       const nonExchangeableQty = Number(c.non_exchangeable_qty || 0);
