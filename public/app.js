@@ -1573,7 +1573,6 @@ socket.on("bookingsUpdated", async (payload) => {
 // Init
 (async function init() {
   bindTabs();
-  bindModuleDashboardLinkOverride();
   bindLiveToggles();
   bindNotificationPanel();
   bindSettingsMenu();
