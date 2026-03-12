@@ -4,55 +4,57 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Administration</title>
-  <link rel="stylesheet" href="/styles.css">
-  <style>
-    body { background:#f8fafc; color:#0f172a; }
-    .tabs { display:flex; gap:10px; margin: 12px 0 18px; flex-wrap: wrap; }
-    .tabs button { padding: 10px 14px; border-radius: 999px; border: 1px solid #e2e8f0; background:#f1f5f9; cursor:pointer; font-weight:600; color:#334155; }
-    .tabs button.active { background:#111827; color:#fff; border-color:#111827; box-shadow: 0 6px 12px rgba(15,23,42,.18); }
-    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .card { background:#fff; padding: 16px; border-radius: 16px; box-shadow: 0 10px 24px rgba(15,23,42,.08); margin-bottom: 16px; border: 1px solid #e2e8f0; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
-    label { display:block; font-size: 12px; color:#64748b; margin-bottom:4px; font-weight:600; }
-    input, select { padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; min-width: 200px; background:#fff; }
-    button { padding: 10px 14px; border-radius: 12px; border:0; cursor:pointer; font-weight:600; }
-    button.primary { background:#111827; color:#fff; }
-    button.secondary { background:#e2e8f0; color:#111827; }
-    button.danger { background:#b91c1c; color:#fff; }
-    small.muted { color:#64748b; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { border-bottom:1px solid #e2e8f0; padding: 10px; font-size: 14px; text-align:left; vertical-align: top; }
-    th { color:#475569; font-weight:600; background:#f8fafc; }
-    .pill { display:inline-block; padding: 2px 10px; border-radius: 999px; background:#e2e8f0; font-size: 12px; color:#334155; }
-    .permGrid { display:grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
-    .permBox { border:1px solid #e2e8f0; border-radius: 14px; padding: 12px; background:#f8fafc; }
-    .permBox b { display:block; margin-bottom:8px; color:#0f172a; }
-    .permBox label { display:flex; gap:8px; align-items:center; margin: 6px 0; font-size: 13px; color:#0f172a; }
-    .permBox small.muted { display:block; margin-top: 6px; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; margin: 12px 0; gap:10px; flex-wrap:wrap; }
-  </style>
+  <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
-<header style="padding:14px 18px; border-bottom: 1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
-  <div><b>Admin</b> <span class="pill" id="me">-</span></div>
-  <div class="row" style="align-items:center;">
-    <button class="secondary" id="backBtn">Zur App</button>
-    <button class="secondary" id="logoutBtn">Logout</button>
+<header class="topbar topbar-modern admin-topbar">
+  <div class="system-logo-wrap">
+    <img src="/public/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+    <a href="/public/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+  </div>
+  <div class="row topbar-actions" style="align-items:center;">
+    <div class="settings-menu-wrap" id="settingsMenuWrap">
+      <button class="secondary settings-trigger" id="settingsTriggerBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Einstellungen öffnen">⚙️</button>
+      <div class="settings-menu" id="settingsMenu" role="menu" aria-label="Einstellungen">
+        <button class="secondary" id="backBtn" role="menuitem">Zur App</button>
+        <button class="secondary" id="openChangePasswordBtn" role="menuitem">Passwort ändern</button>
+        <button class="secondary" id="menuDarkmodeBtn" role="menuitem">Darkmode umschalten</button>
+        <button class="secondary" id="logoutBtn" role="menuitem">Logout</button>
+      </div>
+    </div>
+    <div id="themeToggleMount" style="display:none;"></div>
   </div>
 </header>
 
-<main style="max-width: 1100px; margin: 0 auto; padding: 16px;">
-  <div class="tabs">
-    <button data-tab="roles" class="active">Rollen & Rechte</button>
-    <button data-tab="master">Stammdaten</button>
-    <button data-tab="users">Benutzer</button>
+<main class="dashboard-main admin-main">
+  <section class="dashboard-header admin-header">
+    <div class="dashboard-title-row"><b>Administration</b> <span class="pill" id="me">-</span></div>
+    <div class="tabs admin-tabs">
+      <button data-tab="roles" class="active nav-button"><span class="nav-icon">🔐</span>Rollen & Rechte</button>
+      <button data-tab="master" class="nav-button"><span class="nav-icon">🏷️</span>Stammdaten</button>
+      <button data-tab="users" class="nav-button"><span class="nav-icon">👥</span>Benutzer</button>
+      <button data-tab="history" class="nav-button"><span class="nav-icon">📅</span>Historie</button>
+    </div>
+  </section>
+
+  <div class="card admin-card">
+    <h3 style="margin-top:0;">Belegdruck</h3>
+    <div class="row">
+      <div>
+        <button class="primary" id="printReceiptDriverBtn">Fahrer Palettenschein</button>
+      </div>
+      <div>
+        <button class="secondary" id="printReceiptWarehouseBtn">Lager Palettenschein</button>
+      </div>
+    </div>
+    <p id="printReceiptMsg"></p>
   </div>
 
-  <!-- ROLES -->
   <section id="tab-roles">
-    <div class="card">
+    <div class="card admin-card">
       <h3 style="margin-top:0;">Neue Rolle anlegen</h3>
-      <div class="row">
+      <div class="row role-create-row">
         <div>
           <label>Rollenname</label>
           <input id="roleName" placeholder="z.B. Dispo">
@@ -64,26 +66,26 @@
       <p id="roleMsg"></p>
     </div>
 
-    <div class="card">
-      <div class="topbar">
-        <h3 style="margin:0;">Rollen bearbeiten</h3>
+    <div class="card admin-card">
+      <div class="admin-card-head">
+        <h3>Rechte Verwaltung</h3>
         <button class="secondary" id="reloadRolesBtn">Neu laden</button>
       </div>
 
-      <div class="row">
-        <div>
+      <div class="rights-controls">
+        <div class="rights-role-field">
           <label>Rolle auswählen</label>
           <select id="roleSelect"></select>
         </div>
-        <div>
+        <div class="rights-action">
           <button class="secondary" id="saveRoleBtn">Berechtigungen speichern</button>
         </div>
-        <div>
+        <div class="rights-action">
           <button class="danger" id="deleteRoleBtn">Rolle löschen</button>
         </div>
       </div>
 
-      <div class="permGrid">
+      <div class="permGrid modern-perm-grid">
         <div class="permBox">
           <b>Buchungen</b>
           <label><input type="checkbox" id="p_bookings_create"> Anlegen</label>
@@ -92,6 +94,7 @@
           <label><input type="checkbox" id="p_bookings_receipt"> Beleg</label>
           <label><input type="checkbox" id="p_bookings_edit"> Bearbeiten (manuell ändern)</label>
           <label><input type="checkbox" id="p_bookings_delete"> Löschen</label>
+          <label><input type="checkbox" id="p_bookings_translogica"> Translogica-Kästchen bearbeiten</label>
         </div>
 
         <div class="permBox">
@@ -104,17 +107,20 @@
         <div class="permBox">
           <b>Vorgänge</b>
           <label><input type="checkbox" id="p_cases_create"> Aviso anlegen</label>
-          <label><input type="checkbox" id="p_cases_employee_code"> Mitarbeiterkürzel (2-stellig) Pflicht</label>
+          <label><input type="checkbox" id="p_cases_internal_transfer"> Interne Lagerumbuchung</label>
+          <label><input type="checkbox" id="p_cases_employee_code"> Lagermitarbeiter (2-stellig) bei Status 2 Pflicht</label>
           <label><input type="checkbox" id="p_cases_claim"> Übernehmen</label>
           <label><input type="checkbox" id="p_cases_edit"> Ändern</label>
           <label><input type="checkbox" id="p_cases_submit"> Zur Prüfung senden</label>
           <label><input type="checkbox" id="p_cases_approve"> Buchen/abschließen</label>
-          <label><input type="checkbox" id="p_cases_cancel"> Stornieren/Löschen</label>
+          <label><input type="checkbox" id="p_cases_cancel"> Stornieren</label>
+          <label><input type="checkbox" id="p_cases_delete"> Löschen</label>
         </div>
 
         <div class="permBox">
           <b>Stammdaten</b>
           <label><input type="checkbox" id="p_master_manage"> Verwalten</label>
+          <label><input type="checkbox" id="p_master_entrepreneurs_manage"> Frachtführerstammdaten verwalten</label>
           <small class="muted">Standorte/Abteilungen pflegen</small>
         </div>
 
@@ -128,18 +134,31 @@
         <div class="permBox">
           <b>Rollen</b>
           <label><input type="checkbox" id="p_roles_manage"> Verwalten</label>
-          <small class="muted">Business-Rollen & Rechte verwalten</small>
+          <label><input type="checkbox" id="p_admin_full_access"> Admin-Zugriff & Vollzugriff</label>
+          <small class="muted">Steuert den Admin-Button und gewährt vollständigen Zugriff auf alle Funktionen.</small>
         </div>
+
+        <div class="permBox">
+          <b>Filter</b>
+          <label><input type="checkbox" id="p_filters_all_locations"> Standortfilter „Alle Standorte“ (Vorgänge/Historie)</label>
+          <small class="muted">Erlaubt die Auswahl über alle Standorte statt nur den zugewiesenen Standort.</small>
+        </div>
+        <div class="permBox">
+          <b>Integrationen</b>
+          <label><input type="checkbox" id="p_integrations_container_registration"> ContainerAnmeldung</label>
+          <small class="muted">Erlaubt die SSO-Weitergabe zur Container-Adminseite.</small>
+        </div>
+
+
       </div>
 
       <p id="roleEditMsg"></p>
     </div>
   </section>
 
-  <!-- MASTERDATA -->
   <section id="tab-master" style="display:none;">
     <div class="grid2">
-      <div class="card">
+      <div class="card admin-card">
         <h3 style="margin-top:0;">Standorte</h3>
         <div class="row">
           <div>
@@ -158,11 +177,11 @@
         </div>
       </div>
 
-      <div class="card">
-        <h3 style="margin-top:0;">Unternehmer</h3>
+      <div class="card admin-card">
+        <h3 style="margin-top:0;">Frachtführer</h3>
         <div class="row">
           <div>
-            <label>Unternehmername</label>
+            <label>Frachtführername</label>
             <input id="entName" placeholder="z.B. Spedition Müller">
           </div>
           <div>
@@ -189,13 +208,13 @@
 
         <div style="overflow:auto; margin-top:8px;">
           <table>
-            <thead><tr><th>Unternehmer</th><th>Adresse</th><th>Aktion</th></tr></thead>
+            <thead><tr><th>Frachtführer</th><th>Adresse</th><th>Aktion</th></tr></thead>
             <tbody id="entBody"></tbody>
           </table>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card admin-card">
         <h3 style="margin-top:0;">Abteilungen</h3>
         <div class="row">
           <div>
@@ -217,9 +236,8 @@
     </div>
   </section>
 
-  <!-- USERS -->
   <section id="tab-users" style="display:none;">
-    <div class="card">
+    <div class="card admin-card">
       <h3 style="margin-top:0;">Benutzer anlegen</h3>
       <div class="row">
         <div>
@@ -228,34 +246,21 @@
         </div>
         <div>
           <label>Passwort</label>
-          <input id="uPass" placeholder="Passwort" type="password">
-        </div>
-        <div>
-          <label>Rolle (Admin/Disponent/Lager)</label>
-          <select id="uRole">
-            <option value="disponent">Disponent</option>
-            <option value="lager">Lager</option>
-            <option value="admin">Admin</option>
-          </select>
-          <small class="muted" id="roleLocationHint">Für Lager ist ein Standort Pflicht.</small>
-        </div>
-        <div>
-          <label>E-Mail</label>
-          <input id="uEmail" placeholder="name@firma.de" type="email">
+          <input id="uPass" placeholder="Passwort" type="password" autocomplete="new-password">
         </div>
         <div>
           <label>Standort</label>
           <select id="uLocation"></select>
         </div>
         <div>
-          <label>Business-Rolle</label>
+          <label>Business-Rolle (Rechte)</label>
           <select id="uRoleId"></select>
-          <small class="muted">Optional (für Berechtigungen)</small>
+          <small class="muted">Pflichtfeld für Berechtigungen</small>
         </div>
         <div>
           <label>Fixe Abteilung</label>
           <select id="uFixedDepartment"></select>
-          <small class="muted">Optional (für Status-3-Mails)</small>
+          <small class="muted">Optional (für Abteilungs-Benachrichtigungen)</small>
         </div>
         <div>
           <button class="primary" id="createUserBtn">Anlegen</button>
@@ -264,7 +269,7 @@
       <p id="userMsg"></p>
     </div>
 
-    <div class="card">
+    <div class="card admin-card">
       <h3 style="margin-top:0;">Benutzer bearbeiten</h3>
       <div class="row">
         <div>
@@ -272,21 +277,12 @@
           <select id="editUserSelect"></select>
         </div>
         <div>
-          <label>Rolle</label>
-          <select id="editUserRole">
-            <option value="disponent">Disponent</option>
-            <option value="lager">Lager</option>
-            <option value="admin">Admin</option>
-          </select>
-          <small class="muted" id="editRoleLocationHint">Für Lager ist ein Standort Pflicht.</small>
-        </div>
-        <div>
           <label>Standort</label>
           <select id="editUserLocation"></select>
         </div>
         <div>
-          <label>E-Mail</label>
-          <input id="editUserEmail" placeholder="name@firma.de" type="email">
+          <label>Business-Rolle (Rechte)</label>
+          <select id="editUserRoleId"></select>
         </div>
         <div>
           <label>Fixe Abteilung</label>
@@ -299,18 +295,30 @@
       <p id="userEditMsg"></p>
     </div>
 
-    <div class="card">
-      <div class="topbar">
-        <h3 style="margin:0;">Benutzerliste</h3>
+    <div class="card admin-card">
+      <div class="admin-card-head">
+        <h3>Benutzerliste</h3>
         <button class="secondary" id="reloadUsersBtn">Neu laden</button>
+      </div>
+      <div class="row">
+        <div>
+          <label>Filter Benutzername</label>
+          <input id="usersFilterUsername" placeholder="z.B. max">
+        </div>
+        <div>
+          <label>Filter Abteilung</label>
+          <select id="usersFilterDepartment"></select>
+        </div>
+        <div>
+          <label>Filter Standort</label>
+          <select id="usersFilterLocation"></select>
+        </div>
       </div>
       <div style="overflow:auto;">
         <table>
           <thead>
             <tr>
               <th>Benutzer</th>
-              <th>Rolle</th>
-              <th>E-Mail</th>
               <th>Standort</th>
               <th>Business-Rolle</th>
               <th>Fixe Abteilung</th>
@@ -323,8 +331,88 @@
       </div>
     </div>
   </section>
+
+  <section id="tab-history" style="display:none;">
+    <div class="card admin-card">
+      <h3 style="margin-top:0;">Buchungshistorie</h3>
+      <div class="row">
+        <div>
+          <label>Standort</label>
+          <select id="adminHistLocation"></select>
+        </div>
+        <div>
+          <label>Abteilung</label>
+          <select id="adminHistDepartment"></select>
+        </div>
+        <div>
+          <label>Von</label>
+          <input id="adminHistFrom" type="date">
+        </div>
+        <div>
+          <label>Bis</label>
+          <input id="adminHistTo" type="date">
+        </div>
+        <div>
+          <label>Frachtführer</label>
+          <input id="adminHistEntrepreneur" placeholder="Name">
+        </div>
+        <div>
+          <label>Kennzeichen</label>
+          <input id="adminHistPlate" placeholder="z.B. W123AB">
+        </div>
+        <div>
+          <label>Belegnummer</label>
+          <input id="adminHistReceipt" placeholder="z.B. ICS...">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="secondary" id="adminReloadHistoryBtn">Neu laden</button>
+      </div>
+      <div id="adminHistoryWrap" style="overflow:auto; margin-top:10px;"></div>
+    </div>
+  </section>
 </main>
 
-<script src="/admin.js"></script>
+<div id="adminCaseHistoryModalBack" class="modal-backdrop" style="display:none;" aria-hidden="true">
+  <div class="modal" style="max-width:900px; width:min(900px,95vw);">
+    <div class="modal-head">
+      <h3 style="margin:0;">Änderungshistorie</h3>
+      <button type="button" class="icon-button" id="closeAdminCaseHistoryBtn" aria-label="Schließen">✕</button>
+    </div>
+    <div id="adminCaseHistoryBody" style="max-height:65vh; overflow:auto; margin-top:10px;"></div>
+  </div>
+</div>
+
+<script src="/public/theme.js"></script>
+<div class="modalBack" id="passwordModalBack" aria-hidden="true">
+  <div class="modal password-modal" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+    <div class="password-modal-head">
+      <h3 id="passwordModalTitle">Passwort ändern</h3>
+      <button class="secondary" id="closePasswordModalBtn" type="button">Schließen</button>
+    </div>
+    <p class="muted" style="margin-top:0;">Verwenden Sie ein sicheres Passwort mit mindestens 8 Zeichen.</p>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>Aktuelles Passwort</label>
+        <input id="currentPassword" type="password" autocomplete="new-password" placeholder="Aktuelles Passwort">
+      </div>
+      <div>
+        <label>Neues Passwort</label>
+        <input id="newPassword" type="password" autocomplete="off" placeholder="Mindestens 8 Zeichen">
+      </div>
+      <div>
+        <label>Neues Passwort wiederholen</label>
+        <input id="confirmPassword" type="password" autocomplete="off" placeholder="Passwort bestätigen">
+      </div>
+    </div>
+    <p id="passwordModalMsg"></p>
+    <div class="row" style="justify-content:flex-end; margin-top:8px;">
+      <button class="secondary" id="cancelPasswordBtn" type="button">Abbrechen</button>
+      <button class="primary" id="savePasswordBtn" type="button">Passwort speichern</button>
+    </div>
+  </div>
+</div>
+  <footer class="site-copyright">© 2026 / CTSH Systems</footer>
+<script src="/public/admin.js"></script>
 </body>
 </html>

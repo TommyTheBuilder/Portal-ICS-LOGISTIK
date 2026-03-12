@@ -3,12 +3,15 @@ const { pool } = require("./db_pg");
 
 // Defaults (wie in server.js), damit ältere Rollen nicht plötzlich alles verlieren
 const DEFAULTS = {
-  bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false },
+  bookings: { create: true, view: true, export: true, receipt: true, edit: false, delete: false, translogica: false },
   stock: { view: true, overall: true },
-  cases: { create: true, claim: false, edit: false, submit: false, approve: false },
-  masterdata: { manage: false },
+  cases: { create: true, internal_transfer: false, claim: false, edit: false, submit: false, approve: false, cancel: false, delete: false, require_employee_code: false },
+  filters: { all_locations: false },
+  masterdata: { manage: false, entrepreneurs_manage: false },
   users: { manage: false, view_department: false },
-  roles: { manage: false }
+  roles: { manage: false },
+  integrations: { container_registration: false },
+  admin: { full_access: false }
 };
 
 function isObject(x) {
@@ -25,6 +28,7 @@ function deepMerge(base, override) {
 }
 
 function hasPerm(perms, permPath) {
+  if (perms?.admin?.full_access) return true;
   const parts = String(permPath || "").split(".");
   let cur = perms;
   for (const p of parts) {
@@ -38,12 +42,15 @@ async function loadPermissionsForUser(user) {
   // Admin: immer alles
   if (user?.role === "admin") {
     return {
-      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true },
+      bookings: { create: true, view: true, export: true, receipt: true, edit: true, delete: true, translogica: true },
       stock: { view: true, overall: true },
-      cases: { create: true, claim: true, edit: true, submit: true, approve: true },
-      masterdata: { manage: true },
-      users: { manage: true },
-      roles: { manage: true }
+      cases: { create: true, internal_transfer: true, claim: true, edit: true, submit: true, approve: true, cancel: true, delete: true, require_employee_code: false },
+      filters: { all_locations: true },
+      masterdata: { manage: true, entrepreneurs_manage: true },
+      users: { manage: true, view_department: true },
+      roles: { manage: true },
+      integrations: { container_registration: true },
+      admin: { full_access: true }
     };
   }
 

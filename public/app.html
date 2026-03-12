@@ -4,88 +4,58 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Palettenmanagement</title>
-  <link rel="stylesheet" href="/styles.css">
-  <style>
-    body { background:#f6f7fb; }
-
-    .topbar {
-      background:#0b2a4a;
-      color:#fff;
-      padding:14px 18px;
-      border-bottom: 1px solid #0b2440;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
-    .topbar .pill { background: rgba(255,255,255,0.15); color:#fff; }
-    .topbar .secondary { background:#e9eef5; color:#0b2a4a; }
-    .topbar .row > * { flex: 0 0 auto; min-width: auto; }
-
-    .tabs { display:flex; gap:10px; flex-wrap:wrap; margin: 12px 0; }
-    .tabs button {
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid #d1d5db;
-      background:#f9fafb;
-      color:#111827;
-      cursor:pointer;
-      font-weight:600;
-    }
-    .tabs button:hover { background:#eef2f7; }
-    .tabs button.active {
-      background:#111827;
-      color:#ffffff;
-      border-color:#111827;
-    }
-
-    .card { background:#fff; padding: 14px; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); margin-bottom: 14px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-    label { display:block; font-size: 12px; color:#6b7280; margin-bottom:4px; }
-    input, select { padding: 10px; border-radius: 10px; border: 1px solid #e5e7eb; min-width: 200px; background:#fff; }
-    button { padding: 10px 12px; border-radius: 10px; border:0; cursor:pointer; }
-    button.primary { background:#111827; color:#fff; }
-    button.secondary { background:#e5e7eb; color:#111827; }
-    button.danger { background:#b91c1c; color:#fff; }
-    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; font-size: 12px; }
-    table { width:100%; border-collapse: collapse; background:#fff; border-radius:12px; overflow:hidden; }
-    th, td { border-bottom:1px solid #e5e7eb; padding: 10px; font-size: 14px; text-align:left; vertical-align: top; }
-    th { background:#f9fafb; }
-    .modalBack { position:fixed; inset:0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding: 14px; }
-    .modal { background:#fff; width:min(900px, 100%); border-radius: 14px; padding: 14px; }
-    .muted { color:#6b7280; font-size: 12px; }
-    .history-filters .rollcard-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
-    .history-filters .rollcard-item button { width: 100%; }
-    .toggle-btn { width: 36px; height: 36px; padding: 0; display:flex; align-items:center; justify-content:center; }
-  </style>
+  <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
-<header class="topbar">
-  <div><b>Palettenmanagement</b> <span class="pill" id="me">-</span></div>
-  <div class="row" style="align-items:center;">
-    <button class="secondary" id="adminBtn" style="display:none;">Admin</button>
-    <button class="secondary" id="logoutBtn">Logout</button>
+<header class="topbar topbar-modern">
+  <div class="system-logo-wrap">
+    <img src="/public/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+    <a href="/public/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+  </div>
+  <div class="row topbar-actions" style="align-items:center;">
+    <div class="notification-wrap">
+      <button class="secondary notification-toggle" id="notificationBtn" title="Benachrichtigungen">🔔<span class="notification-badge" id="notificationBadge" style="display:none;">0</span></button>
+      <div class="notification-panel" id="notificationPanel"></div>
+    </div>
+    <button class="secondary" id="entrepreneursMasterBtn" style="display:none;">Frachtführerstammdaten</button>
+    <div class="settings-menu-wrap" id="settingsMenuWrap">
+      <button class="secondary settings-trigger" id="settingsTriggerBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Einstellungen öffnen">⚙️</button>
+      <div class="settings-menu" id="settingsMenu" role="menu" aria-label="Einstellungen">
+        <button class="secondary" id="adminBtn" style="display:none;" role="menuitem">Admin</button>
+        <button class="secondary" id="openChangePasswordBtn" role="menuitem">Passwort ändern</button>
+        <button class="secondary" id="containerRegistrationBtn" style="display:none;" role="menuitem">Container Anmeldung</button>
+        <button class="secondary" id="menuDarkmodeBtn" role="menuitem">Darkmode umschalten</button>
+        <button class="secondary" id="moduleDashboardBtn" role="menuitem">Modul-Dashboard</button>
+        <button class="secondary" id="logoutBtn" role="menuitem">Logout</button>
+      </div>
+    </div>
+    <div id="themeToggleMount" style="display:none;"></div>
   </div>
 </header>
 
-<main style="max-width: 1100px; margin: 0 auto; padding: 16px;">
-  <div class="row">
-    <div>
-      <label>Standort</label>
-      <select id="locationSelect"></select>
+<main class="dashboard-main">
+  <section class="dashboard-header">
+    <div class="dashboard-title-row"><b>Palettenmanagement</b> <span class="pill" id="me">-</span></div>
+    <div class="row filter-row">
+    <div class="filter-field">
+      <label>Standort (Filter für Vorgänge/Historie)</label>
+      <select id="locationSelect" class="filter-select"></select>
     </div>
-    <div>
+    <div class="filter-field">
       <label>Abteilung (für Historie/Export)</label>
-      <select id="departmentSelect"></select>
+      <select id="departmentSelect" class="filter-select"></select>
     </div>
   </div>
+  </section>
 
-  <div class="tabs">
-    <button data-tab="dashboard" class="active">Dashboard</button>
-    <button data-tab="aviso">Aviso</button>
-    <button data-tab="cases">Vorgänge</button>
-    <button data-tab="history">Historie</button>
-    <button data-tab="entrepreneur-history">Unternehmer Historie</button>
-    <button data-tab="export">Export</button>
+  <div class="tabs dashboard-nav">
+    <button data-tab="dashboard" class="active nav-button"><span class="nav-icon">🏠</span>Dashboard</button>
+    <button data-tab="history" class="nav-button"><span class="nav-icon">📅</span>Historie</button>
+    <button data-tab="aviso" class="nav-button"><span class="nav-icon">📄</span>Aviso</button>
+    <button data-tab="entrepreneur-history" class="nav-button"><span class="nav-icon">🚚</span>Frachtführer Historie</button>
+    <button data-tab="cases" class="nav-button"><span class="nav-icon">⚙️</span>Vorgänge</button>
+    <button data-tab="export" class="nav-button"><span class="nav-icon">⤴</span>Export</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -96,13 +66,25 @@
           <button class="secondary toggle-btn" id="toggleStockBtn" type="button" aria-expanded="true">−</button>
           <h3 style="margin:0;">Bestände (Live)</h3>
         </div>
-        <div>
-          <label>Ansicht</label>
-          <select id="stockMode">
-            <option value="location">Standort-Bestand (je Abteilung)</option>
-            <option value="overall">Komplett-Bestand (je Abteilung)</option>
-            <option value="entrepreneur">Unternehmer-Bestand (gesamt)</option>
-          </select>
+        <div class="rollcard" style="padding:10px 12px; margin:0;">
+          <div class="rollcard-grid" style="grid-template-columns: repeat(2, minmax(190px, 1fr)); gap: 8px 12px;">
+            <div class="rollcard-item">
+              <label>Ansicht</label>
+              <select id="stockMode">
+                <option value="location_total">Standort-Bestand (gesamt)</option>
+                <option value="overall">Komplett-Bestand (je Abteilung)</option>
+                <option value="entrepreneur">Frachtführer-Bestand (gesamt)</option>
+              </select>
+            </div>
+            <div class="rollcard-item">
+              <label>Produkt</label>
+              <select id="stockProductType">
+                <option value="euro">Euro-Paletten</option>
+                <option value="h1">H1-Paletten</option>
+                <option value="gitterbox">Gitterboxen</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
       <div id="stockContent">
@@ -129,27 +111,39 @@
       <h3 style="margin-top:0;">Neue Buchung eröffnen (Aviso)</h3>
       <div class="row">
         <div>
+          <label>Lager (Pflicht)</label>
+          <select id="avisoLocation"></select>
+        </div>
+        <div>
           <label>Abteilung (Pflicht)</label>
           <select id="avisoDept"></select>
         </div>
         <div>
           <label>Kennzeichen (Pflicht, ohne -)</label>
-          <input id="avisoPlate" placeholder="z.B. W123AB">
+          <input id="avisoPlate" placeholder="z.B. BGLP123">
         </div>
         <div class="inline-field">
           <div class="grow">
-            <label>Unternehmer (Stammdaten)</label>
+            <label>Frachtführer (Stammdaten)</label>
             <select id="avisoEntrepreneur"></select>
           </div>
-          <button class="secondary" id="addEntrepreneurBtn" type="button" title="Unternehmer hinzufügen" aria-label="Unternehmer hinzufügen">+</button>
+          <button class="secondary" id="addEntrepreneurBtn" type="button" title="Frachtführer hinzufügen" aria-label="Frachtführer hinzufügen">+</button>
         </div>
         <div>
-          <label>Unternehmer (frei, nicht speichern)</label>
-          <input id="avisoEntrepreneurFree" placeholder="optional">
+          <label>Frachtführer (frei, nicht speichern)</label>
+          <input id="avisoEntrepreneurFree" placeholder="z.B. Müller Spedition">
         </div>
       </div>
 
       <div class="row" style="margin-top:10px;">
+        <div>
+          <label>Produkt</label>
+          <select id="avisoProductType">
+            <option value="euro">Euro-Paletten</option>
+            <option value="h1">H1-Paletten</option>
+            <option value="gitterbox">Gitterboxen</option>
+          </select>
+        </div>
         <div>
           <label>Eingang (IN)</label>
           <input id="avisoIn" type="number" min="0" value="0">
@@ -159,18 +153,86 @@
           <input id="avisoOut" type="number" min="0" value="0">
         </div>
         <div>
-          <label id="avisoEmployeeCodeLabel">Mitarbeiterkürzel (2-stellig, optional)</label>
+          <label id="avisoEmployeeCodeLabel">Lagermitarbeiter (2-stellig, optional)</label>
           <input id="avisoEmployeeCode" maxlength="2" placeholder="z.B. AB">
         </div>
         <div style="flex:1; min-width:260px;">
           <label>Notiz</label>
-          <input id="avisoNote" placeholder="optional">
+          <input id="avisoNote" placeholder="z.B. Auftragsnummer/Info">
         </div>
         <div>
           <button class="primary" id="createAvisoBtn">Aviso erstellen</button>
         </div>
       </div>
       <p id="avisoMsg"></p>
+    </div>
+
+    <div class="card" id="internalTransferCard" style="display:none;">
+      <h3 style="margin-top:0;">Interne Lagerumbuchung</h3>
+      <div class="muted" style="margin-bottom:8px;">Umbuchung zwischen Standorten oder direkter Zugang auf einen Standort (ohne Kennzeichen, Frachtführer, Abteilung).</div>
+      <div class="row">
+        <div>
+          <label>Von Standort/Lager (optional)</label>
+          <select id="internalTransferFrom"></select>
+        </div>
+        <div>
+          <label>Empfänger Standort/Lager (Pflicht)</label>
+          <select id="internalTransferTo"></select>
+        </div>
+        <div>
+          <label>Produkt</label>
+          <select id="internalTransferProductType">
+            <option value="euro">Euro-Paletten</option>
+            <option value="h1">H1-Paletten</option>
+            <option value="gitterbox">Gitterboxen</option>
+          </select>
+        </div>
+        <div>
+          <label>Menge (Pflicht)</label>
+          <input id="internalTransferQty" type="number" min="1" value="1">
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <label>Notiz (Pflicht)</label>
+          <input id="internalTransferNote" placeholder="z.B. Umlagerung Wien → Linz">
+        </div>
+        <div>
+          <button class="primary" id="createInternalTransferBtn" type="button">Umbuchung buchen</button>
+        </div>
+      </div>
+      <p id="internalTransferMsg"></p>
+    </div>
+
+    <div class="modalBack" id="entrepreneurModalBack">
+      <div class="modal" style="max-width:620px; width:100%; box-shadow:0 18px 45px rgba(15,23,42,.3); border:1px solid #e5e7eb;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3 style="margin:0;">Frachtführer anlegen</h3>
+          <button class="secondary" type="button" id="closeEntrepreneurModalBtn" style="width:auto;">✕</button>
+        </div>
+        <p class="muted" style="margin-top:0;">Bitte die Stammdaten für den neuen Frachtführer erfassen.</p>
+        <div class="row">
+          <div>
+            <label>Name (Pflicht)</label>
+            <input id="modalEntrepreneurName" placeholder="z.B. Spedition Müller">
+          </div>
+          <div>
+            <label>Straße</label>
+            <input id="modalEntrepreneurStreet" placeholder="z.B. Musterstraße 12">
+          </div>
+          <div>
+            <label>PLZ</label>
+            <input id="modalEntrepreneurPostal" placeholder="z.B. 1010">
+          </div>
+          <div>
+            <label>Ort</label>
+            <input id="modalEntrepreneurCity" placeholder="z.B. Wien">
+          </div>
+        </div>
+        <p id="entrepreneurModalMsg" style="margin:10px 0 0;"></p>
+        <div class="row" style="justify-content:flex-end; margin-top:10px;">
+          <button class="secondary" type="button" id="cancelEntrepreneurModalBtn" style="min-width:140px;">Abbrechen</button>
+          <button class="primary" type="button" id="saveEntrepreneurModalBtn" style="min-width:170px;">Frachtführer speichern</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -191,8 +253,16 @@
           </select>
         </div>
         <div>
-          <label>Suche (ID/Kennzeichen/Unternehmer/Notiz)</label>
-          <input id="caseSearch" placeholder="z.B. W123AB oder 1042">
+          <label>Translogica übernommen</label>
+          <select id="caseTranslogicaFilter">
+            <option value="">Alle</option>
+            <option value="1">Ja</option>
+            <option value="0">Nein</option>
+          </select>
+        </div>
+        <div>
+          <label>Suche (ID/Kennzeichen/Frachtführer/Notiz)</label>
+          <input id="caseSearch" name="caseSearchNoRestore" value="" placeholder="z.B. BGLP123" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false">
         </div>
         <div>
           <button class="secondary" id="reloadCasesBtn">Neu laden</button>
@@ -220,7 +290,7 @@
             <input id="histTo" type="date">
           </div>
           <div class="rollcard-item">
-            <label>Unternehmer</label>
+            <label>Frachtführer</label>
             <input id="histEntrepreneur" placeholder="optional">
           </div>
           <div class="rollcard-item">
@@ -244,10 +314,10 @@
   <!-- ENTREPRENEUR HISTORY -->
   <section id="tab-entrepreneur-history" style="display:none;">
     <div class="card">
-      <h3 style="margin-top:0;">Unternehmer Historie</h3>
+      <h3 style="margin-top:0;">Frachtführer Historie</h3>
       <div class="row">
         <div>
-          <label>Unternehmer</label>
+          <label>Frachtführer</label>
           <select id="entHistEntrepreneur">
             <option value="">Alle</option>
           </select>
@@ -305,8 +375,20 @@
         <input id="casePlate">
       </div>
       <div>
-        <label>Unternehmer</label>
+        <label>Frachtführer</label>
         <input id="caseEntrepreneur">
+      </div>
+      <div id="caseProductWrap" style="flex:0 0 calc(50% - 6px); min-width:220px;">
+        <label>Produkt</label>
+        <select id="caseProductType">
+          <option value="euro">Euro-Paletten</option>
+          <option value="h1">H1-Paletten</option>
+          <option value="gitterbox">Gitterboxen</option>
+        </select>
+      </div>
+      <div id="caseEmployeeCodeStatus4Wrap" style="display:none; flex:0 0 calc(50% - 6px); min-width:220px;">
+        <label>Lagermitarbeiter</label>
+        <input id="caseEmployeeCodeStatus4" maxlength="2" disabled>
       </div>
     </div>
 
@@ -318,6 +400,20 @@
       <div>
         <label>OUT</label>
         <input id="caseOut" type="number" min="0">
+      </div>
+      <div id="caseNonExchangeableWrap" style="display:none;">
+        <label>Nicht tauschfähig</label>
+        <input id="caseNonExchangeable" type="number" min="0" value="0">
+      </div>
+      <div id="caseEmployeeCodeWrap" style="display:none;">
+        <label id="caseEmployeeCodeLabel">Lagermitarbeiter (2-stellig, optional)</label>
+        <input id="caseEmployeeCode" maxlength="2" placeholder="z.B. AB">
+      </div>
+      <div style="min-width:260px;">
+        <label>
+          <input id="caseTranslogicaTransferred" type="checkbox">
+          In Translogica übernommen
+        </label>
       </div>
       <div style="flex:1; min-width:260px;">
         <label>Notiz</label>
@@ -339,7 +435,59 @@
   </div>
 </div>
 
+<div class="modalBack" id="approveConfirmBack" aria-hidden="true">
+  <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="approveConfirmTitle">
+    <div class="row" style="justify-content:space-between; align-items:center; gap:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="icon">✓</div>
+        <h3 id="approveConfirmTitle">Vorgang final abschließen?</h3>
+      </div>
+      <button class="secondary" id="closeApproveConfirmBtn">Schließen</button>
+    </div>
+    <p style="margin:14px 0 4px 0; line-height:1.5;">Mit dem Abschluss wird der Vorgang verbindlich gebucht und die Bestände werden aktualisiert.</p>
+    <p class="muted" style="margin:0;">Bitte prüfen Sie die Angaben im Vorgang, bevor Sie fortfahren.</p>
+    <div class="row" style="justify-content:flex-end; margin-top:16px;">
+      <button class="secondary" id="approveConfirmCancelBtn">Abbrechen</button>
+      <button class="primary" id="approveConfirmBtn">Ja, verbindlich buchen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modalBack" id="passwordModalBack" aria-hidden="true">
+  <div class="modal password-modal" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+    <div class="password-modal-head">
+      <h3 id="passwordModalTitle">Passwort ändern</h3>
+      <button class="secondary" id="closePasswordModalBtn" type="button">Schließen</button>
+    </div>
+    <p class="muted" style="margin-top:0;">Verwenden Sie ein sicheres Passwort mit mindestens 8 Zeichen.</p>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>Aktuelles Passwort</label>
+        <input id="currentPassword" type="password" autocomplete="new-password" placeholder="Aktuelles Passwort">
+      </div>
+      <div>
+        <label>Neues Passwort</label>
+        <input id="newPassword" type="password" autocomplete="off" placeholder="Mindestens 8 Zeichen">
+      </div>
+      <div>
+        <label>Neues Passwort wiederholen</label>
+        <input id="confirmPassword" type="password" autocomplete="off" placeholder="Passwort bestätigen">
+      </div>
+    </div>
+    <p id="passwordModalMsg"></p>
+    <div class="row" style="justify-content:flex-end; margin-top:8px;">
+      <button class="secondary" id="cancelPasswordBtn" type="button">Abbrechen</button>
+      <button class="primary" id="savePasswordBtn" type="button">Passwort speichern</button>
+    </div>
+  </div>
+</div>
+
+  <footer class="site-copyright">© 2026 / CTSH Systems</footer>
+<script src="theme.js"></script>
 <script src="/socket.io/socket.io.js"></script>
-<script src="/app.js"></script>
+<script src="app.js"></script>
+<script src="/public/theme.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/public/app.js"></script>
 </body>
 </html>

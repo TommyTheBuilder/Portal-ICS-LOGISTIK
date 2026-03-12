@@ -21,6 +21,63 @@ function setMsg(elId, text, ok = false) {
   el.textContent = text || "";
 }
 
+function formatDate(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+}
+
+function showApproveConfirmModal(show) {
+  const back = $("approveConfirmBack");
+  if (!back) return;
+  back.style.display = show ? "flex" : "none";
+  back.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function askApproveConfirmation() {
+  return new Promise(resolve => {
+    const approveBtn = $("approveConfirmBtn");
+    const cancelBtn = $("approveConfirmCancelBtn");
+    const closeBtn = $("closeApproveConfirmBtn");
+    const back = $("approveConfirmBack");
+    if (!approveBtn || !cancelBtn || !closeBtn || !back) {
+      resolve(confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich)."));
+      return;
+    }
+
+    let isDone = false;
+    const done = (ok) => {
+      if (isDone) return;
+      isDone = true;
+      showApproveConfirmModal(false);
+      approveBtn.removeEventListener("click", onApprove);
+      cancelBtn.removeEventListener("click", onCancel);
+      closeBtn.removeEventListener("click", onCancel);
+      back.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeydown);
+      resolve(ok);
+    };
+
+    const onApprove = () => done(true);
+    const onCancel = () => done(false);
+    const onBackdrop = (event) => {
+      if (event.target === back) done(false);
+    };
+    const onKeydown = (event) => {
+      if (event.key === "Escape") done(false);
+    };
+
+    approveBtn.addEventListener("click", onApprove);
+    cancelBtn.addEventListener("click", onCancel);
+    closeBtn.addEventListener("click", onCancel);
+    back.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeydown);
+
+    showApproveConfirmModal(true);
+  });
+}
+
 async function readJsonSafe(res) {
   try { return await res.json(); } catch { return null; }
 }
@@ -60,6 +117,157 @@ function bindLiveToggles() {
   }
 }
 
+function showPasswordModal(show) {
+  const back = $("passwordModalBack");
+  if (!back) return;
+  back.style.display = show ? "flex" : "none";
+  back.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function closeSettingsMenu() {
+  const menu = $("settingsMenu");
+  const trigger = $("settingsTriggerBtn");
+  if (!menu || !trigger) return;
+  menu.classList.remove("open");
+  trigger.setAttribute("aria-expanded", "false");
+}
+
+function openSettingsMenu() {
+  const menu = $("settingsMenu");
+  const trigger = $("settingsTriggerBtn");
+  if (!menu || !trigger) return;
+  menu.classList.add("open");
+  trigger.setAttribute("aria-expanded", "true");
+}
+
+function bindSettingsMenu() {
+  const trigger = $("settingsTriggerBtn");
+  const wrap = $("settingsMenuWrap");
+  const menu = $("settingsMenu");
+  const darkmodeBtn = $("menuDarkmodeBtn");
+  const openPasswordBtn = $("openChangePasswordBtn");
+  const containerRegistrationBtn = $("containerRegistrationBtn");
+  const moduleDashboardBtn = $("moduleDashboardBtn");
+  if (!trigger || !wrap || !menu) return;
+
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (menu.classList.contains("open")) closeSettingsMenu();
+    else openSettingsMenu();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!wrap.contains(event.target)) closeSettingsMenu();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeSettingsMenu();
+      showPasswordModal(false);
+    }
+  });
+
+  if (darkmodeBtn) {
+    darkmodeBtn.addEventListener("click", () => {
+      const themeToggleBtn = $("themeToggleBtn");
+      if (themeToggleBtn) themeToggleBtn.click();
+      closeSettingsMenu();
+    });
+  }
+
+  if (openPasswordBtn) {
+    openPasswordBtn.addEventListener("click", () => {
+      closeSettingsMenu();
+      setMsg("passwordModalMsg", "", true);
+      $("currentPassword").value = "";
+      $("newPassword").value = "";
+      $("confirmPassword").value = "";
+      showPasswordModal(true);
+    });
+  }
+
+  if (containerRegistrationBtn) {
+    containerRegistrationBtn.addEventListener("click", async () => {
+      closeSettingsMenu();
+      containerRegistrationBtn.disabled = true;
+      try {
+        const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
+        const data = await readJsonSafe(r);
+        if (!r.ok || !data?.url) {
+          alert(data?.error || "Container Anmeldung ist aktuell nicht verfügbar.");
+          return;
+        }
+        window.location.href = data.url;
+      } catch {
+        alert("Container Anmeldung ist aktuell nicht verfügbar.");
+      } finally {
+        containerRegistrationBtn.disabled = false;
+      }
+    });
+  }
+
+  if (moduleDashboardBtn) {
+    moduleDashboardBtn.addEventListener("click", () => {
+      closeSettingsMenu();
+      window.location.href = "/public/dashboard.html";
+    });
+  }
+}
+
+function bindPasswordModal() {
+  const back = $("passwordModalBack");
+  const closeBtn = $("closePasswordModalBtn");
+  const cancelBtn = $("cancelPasswordBtn");
+  const saveBtn = $("savePasswordBtn");
+  if (!back || !closeBtn || !cancelBtn || !saveBtn) return;
+
+  const close = () => showPasswordModal(false);
+  closeBtn.addEventListener("click", close);
+  cancelBtn.addEventListener("click", close);
+  back.addEventListener("click", (event) => {
+    if (event.target === back) close();
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const current_password = String($("currentPassword").value || "").trim();
+    const new_password = String($("newPassword").value || "").trim();
+    const confirm_password = String($("confirmPassword").value || "").trim();
+
+    if (!current_password || !new_password || !confirm_password) {
+      setMsg("passwordModalMsg", "Bitte alle Felder ausfüllen.");
+      return;
+    }
+    if (new_password.length < 8) {
+      setMsg("passwordModalMsg", "Das neue Passwort muss mindestens 8 Zeichen lang sein.");
+      return;
+    }
+    if (new_password !== confirm_password) {
+      setMsg("passwordModalMsg", "Die neue Passwörter stimmen nicht überein.");
+      return;
+    }
+
+    saveBtn.disabled = true;
+    setMsg("passwordModalMsg", "Passwort wird gespeichert ...", true);
+    try {
+      const r = await api("/api/change-password", {
+        method: "POST",
+        body: JSON.stringify({ current_password, new_password })
+      });
+      const data = await readJsonSafe(r);
+      if (!r.ok) {
+        setMsg("passwordModalMsg", data?.error || "Passwort konnte nicht geändert werden.");
+        return;
+      }
+      setMsg("passwordModalMsg", "Passwort erfolgreich geändert.", true);
+      setTimeout(() => showPasswordModal(false), 700);
+    } catch {
+      setMsg("passwordModalMsg", "Netzwerkfehler. Bitte erneut versuchen.");
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+}
+
 let ME = null;
 let PERMS = {};
 let LOCATIONS = [];
@@ -68,11 +276,19 @@ let ENTREPRENEURS = [];
 let CURRENT_LOCATION = null;
 let CURRENT_DEPARTMENT = null;
 
-let STOCK_MODE = localStorage.getItem("stockMode") || "location";
+let STOCK_MODE = localStorage.getItem("stockMode") || "location_total";
+if (STOCK_MODE === "location") STOCK_MODE = "location_total";
+let STOCK_PRODUCT_TYPE = localStorage.getItem("stockProductType") || "euro";
+
+const PRODUCT_TYPE_LABELS = {
+  euro: "Euro-Paletten",
+  h1: "H1-Paletten",
+  gitterbox: "Gitterboxen"
+};
 
 const socket = io();
 function joinLocationRoom() {
-  if (CURRENT_LOCATION) socket.emit("joinLocation", CURRENT_LOCATION);
+  if (CURRENT_LOCATION > 0) socket.emit("joinLocation", CURRENT_LOCATION);
 }
 
 // Tabs
@@ -91,17 +307,23 @@ function bindTabs() {
 }
 
 $("logoutBtn").addEventListener("click", () => {
+  closeSettingsMenu();
   localStorage.removeItem("token");
   window.location.href = "/login.html";
 });
-$("adminBtn").addEventListener("click", () => window.location.href = "/admin.html");
+$("entrepreneursMasterBtn")?.addEventListener("click", () => window.location.href = "/entrepreneurs.html");
+$("adminBtn").addEventListener("click", () => {
+  closeSettingsMenu();
+  window.location.href = "/admin.html";
+});
 
 async function loadMe() {
   const r = await api("/api/me", { method: "GET", headers: {} });
   if (!r.ok) { localStorage.removeItem("token"); window.location.href = "/login.html"; return; }
   ME = await r.json();
-  $("me").textContent = `${ME.username} • ${ME.role}`;
-  $("adminBtn").style.display = (ME.role === "admin") ? "" : "none";
+  $("me").textContent = `${ME.username} • ${ME.business_role_name || "-"}`;
+  $("adminBtn").style.display = "none";
+  socket.emit("joinUser", ME.id);
 }
 
 async function loadPerms() {
@@ -116,20 +338,18 @@ function ensureOverallOption() {
 
   let optOverall = stockSel.querySelector('option[value="overall"]');
   if (!optOverall && PERMS?.stock?.overall) {
-    // ✅ Falls die Option im HTML fehlt: dynamisch hinzufügen
     optOverall = document.createElement("option");
     optOverall.value = "overall";
     optOverall.textContent = "Komplett-Bestand (alle Standorte)";
     stockSel.appendChild(optOverall);
   }
 
-  // Sichtbarkeit/Reset
   if (optOverall) optOverall.style.display = PERMS?.stock?.overall ? "" : "none";
 
   if (!PERMS?.stock?.overall && stockSel.value === "overall") {
-    stockSel.value = "location";
-    STOCK_MODE = "location";
-    localStorage.setItem("stockMode", "location");
+    stockSel.value = "location_total";
+    STOCK_MODE = "location_total";
+    localStorage.setItem("stockMode", "location_total");
   }
 }
 
@@ -141,16 +361,32 @@ function applyPermsToUI() {
     || PERMS?.cases?.approve
     || PERMS?.cases?.create
     || PERMS?.cases?.cancel
+    || PERMS?.cases?.delete
   );
   const canHistory = !!PERMS?.bookings?.view;
   const canExport = !!PERMS?.bookings?.export;
 
   const tabBtn = (name) => document.querySelector(`.tabs button[data-tab="${name}"]`);
-  if (tabBtn("aviso")) tabBtn("aviso").style.display = PERMS?.cases?.create ? "" : "none";
+  const canAviso = !!(PERMS?.cases?.create || PERMS?.cases?.internal_transfer);
+  if (tabBtn("aviso")) tabBtn("aviso").style.display = canAviso ? "" : "none";
   if (tabBtn("cases")) tabBtn("cases").style.display = canCases ? "" : "none";
   if (tabBtn("history")) tabBtn("history").style.display = canHistory ? "" : "none";
   if (tabBtn("entrepreneur-history")) tabBtn("entrepreneur-history").style.display = canHistory ? "" : "none";
   if (tabBtn("export")) tabBtn("export").style.display = canExport ? "" : "none";
+
+  if ($("entrepreneursMasterBtn")) {
+    $("entrepreneursMasterBtn").style.display = PERMS?.masterdata?.entrepreneurs_manage ? "" : "none";
+  }
+  if ($("adminBtn")) {
+    $("adminBtn").style.display = PERMS?.admin?.full_access ? "" : "none";
+  }
+  if ($("containerRegistrationBtn")) {
+    $("containerRegistrationBtn").style.display = PERMS?.integrations?.container_registration ? "" : "none";
+  }
+
+  if ($("internalTransferCard")) {
+    $("internalTransferCard").style.display = PERMS?.cases?.internal_transfer ? "" : "none";
+  }
 
   ensureOverallOption();
 
@@ -160,14 +396,21 @@ function applyPermsToUI() {
   const employeeLabel = $("avisoEmployeeCodeLabel");
   const employeeInput = $("avisoEmployeeCode");
   if (employeeLabel && employeeInput) {
-    const required = !!PERMS?.cases?.require_employee_code;
-    employeeLabel.textContent = required
-      ? "Mitarbeiterkürzel (2-stellig, Pflicht)"
-      : "Mitarbeiterkürzel (2-stellig, optional)";
-    if (required) {
-      employeeInput.setAttribute("required", "required");
+    employeeLabel.textContent = "Lagermitarbeiter (2-stellig, optional)";
+    employeeInput.removeAttribute("required");
+  }
+
+  const caseEmployeeLabel = $("caseEmployeeCodeLabel");
+  const caseEmployeeInput = $("caseEmployeeCode");
+  if (caseEmployeeLabel && caseEmployeeInput) {
+    const requiredInStatus2 = !!PERMS?.cases?.require_employee_code;
+    caseEmployeeLabel.textContent = requiredInStatus2
+      ? "Lagermitarbeiter (2-stellig, Pflicht bei Status 2)"
+      : "Lagermitarbeiter (2-stellig, optional)";
+    if (requiredInStatus2) {
+      caseEmployeeInput.setAttribute("required", "required");
     } else {
-      employeeInput.removeAttribute("required");
+      caseEmployeeInput.removeAttribute("required");
     }
   }
 }
@@ -177,16 +420,55 @@ async function loadLocations() {
   LOCATIONS = r.ok ? await r.json() : [];
 
   const sel = $("locationSelect");
+  const avisoSel = $("avisoLocation");
+  const transferFromSel = $("internalTransferFrom");
+  const transferToSel = $("internalTransferTo");
   sel.innerHTML = "";
+  if (PERMS?.filters?.all_locations) {
+    const allOpt = document.createElement("option");
+    allOpt.value = "-1";
+    allOpt.textContent = "Alle Standorte";
+    sel.appendChild(allOpt);
+  }
+  if (avisoSel) avisoSel.innerHTML = `<option value="">Bitte wählen…</option>`;
+  if (transferFromSel) transferFromSel.innerHTML = `<option value="">Kein Absender (nur Zugang)</option>`;
+  if (transferToSel) transferToSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   LOCATIONS.forEach(l => {
     const o = document.createElement("option");
     o.value = l.id;
     o.textContent = l.name;
     sel.appendChild(o);
+
+    if (avisoSel) {
+      const o2 = document.createElement("option");
+      o2.value = l.id;
+      o2.textContent = l.name;
+      avisoSel.appendChild(o2);
+    }
+
+    if (transferFromSel) {
+      const o3 = document.createElement("option");
+      o3.value = l.id;
+      o3.textContent = l.name;
+      transferFromSel.appendChild(o3);
+    }
+
+    if (transferToSel) {
+      const o4 = document.createElement("option");
+      o4.value = l.id;
+      o4.textContent = l.name;
+      transferToSel.appendChild(o4);
+    }
   });
 
-  const locked = ME && ME.role !== "admin" && ME.location_id ? String(ME.location_id) : null;
+  const locked = ME && ME.role !== "admin" && ME.location_id && !PERMS?.filters?.all_locations
+    ? String(ME.location_id)
+    : null;
   if (locked) sel.value = locked;
+  else if (PERMS?.filters?.all_locations) sel.value = "-1";
+  if (avisoSel) avisoSel.value = locked || "";
+  if (transferFromSel) transferFromSel.value = locked || "";
+  if (transferToSel) transferToSel.value = locked || "";
 
   CURRENT_LOCATION = Number(sel.value || 0);
   joinLocationRoom();
@@ -205,6 +487,11 @@ async function loadDepartments() {
   avisoSel.innerHTML = `<option value="">Bitte wählen…</option>`;
   caseSel.innerHTML = "";
   if (entHistDept) entHistDept.innerHTML = `<option value="">Alle</option>`;
+
+  const allDepartmentsOpt = document.createElement("option");
+  allDepartmentsOpt.value = "-1";
+  allDepartmentsOpt.textContent = "Alle Abteilungen";
+  sel.appendChild(allDepartmentsOpt);
 
   DEPARTMENTS.forEach(d => {
     const o1 = document.createElement("option");
@@ -226,7 +513,7 @@ async function loadDepartments() {
     }
   });
 
-  CURRENT_DEPARTMENT = Number(sel.value || 0);
+  CURRENT_DEPARTMENT = Number(sel.value || -1);
 }
 
 async function loadEntrepreneurs(selectedName = "") {
@@ -235,7 +522,7 @@ async function loadEntrepreneurs(selectedName = "") {
 
   const sel = $("avisoEntrepreneur");
   if (!sel) return;
-  const current = selectedName || sel.value;
+  const current = selectedName || "";
 
   sel.innerHTML = `<option value="">Bitte wählen…</option>`;
   ENTREPRENEURS.forEach((e) => {
@@ -272,17 +559,16 @@ function statusLabel(s) {
   })[Number(s)] || String(s);
 }
 
-function canSeeAllCases() {
-  return !!(PERMS?.cases?.claim || PERMS?.cases?.edit || PERMS?.cases?.submit || PERMS?.cases?.approve || PERMS?.cases?.cancel);
-}
-
 // ---------- Stock ----------
 function updateStockHint() {
   const hint = $("stockHint");
   if (!hint) return;
   if (STOCK_MODE === "overall") hint.textContent = "Komplett-Bestand (über alle Standorte).";
-  else if (STOCK_MODE === "entrepreneur") hint.textContent = "Unternehmer-Bestand (über alle Standorte).";
-  else hint.textContent = "Standort-Bestand (nur ausgewählter Standort).";
+  else if (STOCK_MODE === "location_total") hint.textContent = "Standort-Bestand gesamt (unabhängig von Abteilung/Frachtführer).";
+  else if (STOCK_MODE === "entrepreneur") hint.textContent = "Frachtführer-Bestand (über alle Standorte).";
+  else hint.textContent = "Standort-Bestand gesamt (unabhängig von Abteilung/Frachtführer).";
+
+  hint.textContent += ` Produkt: ${PRODUCT_TYPE_LABELS[STOCK_PRODUCT_TYPE] || STOCK_PRODUCT_TYPE}`;
 }
 
 async function loadStock() {
@@ -293,11 +579,13 @@ async function loadStock() {
 
   let url = "";
   if (STOCK_MODE === "overall") {
-    url = `/api/stock?mode=overall`;
+    url = `/api/stock?mode=overall&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
+  } else if (STOCK_MODE === "location_total") {
+    url = `/api/stock?mode=location_total&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else if (STOCK_MODE === "entrepreneur") {
-    url = `/api/stock?mode=entrepreneur`;
+    url = `/api/stock?mode=entrepreneur&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   } else {
-    url = `/api/stock?mode=location&location_id=${encodeURIComponent(CURRENT_LOCATION)}`;
+    url = `/api/stock?mode=location_total&product_type=${encodeURIComponent(STOCK_PRODUCT_TYPE)}`;
   }
 
   const r = await api(url, { method: "GET", headers: {} });
@@ -309,14 +597,27 @@ async function loadStock() {
   const rows = await r.json();
 
   const isEntrepreneur = STOCK_MODE === "entrepreneur";
+  const isLocationTotal = STOCK_MODE === "location_total";
   const head = isEntrepreneur
-    ? `<tr><th>Unternehmer</th><th>Soll</th></tr>`
-    : `<tr><th>Abteilung</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`;
+    ? `<tr><th>Frachtführer</th><th>Soll</th></tr>`
+    : isLocationTotal
+      ? `<tr><th>Standort</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`
+      : `<tr><th>Abteilung</th><th>IN</th><th>OUT</th><th>Saldo</th></tr>`;
   const body = (rows || []).map(x => {
     if (isEntrepreneur) {
       return `
         <tr>
           <td>${x.entrepreneur || "-"}</td>
+          <td><b>${x.saldo}</b></td>
+        </tr>
+      `;
+    }
+    if (isLocationTotal) {
+      return `
+        <tr>
+          <td>${x.location}</td>
+          <td>${x.ins}</td>
+          <td>${x.outs}</td>
           <td><b>${x.saldo}</b></td>
         </tr>
       `;
@@ -352,71 +653,133 @@ if ($("stockMode")) {
   });
 }
 
+if ($("stockProductType")) {
+  $("stockProductType").value = STOCK_PRODUCT_TYPE;
+  $("stockProductType").addEventListener("change", async () => {
+    STOCK_PRODUCT_TYPE = $("stockProductType").value;
+    localStorage.setItem("stockProductType", STOCK_PRODUCT_TYPE);
+    await loadStock();
+  });
+}
+
 // ---------- Cases ----------
 let CASES = [];
 let ACTIVE_CASE_ID = null;
-let HAS_LOADED_CASES = false;
+let ACTIVE_CASE_STATUS = null;
+let NOTIFICATIONS = [];
+let CASE_SEARCH_USER_TOUCHED = false;
+let CASE_SEARCH_TERM = "";
 
-function notifyStatus3(caseItem) {
-  if (!("Notification" in window)) return;
-
-  const title = `Aviso #${caseItem.id} in Prüfung`;
-  const bodyParts = [
-    caseItem.license_plate ? `Kennzeichen: ${caseItem.license_plate}` : null,
-    caseItem.department ? `Abteilung: ${caseItem.department}` : null
-  ].filter(Boolean);
-
-  const show = () => {
-    new Notification(title, {
-      body: bodyParts.join(" · ")
-    });
-  };
-
-  if (Notification.permission === "granted") {
-    show();
-  } else if (Notification.permission === "default") {
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") show();
-    });
+function clearCaseSearchFilter() {
+  const caseSearchEl = $("caseSearch");
+  if (caseSearchEl) {
+    caseSearchEl.value = "";
   }
+  CASE_SEARCH_USER_TOUCHED = false;
+  CASE_SEARCH_TERM = "";
+}
+
+function syncCaseSearchFromInput() {
+  const caseSearchEl = $("caseSearch");
+  CASE_SEARCH_TERM = (caseSearchEl?.value || "").trim();
+}
+
+function renderNotifications() {
+  const panel = $("notificationPanel");
+  const badge = $("notificationBadge");
+  if (!panel || !badge) return;
+
+  const unreadCount = NOTIFICATIONS.filter((n) => !n.is_read).length;
+  badge.textContent = String(unreadCount);
+  badge.style.display = unreadCount > 0 ? "" : "none";
+
+  if (NOTIFICATIONS.length === 0) {
+    panel.innerHTML = '<div class="notification-item">Keine Benachrichtigungen</div>';
+    return;
+  }
+
+  panel.innerHTML = NOTIFICATIONS.map((n) => `
+    <div class="notification-item ${n.is_read ? "" : "unread"}" data-notification-id="${n.id}" data-case-id="${n.case_id || ""}">
+      <div><b>${n.title}</b></div>
+      <div>${n.message}</div>
+      <div class="muted">${formatDate(n.created_at)}</div>
+    </div>
+  `).join("");
+
+  document.querySelectorAll("[data-notification-id]").forEach((el) => {
+    el.addEventListener("click", async () => {
+      const id = Number(el.getAttribute("data-notification-id"));
+      const caseId = Number(el.getAttribute("data-case-id") || 0);
+      if (id) {
+        await api(`/api/notifications/${encodeURIComponent(id)}/read`, { method: "PUT", body: JSON.stringify({}) });
+      }
+      if (caseId) {
+        await loadCases();
+        openCaseModal(caseId);
+      }
+      await loadNotifications();
+    });
+  });
+}
+
+async function loadNotifications() {
+  const r = await api("/api/notifications", { method: "GET", headers: {} });
+  if (!r.ok) return;
+  const data = await r.json();
+  NOTIFICATIONS = Array.isArray(data.items) ? data.items : [];
+  renderNotifications();
+}
+
+function bindNotificationPanel() {
+  const btn = $("notificationBtn");
+  const panel = $("notificationPanel");
+  if (!btn || !panel) return;
+
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    panel.classList.toggle("open");
+  });
+
+  document.addEventListener("click", () => panel.classList.remove("open"));
+  panel.addEventListener("click", (event) => event.stopPropagation());
 }
 
 async function loadCases() {
   if (!CURRENT_LOCATION) return;
 
   const f = $("caseStatusFilter").value;
-  const search = ($("caseSearch").value || "").trim();
-  const mine = canSeeAllCases() ? "0" : "1";
-  const previousStatuses = new Map(CASES.map(c => [Number(c.id), Number(c.status)]));
+  const translogicaTransferred = $("caseTranslogicaFilter").value;
+  const search = CASE_SEARCH_USER_TOUCHED ? CASE_SEARCH_TERM.trim() : "";
 
   const params = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
     ...(f ? { status: f } : {}),
-    ...(search ? { search } : {}),
-    ...(mine === "1" ? { mine: "1" } : {})
+    ...(translogicaTransferred !== "" ? { translogica_transferred: translogicaTransferred } : {}),
+    ...(search ? { search } : {})
   });
 
-  const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
-  CASES = r.ok ? await r.json() : [];
-  if (HAS_LOADED_CASES) {
-    CASES.forEach((c) => {
-      const prev = previousStatuses.get(Number(c.id));
-      if (prev !== 3 && Number(c.status) === 3) {
-        notifyStatus3(c);
-      }
-    });
-  }
-  HAS_LOADED_CASES = true;
+  try {
+    const r = await api(`/api/cases?${params.toString()}`, { method: "GET", headers: {} });
+    if (!r.ok) {
+      const data = await readJsonSafe(r);
+      setMsg("caseModalMsg", data?.error || `Vorgänge konnten nicht geladen werden (HTTP ${r.status})`);
+      return;
+    }
 
-  renderCasesTable();
-  renderCasesDashboard();
+    const nextCases = await r.json().catch(() => []);
+    CASES = Array.isArray(nextCases) ? nextCases : [];
+    renderCasesTable();
+    renderCasesDashboard();
+  } catch {
+    setMsg("caseModalMsg", "Netzwerkfehler beim Laden der Vorgänge");
+  }
 }
 
 function renderCasesDashboard() {
   const rows = CASES.slice(0, 10);
   const html = `
     <table>
-      <thead><tr><th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>IN/OUT</th><th>Aktion</th></tr></thead>
+      <thead><tr><th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Produkt</th><th>IN/OUT</th><th>Aktion</th></tr></thead>
       <tbody>
         ${rows.map(c => `
           <tr>
@@ -424,11 +787,12 @@ function renderCasesDashboard() {
             <td>${statusLabel(c.status)}</td>
             <td>${c.department}</td>
             <td><b>${c.license_plate}</b></td>
+            <td>${PRODUCT_TYPE_LABELS[c.product_type] || c.product_type || "-"}</td>
             <td>${c.qty_in}/${c.qty_out}</td>
             <td><button class="secondary" data-open-case="${c.id}">Öffnen</button></td>
           </tr>
         `).join("")}
-        ${(rows.length === 0) ? `<tr><td colspan="6" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
+        ${(rows.length === 0) ? `<tr><td colspan="7" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
       </tbody>
     </table>
   `;
@@ -441,7 +805,7 @@ function renderCasesTable() {
     <table>
       <thead>
         <tr>
-          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Unternehmer</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
+          <th>ID</th><th>Status</th><th>Abteilung</th><th>Kennzeichen</th><th>Frachtführer</th><th>Translogica</th><th>Produkt</th><th>IN/OUT</th><th>Erstellt</th><th>Aktion</th>
         </tr>
       </thead>
       <tbody>
@@ -452,16 +816,18 @@ function renderCasesTable() {
             <td>${c.department}</td>
             <td><b>${c.license_plate}</b></td>
             <td>${c.entrepreneur || "-"}</td>
+            <td>${c.translogica_transferred ? "Ja" : "Nein"}</td>
+            <td>${PRODUCT_TYPE_LABELS[c.product_type] || c.product_type || "-"}</td>
             <td>${c.qty_in}/${c.qty_out}</td>
-            <td>${new Date(c.created_at).toLocaleString("de-DE")}</td>
+            <td>${formatDate(c.created_at)}</td>
             <td>
               <button class="secondary" data-open-case="${c.id}">Öffnen</button>
               ${(PERMS?.bookings?.receipt && Number(c.status) === 3) ? `<button class="secondary" data-print-case="${c.id}">Vorl. Druck</button>` : ""}
-              ${(PERMS?.cases?.cancel) ? `<button class="danger" data-delete-case="${c.id}">Löschen</button>` : ""}
+              ${(PERMS?.cases?.delete) ? `<button class="danger" data-delete-case="${c.id}">Löschen</button>` : ""}
             </td>
           </tr>
         `).join("")}
-        ${(CASES.length === 0) ? `<tr><td colspan="8" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
+        ${(CASES.length === 0) ? `<tr><td colspan="10" style="padding:10px;color:#6b7280;">Keine Vorgänge</td></tr>` : ""}
       </tbody>
     </table>
   `;
@@ -516,11 +882,22 @@ async function caseAction(action, payload = {}) {
   return { ok: true, data };
 }
 
+async function fetchCaseById(id) {
+  const rr = await api(`/api/cases/${encodeURIComponent(id)}`, {
+    method: "GET",
+    headers: {}
+  });
+  if (!rr.ok) return null;
+  return rr.json().catch(() => null);
+}
+
 async function openCaseModal(id) {
   let c = CASES.find(x => Number(x.id) === Number(id));
+  if (!c) c = await fetchCaseById(id);
   if (!c) return;
 
   ACTIVE_CASE_ID = id;
+  ACTIVE_CASE_STATUS = Number(c.status);
 
   if (Number(c.status) === 1 && PERMS?.cases?.claim) {
     const rr = await api(`/api/cases/${encodeURIComponent(id)}`, {
@@ -528,10 +905,13 @@ async function openCaseModal(id) {
       body: JSON.stringify({ action: "claim" })
     });
     if (rr.ok) {
+      const refreshed = await fetchCaseById(id);
+      c = refreshed || CASES.find(x => Number(x.id) === Number(id)) || c;
       await loadCases();
-      c = CASES.find(x => Number(x.id) === Number(id)) || c;
     }
   }
+
+  ACTIVE_CASE_STATUS = Number(c.status);
 
   $("caseModalMeta").textContent = `#${c.id} • Status ${c.status} (${statusLabel(c.status)}) • ${c.location}`;
 
@@ -541,14 +921,32 @@ async function openCaseModal(id) {
   $("caseNote").value = c.note || "";
   $("caseIn").value = c.qty_in ?? 0;
   $("caseOut").value = c.qty_out ?? 0;
+  const nonExchangeableQty = Number(c.non_exchangeable_qty ?? 0);
+  $("caseNonExchangeable").value = nonExchangeableQty;
+  $("caseProductType").value = c.product_type || "euro";
+  $("caseTranslogicaTransferred").checked = !!c.translogica_transferred;
+  $("caseTranslogicaTransferred").disabled = !(PERMS?.bookings?.translogica && Number(c.status) === 4);
+  $("caseTranslogicaTransferred").closest("div").style.display = Number(c.status) === 4 ? "" : "none";
+  const showNonExchangeable = Number(c.status) >= 2;
+  const showStatus2Fields = Number(c.status) === 2;
+  const showStatus4EmployeeField = Number(c.status) === 4;
+  $("caseNonExchangeableWrap").style.display = showNonExchangeable ? "" : "none";
+  $("caseNonExchangeable").disabled = !showStatus2Fields;
+  $("caseEmployeeCodeWrap").style.display = showStatus2Fields ? "" : "none";
+  $("caseEmployeeCode").disabled = !showStatus2Fields;
+  $("caseEmployeeCode").value = c.employee_code || "";
+  $("caseEmployeeCodeStatus4Wrap").style.display = showStatus4EmployeeField ? "" : "none";
+  $("caseEmployeeCodeStatus4").value = c.employee_code || "";
+  $("caseProductType").disabled = Number(c.status) === 4;
 
   $("saveCaseBtn").style.display = (PERMS?.cases?.edit && (c.status === 1 || c.status === 2)) ? "" : "none";
   $("claimCaseBtn").style.display = (PERMS?.cases?.claim && c.status === 1) ? "" : "none";
   $("submitCaseBtn").style.display = (PERMS?.cases?.submit && c.status === 2) ? "" : "none";
-  $("printCaseBtn").style.display = (PERMS?.bookings?.receipt && c.status === 3) ? "" : "none";
+  $("printCaseBtn").style.display = (PERMS?.bookings?.receipt && [3, 4].includes(Number(c.status))) ? "" : "none";
+  $("printCaseBtn").textContent = Number(c.status) === 4 ? "Drucken" : "Vorläufig drucken";
   $("approveCaseBtn").style.display = (PERMS?.cases?.approve && c.status === 3) ? "" : "none";
   $("cancelCaseBtn").style.display = (PERMS?.cases?.cancel && [1, 2, 3].includes(Number(c.status))) ? "" : "none";
-  $("deleteCaseBtn").style.display = (PERMS?.cases?.cancel && [0, 1].includes(Number(c.status))) ? "" : "none";
+  $("deleteCaseBtn").style.display = (PERMS?.cases?.delete && [0, 1].includes(Number(c.status))) ? "" : "none";
 
   showCaseModal(true);
 }
@@ -561,7 +959,10 @@ $("saveCaseBtn").addEventListener("click", async () => {
     entrepreneur: $("caseEntrepreneur").value,
     note: $("caseNote").value,
     qty_in: Number($("caseIn").value || 0),
-    qty_out: Number($("caseOut").value || 0)
+    qty_out: Number($("caseOut").value || 0),
+    non_exchangeable_qty: ACTIVE_CASE_STATUS === 2 ? Number($("caseNonExchangeable").value || 0) : undefined,
+    employee_code: ACTIVE_CASE_STATUS === 2 ? (($("caseEmployeeCode").value || "").trim().toUpperCase() || null) : undefined,
+    product_type: $("caseProductType").value
   });
   if (!ok) return;
   setMsg("caseModalMsg", "Gespeichert", true);
@@ -570,7 +971,8 @@ $("saveCaseBtn").addEventListener("click", async () => {
 
 $("approveCaseBtn").addEventListener("click", async () => {
   setMsg("caseModalMsg", "");
-  if (!confirm("Wirklich abschließen? Danach wird gebucht (Bestand ändert sich).")) return;
+  const isConfirmed = await askApproveConfirmation();
+  if (!isConfirmed) return;
 
   const { ok, data } = await caseAction("approve");
   if (!ok) return;
@@ -581,13 +983,36 @@ $("approveCaseBtn").addEventListener("click", async () => {
   await loadHistory();
 });
 
+$("caseTranslogicaTransferred").addEventListener("change", async () => {
+  const { ok } = await caseAction("set_translogica", {
+    translogica_transferred: $("caseTranslogicaTransferred").checked
+  });
+  if (!ok) return;
+  setMsg("caseModalMsg", "Translogica-Status gespeichert", true);
+  await loadCases();
+});
+
 $("claimCaseBtn").addEventListener("click", async () => {
   const { ok } = await caseAction("claim");
   if (ok) { await loadCases(); }
 });
 
 $("submitCaseBtn").addEventListener("click", async () => {
-  const { ok } = await caseAction("submit");
+  const employee_code = (($("caseEmployeeCode").value || "").trim().toUpperCase() || "");
+  if (ACTIVE_CASE_STATUS === 2 && PERMS?.cases?.require_employee_code && !employee_code) {
+    return setMsg("caseModalMsg", "Lagermitarbeiter (2-stellig) ist bei Status 2 Pflicht");
+  }
+  if (employee_code && !/^[A-Z0-9]{2}$/.test(employee_code)) {
+    return setMsg("caseModalMsg", "Lagermitarbeiter muss genau 2 Zeichen haben");
+  }
+
+  const payload = ACTIVE_CASE_STATUS === 2
+    ? {
+      non_exchangeable_qty: Number($("caseNonExchangeable").value || 0),
+      employee_code: employee_code || null
+    }
+    : {};
+  const { ok } = await caseAction("submit", payload);
   if (ok) { await loadCases(); }
 });
 
@@ -624,11 +1049,33 @@ $("deleteCaseBtn").addEventListener("click", async () => {
 });
 
 // ---------- Aviso ----------
+function resetAvisoForm() {
+  $("avisoLocation").value = "";
+  $("avisoDept").value = "";
+  $("avisoPlate").value = "";
+  $("avisoEntrepreneur").value = "";
+  $("avisoEntrepreneurFree").value = "";
+  $("avisoNote").value = "";
+  $("avisoIn").value = 0;
+  $("avisoOut").value = 0;
+  $("avisoProductType").value = "euro";
+  $("avisoEmployeeCode").value = "";
+}
+
+function resetInternalTransferForm() {
+  if ($("internalTransferFrom")) $("internalTransferFrom").value = "";
+  if ($("internalTransferTo")) $("internalTransferTo").value = "";
+  if ($("internalTransferProductType")) $("internalTransferProductType").value = "euro";
+  if ($("internalTransferQty")) $("internalTransferQty").value = 1;
+  if ($("internalTransferNote")) $("internalTransferNote").value = "";
+}
+
 $("createAvisoBtn").addEventListener("click", async () => {
   setMsg("avisoMsg", "");
   if (!PERMS?.cases?.create) return setMsg("avisoMsg", "Keine Berechtigung für Aviso");
 
   const department_id = $("avisoDept").value;
+  const location_id = $("avisoLocation").value;
   const license_plate = ($("avisoPlate").value || "").trim();
   const entrepreneurFree = ($("avisoEntrepreneurFree").value || "").trim();
   const entrepreneurSelect = $("avisoEntrepreneur").value;
@@ -636,28 +1083,28 @@ $("createAvisoBtn").addEventListener("click", async () => {
   const note = $("avisoNote").value;
   const qty_in = Number($("avisoIn").value || 0);
   const qty_out = Number($("avisoOut").value || 0);
+  const product_type = $("avisoProductType").value;
   const employee_code_raw = ($("avisoEmployeeCode").value || "").trim();
   const employee_code = employee_code_raw ? employee_code_raw.toUpperCase() : "";
 
+  if (!location_id) return setMsg("avisoMsg", "Bitte Lager auswählen");
   if (!department_id) return setMsg("avisoMsg", "Bitte Abteilung auswählen");
   if (!license_plate) return setMsg("avisoMsg", "Kennzeichen ist Pflicht");
-  if (PERMS?.cases?.require_employee_code && !employee_code) {
-    return setMsg("avisoMsg", "Mitarbeiterkürzel (2-stellig) ist Pflicht");
-  }
   if (employee_code && !/^[A-Z0-9]{2}$/.test(employee_code)) {
-    return setMsg("avisoMsg", "Mitarbeiterkürzel muss genau 2 Zeichen haben");
+    return setMsg("avisoMsg", "Lagermitarbeiter muss genau 2 Zeichen haben");
   }
 
   const rr = await api("/api/cases", {
     method: "POST",
     body: JSON.stringify({
-      location_id: CURRENT_LOCATION,
+      location_id: Number(location_id),
       department_id: Number(department_id),
       license_plate,
       entrepreneur,
       note,
       qty_in,
       qty_out,
+      product_type,
       employee_code: employee_code || null
     })
   });
@@ -666,28 +1113,89 @@ $("createAvisoBtn").addEventListener("click", async () => {
   if (!rr.ok) return setMsg("avisoMsg", data.error || "Aviso konnte nicht erstellt werden");
 
   setMsg("avisoMsg", `Aviso erstellt (#${data.id})`, true);
-  $("avisoPlate").value = "";
-  $("avisoEntrepreneur").value = "";
-  $("avisoEntrepreneurFree").value = "";
-  $("avisoNote").value = "";
-  $("avisoIn").value = 0;
-  $("avisoOut").value = 0;
-  $("avisoEmployeeCode").value = "";
+  resetAvisoForm();
 
   await loadCases();
 });
 
-$("addEntrepreneurBtn").addEventListener("click", async () => {
+$("createInternalTransferBtn")?.addEventListener("click", async () => {
+  setMsg("internalTransferMsg", "");
+  if (!PERMS?.cases?.internal_transfer) return setMsg("internalTransferMsg", "Keine Berechtigung für interne Lagerumbuchung");
+
+  const from_location_id = Number($("internalTransferFrom")?.value || 0) || null;
+  const to_location_id = Number($("internalTransferTo")?.value || 0);
+  const qty = Number($("internalTransferQty")?.value || 0);
+  const note = String($("internalTransferNote")?.value || "").trim();
+  const product_type = $("internalTransferProductType")?.value || "euro";
+
+  if (!to_location_id) return setMsg("internalTransferMsg", "Empfänger Standort/Lager ist Pflicht");
+  if (!Number.isInteger(qty) || qty <= 0) return setMsg("internalTransferMsg", "Menge muss größer als 0 sein");
+  if (!note) return setMsg("internalTransferMsg", "Notiz ist Pflicht");
+  if (from_location_id && from_location_id === to_location_id) {
+    return setMsg("internalTransferMsg", "Absender und Empfänger dürfen nicht identisch sein");
+  }
+
+  const rr = await api("/api/internal-transfers", {
+    method: "POST",
+    body: JSON.stringify({
+      from_location_id,
+      to_location_id,
+      qty,
+      note,
+      product_type
+    })
+  });
+  const data = await rr.json().catch(() => ({}));
+  if (!rr.ok) return setMsg("internalTransferMsg", data.error || "Umbuchung konnte nicht gebucht werden");
+
+  setMsg("internalTransferMsg", `Umbuchung gebucht (${data.mode === "transfer" ? "OUT/IN" : "IN"})`, true);
+  resetInternalTransferForm();
+  await loadStock();
+  await loadHistory({ resetPage: true });
+});
+
+function toggleEntrepreneurModal(show) {
+  const back = $("entrepreneurModalBack");
+  if (!back) return;
+  back.style.display = show ? "flex" : "none";
+}
+
+function setEntrepreneurModalMsg(text, ok = false) {
+  const el = $("entrepreneurModalMsg");
+  if (!el) return;
+  el.style.color = ok ? "#0a7a2f" : "#b00020";
+  el.textContent = text || "";
+}
+
+function clearEntrepreneurModal() {
+  ["modalEntrepreneurName", "modalEntrepreneurStreet", "modalEntrepreneurPostal", "modalEntrepreneurCity"].forEach((id) => {
+    if ($(id)) $(id).value = "";
+  });
+  setEntrepreneurModalMsg("");
+}
+
+$("addEntrepreneurBtn").addEventListener("click", () => {
   setMsg("avisoMsg", "");
   if (!PERMS?.cases?.create) return setMsg("avisoMsg", "Keine Berechtigung für Aviso");
+  clearEntrepreneurModal();
+  toggleEntrepreneurModal(true);
+  $("modalEntrepreneurName")?.focus();
+});
 
-  const raw = window.prompt("Neuen Unternehmer (Name)");
-  if (raw === null) return;
-  const name = raw.trim();
-  if (!name) return setMsg("avisoMsg", "Bitte einen Unternehmer-Namen eingeben");
-  const street = (window.prompt("Straße (optional)") || "").trim();
-  const postal_code = (window.prompt("PLZ (optional)") || "").trim();
-  const city = (window.prompt("Ort (optional)") || "").trim();
+$("closeEntrepreneurModalBtn")?.addEventListener("click", () => toggleEntrepreneurModal(false));
+$("cancelEntrepreneurModalBtn")?.addEventListener("click", () => toggleEntrepreneurModal(false));
+$("entrepreneurModalBack")?.addEventListener("click", (e) => {
+  if (e.target?.id === "entrepreneurModalBack") toggleEntrepreneurModal(false);
+});
+
+$("saveEntrepreneurModalBtn")?.addEventListener("click", async () => {
+  setEntrepreneurModalMsg("");
+  const name = ($("modalEntrepreneurName")?.value || "").trim();
+  const street = ($("modalEntrepreneurStreet")?.value || "").trim();
+  const postal_code = ($("modalEntrepreneurPostal")?.value || "").trim();
+  const city = ($("modalEntrepreneurCity")?.value || "").trim();
+
+  if (!name) return setEntrepreneurModalMsg("Bitte einen Frachtführer-Namen eingeben");
 
   const r = await api("/api/entrepreneurs", {
     method: "POST",
@@ -699,27 +1207,30 @@ $("addEntrepreneurBtn").addEventListener("click", async () => {
     })
   });
   const data = await readJsonSafe(r);
-  if (!r.ok) return setMsg("avisoMsg", data?.error || "Unternehmer konnte nicht gespeichert werden");
+  if (!r.ok) return setEntrepreneurModalMsg(data?.error || "Frachtführer konnte nicht gespeichert werden");
 
   await loadEntrepreneurs(data?.name || name);
   $("avisoEntrepreneur").value = data?.name || name;
-  setMsg("avisoMsg", "Unternehmer gespeichert", true);
+  setMsg("avisoMsg", "Frachtführer gespeichert", true);
+  toggleEntrepreneurModal(false);
 });
 
 // ---------- Historie ----------
 let HISTORY = [];
 let ENTREPRENEUR_HISTORY = [];
+const HISTORY_PAGE_SIZE = 20;
+let HISTORY_PAGE = 0;
+let HISTORY_HAS_MORE = false;
 
-async function loadHistory() {
+async function loadHistory({ resetPage = false } = {}) {
   if (!CURRENT_LOCATION) return;
+  if (resetPage) HISTORY_PAGE = 0;
 
-  // ✅ falls CURRENT_DEPARTMENT nicht gesetzt ist: aus Select holen
-  if (!CURRENT_DEPARTMENT) {
-    CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || 0);
+  if (CURRENT_DEPARTMENT === null || CURRENT_DEPARTMENT === undefined) {
+    CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || -1);
   }
-  if (!CURRENT_DEPARTMENT) {
-    return showWrapError("historyWrap", "Bitte eine Abteilung auswählen (für Historie/Export).");
-  }
+
+  const hasDepartmentFilter = Number(CURRENT_DEPARTMENT) > 0;
 
   const from = $("histFrom")?.value || "";
   const to = $("histTo")?.value || "";
@@ -729,7 +1240,9 @@ async function loadHistory() {
 
   const qs = new URLSearchParams({
     location_id: String(CURRENT_LOCATION),
-    department_id: String(CURRENT_DEPARTMENT),
+    ...(hasDepartmentFilter ? { department_id: String(CURRENT_DEPARTMENT) } : {}),
+    limit: String(HISTORY_PAGE_SIZE),
+    offset: String(HISTORY_PAGE * HISTORY_PAGE_SIZE),
     ...(from ? { date_from: from } : {}),
     ...(to ? { date_to: to } : {}),
     ...(entrepreneur ? { entrepreneur } : {}),
@@ -743,7 +1256,9 @@ async function loadHistory() {
     return showWrapError("historyWrap", data?.error || `Historie konnte nicht geladen werden (HTTP ${r.status})`);
   }
 
-  HISTORY = await r.json();
+  const data = await r.json();
+  HISTORY = Array.isArray(data?.items) ? data.items : [];
+  HISTORY_HAS_MORE = Boolean(data?.has_more);
   renderHistory();
 }
 
@@ -764,7 +1279,7 @@ async function loadEntrepreneurHistory() {
   const r = await api(`/api/entrepreneur-history?${qs}`, { method: "GET", headers: {} });
   if (!r.ok) {
     const data = await readJsonSafe(r);
-    return showWrapError("entrepreneurHistoryWrap", data?.error || `Unternehmer-Historie konnte nicht geladen werden (HTTP ${r.status})`);
+    return showWrapError("entrepreneurHistoryWrap", data?.error || `Frachtführer-Historie konnte nicht geladen werden (HTTP ${r.status})`);
   }
 
   ENTREPRENEUR_HISTORY = await r.json();
@@ -804,7 +1319,7 @@ function renderHistory() {
           <div class="rollcard-grid">
             <div class="rollcard-item">
               <label>Datum</label>
-              <div>${new Date(h.created_at).toLocaleString("de-DE")}</div>
+              <div>${formatDate(h.created_at)}</div>
             </div>
             <div class="rollcard-item">
               <label>Beleg</label>
@@ -815,7 +1330,7 @@ function renderHistory() {
               <div>${h.license_plate || "-"}</div>
             </div>
             <div class="rollcard-item">
-              <label>Unternehmer</label>
+              <label>Frachtführer</label>
               <div>${h.entrepreneur || "-"}</div>
             </div>
             <div class="rollcard-item">
@@ -827,11 +1342,15 @@ function renderHistory() {
               <div>${h.qty_out}</div>
             </div>
             <div class="rollcard-item">
+              <label>Produkt</label>
+              <div>${PRODUCT_TYPE_LABELS[h.product_type] || h.product_type || "-"}</div>
+            </div>
+            <div class="rollcard-item">
               <label>Aviso erstellt</label>
               <div>${h.aviso_created_by || "-"}</div>
             </div>
             <div class="rollcard-item">
-              <label>Mitarbeiterkürzel</label>
+              <label>Lagermitarbeiter</label>
               <div>${h.employee_code || "-"}</div>
             </div>
             <div class="rollcard-item">
@@ -849,6 +1368,11 @@ function renderHistory() {
       `).join("")}
       ${(HISTORY.length === 0) ? `<div class="rollcard" style="color:#6b7280;">Keine Buchungen gefunden</div>` : ""}
     </div>
+    <div class="row" style="margin-top:10px; align-items:center; gap:10px;">
+      <button class="secondary" id="historyPrevBtn" ${HISTORY_PAGE === 0 ? "disabled" : ""}>Zurück</button>
+      <button class="secondary" id="historyNextBtn" ${!HISTORY_HAS_MORE ? "disabled" : ""}>Weiter</button>
+      <span class="muted">Seite ${HISTORY_PAGE + 1} · max. ${HISTORY_PAGE_SIZE} Buchungen pro Seite</span>
+    </div>
   `;
   $("historyWrap").innerHTML = html;
 
@@ -857,6 +1381,18 @@ function renderHistory() {
       const id = btn.getAttribute("data-print");
       window.open(`/receipt.html?id=${encodeURIComponent(id)}`, "_blank", "noopener,noreferrer");
     });
+  });
+
+  $("historyPrevBtn")?.addEventListener("click", async () => {
+    if (HISTORY_PAGE === 0) return;
+    HISTORY_PAGE -= 1;
+    await loadHistory();
+  });
+
+  $("historyNextBtn")?.addEventListener("click", async () => {
+    if (!HISTORY_HAS_MORE) return;
+    HISTORY_PAGE += 1;
+    await loadHistory();
   });
 }
 
@@ -873,10 +1409,10 @@ function renderEntrepreneurHistory() {
           <div class="rollcard-grid">
             <div class="rollcard-item">
               <label>Letzte Aktivität</label>
-              <div>${new Date(h.last_seen || h.created_at).toLocaleString("de-DE")}</div>
+              <div>${formatDate(h.last_seen || h.created_at)}</div>
             </div>
             <div class="rollcard-item">
-              <label>Unternehmer</label>
+              <label>Frachtführer</label>
               <div>${h.entrepreneur || "-"}</div>
             </div>
             <div class="rollcard-item">
@@ -886,6 +1422,10 @@ function renderEntrepreneurHistory() {
             <div class="rollcard-item">
               <label>Kennzeichen</label>
               <div>${h.license_plate || "-"}</div>
+            </div>
+            <div class="rollcard-item">
+              <label>Produkt</label>
+              <div>${PRODUCT_TYPE_LABELS[h.product_type] || h.product_type || "-"}</div>
             </div>
             <div class="rollcard-item">
               <label>Soll</label>
@@ -911,8 +1451,6 @@ async function downloadWithAuth(url, fallbackFilename) {
     }
 
     const blob = await r.blob();
-
-    // Dateiname aus Content-Disposition holen (server.js setzt das bereits)
     const cd = r.headers.get("Content-Disposition") || "";
     let filename = fallbackFilename;
     const m = cd.match(/filename="([^"]+)"/i);
@@ -932,57 +1470,81 @@ async function downloadWithAuth(url, fallbackFilename) {
 }
 
 $("csvBtn").addEventListener("click", async () => {
-  if (!CURRENT_LOCATION || !CURRENT_DEPARTMENT) return;
+  if (!CURRENT_LOCATION) return;
 
-  const url = `/api/export/csv?location_id=${encodeURIComponent(CURRENT_LOCATION)}&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`;
+  const depQuery = Number(CURRENT_DEPARTMENT) > 0
+    ? `&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`
+    : "";
+  const url = `/api/export/csv?location_id=${encodeURIComponent(CURRENT_LOCATION)}${depQuery}`;
   await downloadWithAuth(url, "buchungen.csv");
 });
 
 $("xlsxBtn").addEventListener("click", async () => {
-  if (!CURRENT_LOCATION || !CURRENT_DEPARTMENT) return;
+  if (!CURRENT_LOCATION) return;
 
-  const url = `/api/export/xlsx?location_id=${encodeURIComponent(CURRENT_LOCATION)}&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`;
+  const depQuery = Number(CURRENT_DEPARTMENT) > 0
+    ? `&department_id=${encodeURIComponent(CURRENT_DEPARTMENT)}`
+    : "";
+  const url = `/api/export/xlsx?location_id=${encodeURIComponent(CURRENT_LOCATION)}${depQuery}`;
   await downloadWithAuth(url, "buchungen.xlsx");
 });
-
 
 // ---------- Events ----------
 $("locationSelect").addEventListener("change", async () => {
   CURRENT_LOCATION = Number($("locationSelect").value || 0);
+  clearCaseSearchFilter();
   joinLocationRoom();
-  await loadStock();
   await loadCases();
-  await loadHistory();
+  await loadHistory({ resetPage: true });
+  await loadEntrepreneurHistoryPlates();
+  await loadEntrepreneurHistory();
 });
 
 $("departmentSelect").addEventListener("change", async () => {
-  CURRENT_DEPARTMENT = Number($("departmentSelect").value || 0);
-  await loadHistory();
+  CURRENT_DEPARTMENT = Number($("departmentSelect").value || -1);
+  await loadHistory({ resetPage: true });
 });
 
 $("reloadCasesBtn").addEventListener("click", loadCases);
 $("caseStatusFilter").addEventListener("change", loadCases);
-$("caseSearch").addEventListener("input", () => {
-  clearTimeout(window.__caseSearchT);
-  window.__caseSearchT = setTimeout(loadCases, 250);
+$("caseTranslogicaFilter").addEventListener("change", loadCases);
+
+$("caseSearch").addEventListener("input", (event) => {
+  if (!event.isTrusted) return;
+  CASE_SEARCH_USER_TOUCHED = true;
+  syncCaseSearchFromInput();
 });
-$("reloadHistoryBtn").addEventListener("click", loadHistory);
+
+$("caseSearch").addEventListener("keydown", (event) => {
+  if (!event.isTrusted) return;
+  if (event.key !== "Enter") return;
+  CASE_SEARCH_USER_TOUCHED = true;
+  syncCaseSearchFromInput();
+  loadCases();
+});
+
+window.addEventListener("pageshow", () => {
+  clearCaseSearchFilter();
+});
+
+$("reloadHistoryBtn").addEventListener("click", () => loadHistory({ resetPage: true }));
+
 if ($("histEntrepreneur")) {
   $("histEntrepreneur").addEventListener("input", () => {
     clearTimeout(window.__histEntrepreneurT);
-    window.__histEntrepreneurT = setTimeout(loadHistory, 250);
+    window.__histEntrepreneurT = setTimeout(() => loadHistory({ resetPage: true }), 250);
   });
 }
 if ($("histPlate")) {
   $("histPlate").addEventListener("input", () => {
     clearTimeout(window.__histPlateT);
-    window.__histPlateT = setTimeout(loadHistory, 250);
+    window.__histPlateT = setTimeout(() => loadHistory({ resetPage: true }), 250);
   });
 }
 if ($("histReceipt")) {
   $("histReceipt").addEventListener("input", () => {
     clearTimeout(window.__histReceiptT);
-    window.__histReceiptT = setTimeout(loadHistory, 250);
+    window.__histReceiptT = setTimeout(() => loadHistory({ resetPage: true }), 250);
   });
 }
 $("entHistReloadBtn").addEventListener("click", loadEntrepreneurHistory);
@@ -1001,21 +1563,42 @@ if ($("entHistDept")) {
 
 // Live events
 socket.on("stockUpdated", async (payload) => {
-  if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) {
-    await loadStock();
-  }
+  if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) return loadStock();
+  if (payload?.from_location_id && Number(payload.from_location_id) === Number(CURRENT_LOCATION)) return loadStock();
+  if (payload?.to_location_id && Number(payload.to_location_id) === Number(CURRENT_LOCATION)) return loadStock();
+  if (!payload?.location_id && !payload?.from_location_id && !payload?.to_location_id) return loadStock();
 });
+
 socket.on("casesUpdated", async (payload) => {
   if (payload?.location_id && Number(payload.location_id) === Number(CURRENT_LOCATION)) {
     await loadCases();
   }
 });
+
+socket.on("notificationCreated", async () => {
+  await loadNotifications();
+});
+
+socket.on("notificationsDeleted", async (payload) => {
+  const ids = Array.isArray(payload?.notification_ids)
+    ? payload.notification_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+    : [];
+
+  if (ids.length > 0) {
+    const idSet = new Set(ids);
+    NOTIFICATIONS = NOTIFICATIONS.filter((item) => !idSet.has(Number(item.id)));
+    renderNotifications();
+    return;
+  }
+
+  await loadNotifications();
+});
+
 socket.on("bookingsUpdated", async (payload) => {
   if (!payload?.location_id) return;
   if (Number(payload.location_id) !== Number(CURRENT_LOCATION)) return;
-  // Wenn Department gefiltert ist, nur dann auto-reload, wenn es passt
-  if (payload.department_id && CURRENT_DEPARTMENT && Number(payload.department_id) !== Number(CURRENT_DEPARTMENT)) return;
-  await loadHistory();
+  if (payload.department_id && Number(CURRENT_DEPARTMENT) > 0 && Number(payload.department_id) !== Number(CURRENT_DEPARTMENT)) return;
+  await loadHistory({ resetPage: true });
   await loadStock();
 });
 
@@ -1023,13 +1606,16 @@ socket.on("bookingsUpdated", async (payload) => {
 (async function init() {
   bindTabs();
   bindLiveToggles();
+  bindNotificationPanel();
+  bindSettingsMenu();
+  bindPasswordModal();
   await loadMe();
   await loadPerms();
   await loadLocations();
   await loadDepartments();
   await loadEntrepreneurs();
 
-  CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || 0);
+  CURRENT_DEPARTMENT = Number($("departmentSelect")?.value || -1);
 
   if ($("stockMode")) {
     $("stockMode").value = STOCK_MODE;
@@ -1037,9 +1623,12 @@ socket.on("bookingsUpdated", async (payload) => {
     updateStockHint();
   }
 
+  clearCaseSearchFilter();
+
   await loadStock();
   await loadCases();
-  await loadHistory();
+  await loadNotifications();
+  await loadHistory({ resetPage: true });
   await loadEntrepreneurHistoryPlates();
   await loadEntrepreneurHistory();
 })();

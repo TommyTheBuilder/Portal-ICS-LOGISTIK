@@ -23,18 +23,6 @@ async function migrate() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
-    CREATE TABLE IF NOT EXISTS entrepreneur_history (
-      id SERIAL PRIMARY KEY,
-      location_id INTEGER NOT NULL REFERENCES locations(id),
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      entrepreneur TEXT NOT NULL,
-      license_plate TEXT,
-      qty_in INTEGER NOT NULL DEFAULT 0,
-      qty_out INTEGER NOT NULL DEFAULT 0,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
@@ -55,7 +43,47 @@ async function migrate() {
       note TEXT,
       receipt_no TEXT,
       license_plate TEXT,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS entrepreneur_history (
+      id SERIAL PRIMARY KEY,
+      location_id INTEGER NOT NULL REFERENCES locations(id),
+      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      entrepreneur TEXT NOT NULL,
+      license_plate TEXT,
+      qty_in INTEGER NOT NULL DEFAULT 0,
+      qty_out INTEGER NOT NULL DEFAULT 0,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS booking_cases (
+      id SERIAL PRIMARY KEY,
+      location_id INTEGER NOT NULL REFERENCES locations(id),
+      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      status INTEGER NOT NULL DEFAULT 1, -- 0 Storniert, 1 Aviso, 2 In Bearbeitung, 3 In Prüfung, 4 Gebucht
+      license_plate TEXT NOT NULL,
+      entrepreneur TEXT,
+      note TEXT,
+      qty_in INTEGER NOT NULL DEFAULT 0,
+      qty_out INTEGER NOT NULL DEFAULT 0,
+      non_exchangeable_qty INTEGER NOT NULL DEFAULT 0,
+      product_type TEXT NOT NULL DEFAULT 'euro' CHECK (product_type IN ('euro','h1','gitterbox')),
+      translogica_transferred BOOLEAN NOT NULL DEFAULT FALSE,
+      receipt_no TEXT,
+      claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      claimed_at TIMESTAMPTZ,
+      submitted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      submitted_at TIMESTAMPTZ,
+      approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      approved_at TIMESTAMPTZ,
+      employee_code TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
     CREATE TABLE IF NOT EXISTS receipt_seq (
@@ -78,7 +106,18 @@ async function migrate() {
   await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS license_plate TEXT;`);
   await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS qty_in INTEGER;`);
   await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS qty_out INTEGER;`);
+  await pool.query(`ALTER TABLE entrepreneur_history ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE entrepreneur_history DROP CONSTRAINT IF EXISTS entrepreneur_history_product_type_check;`);
+  await pool.query(`ALTER TABLE entrepreneur_history ADD CONSTRAINT entrepreneur_history_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
   await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS employee_code TEXT;`);
+  await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS translogica_transferred BOOLEAN NOT NULL DEFAULT FALSE;`);
+  await pool.query(`ALTER TABLE booking_cases ADD COLUMN IF NOT EXISTS non_exchangeable_qty INTEGER NOT NULL DEFAULT 0;`);
+  await pool.query(`ALTER TABLE booking_cases DROP CONSTRAINT IF EXISTS booking_cases_product_type_check;`);
+  await pool.query(`ALTER TABLE booking_cases ADD CONSTRAINT booking_cases_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'euro';`);
+  await pool.query(`ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_product_type_check;`);
+  await pool.query(`ALTER TABLE bookings ADD CONSTRAINT bookings_product_type_check CHECK (product_type IN ('euro','h1','gitterbox'));`);
 
   // FK-Constraints lockern (Benutzer/Abteilungen löschen -> SET NULL)
   await pool.query(`ALTER TABLE bookings ALTER COLUMN department_id DROP NOT NULL;`);
@@ -128,13 +167,29 @@ async function migrate() {
     ADD CONSTRAINT entrepreneur_history_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
   `);
 
+  // users.email + users.fixed_department_id hinzufügen
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER;`);
+
   await pool.query(`
     ALTER TABLE users
     DROP CONSTRAINT IF EXISTS users_fixed_department_id_fkey;
   `);
   await pool.query(`
-    ALTER TABLE users
-    ADD CONSTRAINT users_fixed_department_id_fkey FOREIGN KEY (fixed_department_id) REFERENCES departments(id) ON DELETE SET NULL;
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'users'
+          AND column_name = 'fixed_department_id'
+      ) THEN
+        ALTER TABLE users
+        ADD CONSTRAINT users_fixed_department_id_fkey FOREIGN KEY (fixed_department_id) REFERENCES departments(id) ON DELETE SET NULL;
+      END IF;
+    END
+    $$;
   `);
   await pool.query(`
     ALTER TABLE users
@@ -175,9 +230,27 @@ async function migrate() {
     ADD COLUMN IF NOT EXISTS role_id INTEGER REFERENCES roles(id);
   `);
 
-  // users.email + users.fixed_department_id hinzufügen
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fixed_department_id INTEGER REFERENCES departments(id);`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ip_preferences (
+      ip_address TEXT PRIMARY KEY,
+      theme TEXT NOT NULL DEFAULT 'light' CHECK (theme IN ('light','dark')),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      case_id INTEGER REFERENCES booking_cases(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC);`);
 
   // Default Rolle anlegen
   await pool.query(`
@@ -185,50 +258,31 @@ async function migrate() {
     VALUES (
       'Standard',
       '{
-        "bookings": { "create": true, "view": true, "export": true, "receipt": true, "edit": false, "delete": false },
+        "bookings": { "create": true, "view": true, "export": true, "receipt": true, "edit": false, "delete": false, "translogica": false },
         "stock": { "view": true, "overall": true },
         "cases": {
           "create": true,
+          "internal_transfer": false,
           "claim": false,
           "edit": false,
           "submit": false,
           "approve": false,
           "cancel": false,
+          "delete": false,
           "require_employee_code": false
         },
+        "filters": { "all_locations": false },
         "masterdata": { "manage": false },
         "users": { "manage": false, "view_department": false },
-        "roles": { "manage": false }
+        "roles": { "manage": false },
+        "integrations": { "container_registration": false }
       }'::jsonb
     )
     ON CONFLICT (name) DO NOTHING;
   `);
 
-  // booking_cases + Index
+  // booking_cases Index
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS booking_cases (
-      id SERIAL PRIMARY KEY,
-      location_id INTEGER NOT NULL REFERENCES locations(id),
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      status INTEGER NOT NULL DEFAULT 1, -- 0 Storniert, 1 Aviso, 2 In Bearbeitung, 3 In Prüfung, 4 Gebucht
-      license_plate TEXT NOT NULL,
-      entrepreneur TEXT,
-      note TEXT,
-      qty_in INTEGER NOT NULL DEFAULT 0,
-      qty_out INTEGER NOT NULL DEFAULT 0,
-      receipt_no TEXT,
-      claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      claimed_at TIMESTAMPTZ,
-      submitted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      submitted_at TIMESTAMPTZ,
-      approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      approved_at TIMESTAMPTZ,
-      employee_code TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-
     CREATE INDEX IF NOT EXISTS idx_booking_cases_loc_status
       ON booking_cases(location_id, status);
   `);

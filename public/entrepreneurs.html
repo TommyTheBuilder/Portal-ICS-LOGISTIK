@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Frachtführerstammdaten</title>
+  <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+<header class="topbar topbar-modern admin-topbar">
+  <div class="system-logo-wrap">
+    <img src="/public/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+    <a href="/public/app.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+  </div>
+  <div class="row topbar-actions" style="align-items:center;">
+    <button class="secondary" id="backBtn">Zur App</button>
+    <button class="secondary" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<main class="dashboard-main admin-main">
+  <section class="dashboard-header admin-header">
+    <div class="dashboard-title-row"><b>Frachtführerstammdaten</b></div>
+  </section>
+
+  <div class="card admin-card">
+    <h3 style="margin-top:0;">Frachtführer verwalten</h3>
+    <div class="row">
+      <div>
+        <label>Name</label>
+        <input id="entName" placeholder="z.B. Spedition Müller">
+      </div>
+      <div>
+        <label>Straße</label>
+        <input id="entStreet" placeholder="z.B. Musterstraße 12">
+      </div>
+      <div>
+        <label>PLZ</label>
+        <input id="entPostal" placeholder="z.B. 1010">
+      </div>
+      <div>
+        <label>Ort</label>
+        <input id="entCity" placeholder="z.B. Wien">
+      </div>
+      <div>
+        <button id="saveBtn">Speichern</button>
+      </div>
+      <div>
+        <button class="secondary" id="resetBtn">Zurücksetzen</button>
+      </div>
+    </div>
+    <p id="msg"></p>
+    <div style="overflow:auto; margin-top:8px;">
+      <table>
+        <thead><tr><th>Frachtführer</th><th>Adresse</th><th>Aktion</th></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+  <footer class="site-copyright">© 2026 / CTSH Systems</footer>
+<script src="/public/theme.js"></script>
+<script src="/public/entrepreneurs.js"></script>
+</body>
+</html>

@@ -4,30 +4,73 @@
     window.location.href = "/login.html";
     return;
   }
-
   function qs(name) {
     return new URL(window.location.href).searchParams.get(name);
   }
-  function byId(id) { return document.getElementById(id); }
-
-  function showError(msg) {
-    const box = byId("errBox");
-    if (!box) { alert(msg); return; }
-    byId("errText").textContent = msg || "Unbekannter Fehler";
-    box.style.display = "block";
+  function byId(id) {
+    return document.getElementById(id);
   }
+  function setText(id, value) {
+    const el = byId(id);
+    if (el) el.textContent = value;
+  }
+  function showError(msg) {
+    alert(msg || "Unbekannter Fehler");
+  }
+  function hasTruthyQuery(name) {
+    const v = String(qs(name) || "").toLowerCase();
+    return ["1", "true", "yes", "ja"].includes(v);
+  }
+  function buildCarrierAddress(data) {
+    const line1 = data.entrepreneur || "-";
+    const line2 = data.entrepreneur_street || "";
+    const line3 = [data.entrepreneur_postal_code, data.entrepreneur_city].filter(Boolean).join(" ");
+    return [line1, line2, line3].filter(Boolean).join("\n");
+  }
+  function applyCompactTruckSwap(compactPrint) {
+    const leftIcon = document.querySelector(".transferIcon.left");
+    const rightIcon = document.querySelector(".transferIcon.right");
+    if (!leftIcon || !rightIcon) return;
 
+    const alreadySwapped = document.body.dataset.compactTruckSwapped === "1";
+    if (compactPrint && !alreadySwapped) {
+      const leftMarkup = leftIcon.innerHTML;
+      leftIcon.innerHTML = rightIcon.innerHTML;
+      rightIcon.innerHTML = leftMarkup;
+      document.body.dataset.compactTruckSwapped = "1";
+    }
+
+    if (!compactPrint && alreadySwapped) {
+      const leftMarkup = leftIcon.innerHTML;
+      leftIcon.innerHTML = rightIcon.innerHTML;
+      rightIcon.innerHTML = leftMarkup;
+      delete document.body.dataset.compactTruckSwapped;
+    }
+  }
+  function clearReceiptForBlankPrint() {
+    [
+      "receiptDate",
+      "trailerNo",
+      "department",
+      "note",
+      "receiptNoInline",
+      "nonExchangeable",
+      "driverTrailerNo",
+      "entrepreneurAddress",
+      "qtyInEu", "qtyOutEu",
+      "qtyInH1", "qtyOutH1",
+      "qtyInGb", "qtyOutGb"
+    ].forEach((id) => setText(id, ""));
+
+    const nonExchangeableRow = byId("nonExchangeableRow");
+    if (nonExchangeableRow) nonExchangeableRow.style.display = "none";
+  }
   function closeTabSafe() {
-    // 1) Versuchen zu schließen (geht nur bei window.open() / Script-opened Tabs)
     try { window.close(); } catch (_) {}
-
-    // 2) Wenn noch offen: zurück
     setTimeout(() => {
       if (!document.hidden) {
-        // history.length > 1 = meist "Zurück" möglich
         if (window.history.length > 1) {
           window.history.back();
-          // 3) Wenn "Zurück" nix bringt (z.B. direkt geöffnet):
           setTimeout(() => {
             if (!document.hidden) window.location.href = "/app.html";
           }, 200);
@@ -37,11 +80,9 @@
       }
     }, 120);
   }
-
   function wireButtons() {
     const btnPrint = byId("btnPrint");
     const btnClose = byId("btnClose");
-
     if (btnPrint) {
       btnPrint.addEventListener("click", () => {
         try {
@@ -52,80 +93,120 @@
         }
       });
     }
-
     if (btnClose) {
       btnClose.addEventListener("click", closeTabSafe);
     }
   }
-
   async function loadReceipt() {
     const bookingId = qs("id");
     const caseId = qs("caseId");
-    if (!bookingId && !caseId) return showError("Keine Beleg-ID übergeben");
+    const compactPrint = hasTruthyQuery("compact");
+    const driverSlip = hasTruthyQuery("driverSlip");
+    const warehouseSlip = hasTruthyQuery("warehouseSlip");
+    const allowBlankPrint = compactPrint || driverSlip || warehouseSlip;
 
-    let res, data;
+    document.body.classList.toggle("driverSlipMode", driverSlip);
+    document.body.classList.toggle("warehouseSlipMode", warehouseSlip);
+    document.body.classList.toggle("caseSlipMode", !driverSlip && !warehouseSlip);
+
+    document.body.classList.toggle("compactMode", compactPrint);
+    applyCompactTruckSwap(compactPrint);
+
+    const receiptNoRow = byId("receiptNoRow");
+    const departmentRow = byId("departmentRow");
+    const driverTrailerRow = byId("driverTrailerRow");
+    if (receiptNoRow) receiptNoRow.style.display = driverSlip ? "none" : "";
+    if (departmentRow) departmentRow.style.display = driverSlip ? "none" : "";
+    if (driverTrailerRow) driverTrailerRow.style.display = driverSlip ? "" : "none";
+
+    const receiptTitle = byId("receiptTitle");
+    if (receiptTitle) {
+      receiptTitle.textContent = "LADEMITTELSCHEIN";
+    }
+
+    const metaCard = document.querySelector(".metaCard");
+    if (metaCard) metaCard.style.display = "";
+
+    if (!bookingId && !caseId) {
+      if (!allowBlankPrint) return showError("Keine Beleg-ID übergeben");
+      clearReceiptForBlankPrint();
+      return;
+    }
+
+    let res;
+    let data;
     try {
       const path = bookingId
         ? `/api/receipt/${encodeURIComponent(bookingId)}`
         : `/api/cases/${encodeURIComponent(caseId)}/receipt`;
       res = await fetch(path, {
-        headers: { "Authorization": "Bearer " + token }
+        headers: { Authorization: "Bearer " + token }
       });
       data = await res.json();
-    } catch (e) {
+    } catch (_) {
       return showError("Netzwerkfehler beim Laden des Belegs");
     }
-
     if (!res.ok) return showError(data?.error || `Beleg konnte nicht geladen werden (HTTP ${res.status})`);
-
     let receiptLabel = data.receipt_no || "-";
-    if (data.provisional) {
-      receiptLabel = data.receipt_no ? `Vorläufig ${data.receipt_no}` : "Vorläufig";
+    if (data.provisional && receiptTitle) {
+      receiptTitle.textContent = "VORLÄUFIGER LADEMITTELSCHEIN";
     }
-    byId("receiptNo").textContent = receiptLabel;
-    byId("dateTime").textContent = data.created_at ? new Date(data.created_at).toLocaleString("de-DE") : "-";
-    byId("location").textContent = data.location || "-";
-    byId("department").textContent = data.department || "-";
-    const userName = data.aviso_created_by || data.username || "-";
-    const employeeCode = data.employee_code ? ` / ${data.employee_code}` : "";
-    byId("username").textContent = `${userName}${employeeCode}`;
-    byId("plate").textContent = data.license_plate || "-";
-    const entLines = [];
-    if (data.entrepreneur) entLines.push(data.entrepreneur);
-    const addressLine1 = data.entrepreneur_street || "";
-    const addressLine2 = [data.entrepreneur_postal_code, data.entrepreneur_city].filter(Boolean).join(" ");
-    if (addressLine1) entLines.push(addressLine1);
-    if (addressLine2) entLines.push(addressLine2);
-    byId("entrepreneur").textContent = entLines.length ? entLines.join("\n") : "-";
-    byId("note").textContent = data.note || "";
-
+    const formattedDate = data.created_at
+      ? new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(data.created_at))
+      : "-";
+    setText("receiptDate", formattedDate);
+    setText("trailerNo", data.license_plate || "-");
+    setText("driverTrailerNo", data.trailer_no || data.trailer || "-");
+    setText("receiptNoInline", receiptLabel);
+    setText("department", data.department || "-");
+    setText("entrepreneurAddress", buildCarrierAddress(data));
+    const nonExchangeable = Number(data.non_exchangeable_qty ?? 0);
+    const noteText = data.note || "";
+    setText("note", noteText || "-");
+    const nonExchangeableRow = byId("nonExchangeableRow");
+    if (nonExchangeableRow) nonExchangeableRow.style.display = nonExchangeable > 0 ? "" : "none";
+    if (nonExchangeable > 0) setText("nonExchangeable", String(nonExchangeable));
     const qtyIn = Number(data.qty_in ?? 0);
     const qtyOut = Number(data.qty_out ?? 0);
-    byId("qtyIn").textContent = String(qtyIn);
-    byId("qtyOut").textContent = String(qtyOut);
+    const productType = String(data.product_type || "euro").toLowerCase();
+    const map = {
+      euro: ["qtyOutEu", "qtyInEu"],
+      h1: ["qtyOutH1", "qtyInH1"],
+      gitterbox: ["qtyOutGb", "qtyInGb"]
+    };
+    const [outId, inId] = map[productType] || map.euro;
+    setText(outId, String(qtyOut));
+    setText(inId, String(qtyIn));
 
-    if (Array.isArray(data.lines) && data.lines.length > 0) {
-      const details = data.lines
-        .map(l => `${l.type === "IN" ? "Eingang" : "Ausgang"}: ${l.quantity}`)
-        .join(" • ");
-      byId("details").textContent = details;
-    } else {
-      byId("details").textContent = `Eingang: ${qtyIn} • Ausgang: ${qtyOut}`;
+    if (compactPrint) {
+      [
+        "receiptDate",
+        "trailerNo",
+        "driverTrailerNo",
+        "department",
+        "note",
+        "receiptNoInline",
+        "nonExchangeable"
+      ].forEach((id) => setText(id, ""));
+
+      [
+        "qtyInEu", "qtyOutEu",
+        "qtyInH1", "qtyOutH1",
+        "qtyInGb", "qtyOutGb"
+      ].forEach((id) => setText(id, ""));
+
+      if (nonExchangeableRow) nonExchangeableRow.style.display = "none";
     }
   }
-
-  // Extra: STRG+P als Print
   window.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
       e.preventDefault();
       try { window.print(); } catch (_) {}
     }
     if (e.key === "Escape") {
-      // ESC = schließen
       closeTabSafe();
     }
   });
-
   document.addEventListener("DOMContentLoaded", () => {
     wireButtons();
     loadReceipt();

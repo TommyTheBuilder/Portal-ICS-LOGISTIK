@@ -13,128 +13,476 @@
       font-family: Arial, sans-serif;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      color: #111;
     }
 
-    .btnBar{
+    .btnBar {
       position: fixed;
       top: 12px;
       right: 12px;
-      display:flex;
-      gap:10px;
-      z-index: 2147483647;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
     }
-    .btn { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; font-weight:700; }
-    .primary { background:#111827; color:#fff; }
-    .secondary { background:#e5e7eb; color:#111827; }
-    @media print { .btnBar{ display:none !important; } }
+    .btn { padding: 10px 12px; border-radius: 10px; border: 0; cursor: pointer; font-weight: 700; }
+    .primary { background: #111827; color: #fff; }
+    .secondary { background: #e5e7eb; color: #111827; }
+    @media print {
+      .btnBar { display: none !important; }
+      html, body {
+        height: 297mm !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+      }
+      .sheet {
+        height: 297mm !important;
+        min-height: 0;
+        page-break-inside: avoid;
+        break-inside: avoid-page;
+        page-break-after: avoid;
+        break-after: avoid-page;
+      }
+      .metaCard,
+      .tableWrap,
+      .signatures,
+      .footerText {
+        page-break-inside: avoid;
+        break-inside: avoid-page;
+      }
+    }
 
     .sheet {
       position: relative;
       width: 210mm;
       height: 297mm;
+      margin: 0 auto;
+      padding: 60mm 15mm 14mm;
+      box-sizing: border-box;
       overflow: hidden;
     }
 
-    .bg {
+    .briefkopf {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
       width: 210mm;
       height: 297mm;
       object-fit: cover;
       pointer-events: none;
+      z-index: 0;
     }
 
-    .layer { position: absolute; inset: 0; }
+    .content {
+      position: relative;
+      z-index: 1;
+    }
 
-    .field {
+    .logoFrame {
       position: absolute;
-      background: rgba(255,255,255,0.90);
-      border: 1px solid rgba(207,216,227,0.95);
-      border-radius: 6px;
-      padding: 5px 7px;
-      box-sizing: border-box;
+      top: 6.5mm;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90mm;
+      height: 33mm;
+      background: #fff;
+      border-radius: 1.2mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      pointer-events: none;
     }
-    .field label{
-      display:block;
-      font-size: 9pt;
-      color: #6b7280;
-      margin-bottom: 2px;
+
+    .logoHomeBtn {
+      position: absolute;
+      top: 6.5mm;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90mm;
+      height: 33mm;
+      z-index: 3;
+      opacity: 0;
     }
-    .field .val{
-      font-size: 11pt;
-      font-weight: 700;
-      color: #111827;
+
+    @media print {
+      .logoHomeBtn {
+        display: none !important;
+      }
     }
-    .field .val.multiline{
-      white-space: pre-line;
-      line-height: 1.2;
+
+    .companyLogo {
+      width: 78mm;
+      height: auto;
+      object-fit: contain;
+    }
+
+
+    .page-copyright {
+      text-align: center;
+      font-size: 11px;
+      color: #4b5563;
+      padding: 8px 0 14px;
+    }
+    @media print {
+      .page-copyright {
+        position: fixed;
+        bottom: 4mm;
+        left: 0;
+        right: 0;
+        padding: 0;
+      }
     }
 
     .title {
-      position: absolute;
-      left: 18mm;
-      top: 54mm;
-      font-size: 15pt;
+      text-align: center;
+      font-size: 6.2mm;
       font-weight: 800;
-      background: rgba(255,255,255,0.75);
-      padding: 4px 8px;
-      border-radius: 6px;
+      letter-spacing: 0.4px;
+      margin: 0 0 4.8mm;
     }
 
-    .f-receipt { left: 132mm; top: 54mm; width: 66mm; height: 16mm; }
-    .f-dt      { left: 132mm; top: 72mm; width: 66mm; height: 16mm; }
+    .driverSlipTopMask,
+    .driverSlipFooterMask,
+    .driverSlipFooterReplacement {
+      display: none;
+    }
 
-    .f-loc     { left: 18mm; top: 76mm; width: 88mm; height: 18mm; }
-    .f-dept    { left: 112mm; top: 96mm; width: 86mm; height: 18mm; }
-
-    /* 🔁 GETAUSCHT */
-    .f-plate   { left: 18mm; top: 98mm; width: 88mm; height: 18mm; }
-    .f-out     { left: 112mm; top: 118mm; width: 86mm; height: 18mm; }
-    .f-in      { left: 18mm; top: 120mm; width: 88mm; height: 18mm; }
-    .f-ent     { left: 112mm; top: 140mm; width: 86mm; height: 24mm; }
-
-    .f-user    { left: 18mm; top: 140mm; width: 88mm; height: 24mm; }
-    .f-note    { left: 18mm; top: 172mm; width: 180mm; height: 10mm; }
-    .f-details { left: 18mm; top: 186mm; width: 180mm; height: 16mm; }
-
-    .signTitle{
-      position:absolute;
-      left:18mm;
-      top: 214mm;
-      font-size: 10pt;
+    .metaCard {
+      border: 1px solid #d9dee7;
+      border-radius: 5mm;
+      background: #f7f8fb;
+      padding: 2.8mm 3.2mm 2.1mm;
+      margin-bottom: 2.2mm;
+      box-shadow: 0 0 0.6mm rgba(17, 24, 39, 0.12);
+    }
+    .metaLayout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      align-items: stretch;
+    }
+    .metaColumn {
+      display: grid;
+      gap: 1.5mm;
+      align-content: start;
+    }
+    .metaField.rightAligned {
+      grid-template-columns: auto 1fr;
+    }
+    .metaField.rightAligned .metaValue {
+      text-align: right;
+    }
+    .metaField {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2.2mm;
+      align-items: center;
+      border-bottom: 0.35mm solid #7c838d;
+      padding-bottom: 1mm;
+      min-height: 6mm;
+    }
+    .metaField.carrierField {
+      grid-template-columns: 1fr;
+      border-bottom: 0;
+      padding-bottom: 0;
+      min-height: 22mm;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+    }
+    .metaField.carrierField .metaLabel {
+      margin-bottom: 1.2mm;
+      text-align: center;
+    }
+    .metaValue.carrierValue {
+      font-size: 4.7mm;
+      font-weight: 600;
+      text-align: center;
+      white-space: pre-line;
+      overflow: visible;
+      text-overflow: clip;
+      line-height: 1.2;
+    }
+    .metaLabel {
+      font-size: 4.0mm;
       font-weight: 700;
-      background: rgba(255,255,255,0.75);
-      padding: 3px 6px;
-      border-radius: 6px;
+      color: #22324d;
+      white-space: nowrap;
     }
-
-    .signBox {
+    .metaLabelSub {
+      display: none;
+      font-size: 2.6mm;
+      line-height: 1.1;
+      font-weight: 400;
+      color: #4b5563;
+      margin-top: 0.6mm;
+      letter-spacing: 0.1px;
+    }
+    .carrierLabelSub {
+      display: none;
+      font-size: 2.5mm;
+      line-height: 1.1;
+      font-weight: 400;
+      color: #4b5563;
+      margin-top: 0.7mm;
+      letter-spacing: 0.1px;
+    }
+    body.compactMode .metaCard {
+      padding: 3.4mm 3.2mm 2.9mm;
+    }
+    body.compactMode .metaField {
+      min-height: 7.2mm;
+    }
+    body.compactMode .metaField.carrierField {
+      min-height: 26mm;
+      align-content: start;
+      padding-top: 0.8mm;
+    }
+    body.compactMode .metaField.carrierField .metaLabel {
+      margin-bottom: 0;
+    }
+    body.driverSlipMode .metaField.carrierField {
+      align-content: start;
+      padding-top: 0.8mm;
+    }
+    body.driverSlipMode .metaCard {
+      min-height: 35mm;
+      padding-top: 4.4mm;
+      padding-bottom: 3.8mm;
+    }
+    body.driverSlipMode .metaField {
+      min-height: 8.6mm;
+    }
+    body.driverSlipMode .metaField.carrierField {
+      min-height: 28mm;
+    }
+    body.driverSlipMode .carrierLabelSub {
+      display: block;
+    }
+    body.compactMode .metaValue.carrierValue {
+      display: none;
+    }
+    body.driverSlipMode .metaLabelSub {
+      display: block;
+    }
+    body.driverSlipMode .metaLabel,
+    body.driverSlipMode .transferLabel,
+    body.driverSlipMode th {
+      color: #111;
+    }
+    body.driverSlipMode .title {
+      font-size: 7mm;
+      margin-bottom: 6.2mm;
+    }
+    body.driverSlipMode .metaCard {
+      min-height: 41mm;
+      margin-bottom: 3.4mm;
+    }
+    body.driverSlipMode .tableWrap {
+      margin: 3.4mm auto 3.4mm;
+    }
+    body.driverSlipMode table {
+      font-size: 4.35mm;
+    }
+    body.driverSlipMode th {
+      font-size: 5.2mm;
+    }
+    body.driverSlipMode th,
+    body.driverSlipMode td {
+      padding-top: 2.2mm;
+      padding-bottom: 2.2mm;
+    }
+    body.driverSlipMode .signatures {
+      margin-bottom: 3.6mm;
+    }
+    body.driverSlipMode .sigBox {
+      min-height: 27mm;
+    }
+    body.driverSlipMode .footerText {
+      font-size: 3.35mm;
+      line-height: 1.18;
+      color: #111;
+    }
+    body.warehouseSlipMode .logoFrame,
+    body.caseSlipMode .logoFrame {
+      top: 10.5mm;
+    }
+    body.warehouseSlipMode .logoHomeBtn,
+    body.caseSlipMode .logoHomeBtn {
+      top: 10.5mm;
+    }
+    body.driverSlipMode .driverSlipTopMask,
+    body.warehouseSlipMode .driverSlipTopMask,
+    body.caseSlipMode .driverSlipTopMask {
+      display: block;
       position: absolute;
-      top: 222mm;
-      width: 85mm;
-      height: 30mm;
-      background: rgba(255,255,255,0.90);
-      border: 1px solid rgba(207,216,227,0.95);
-      border-radius: 6px;
-      padding: 7px;
+      top: 46.5mm;
+      left: 0;
+      width: 210mm;
+      height: 16mm;
+      background: #fff;
+      z-index: 1;
+    }
+    body.driverSlipMode .driverSlipFooterMask,
+    body.warehouseSlipMode .driverSlipFooterMask,
+    body.caseSlipMode .driverSlipFooterMask {
+      display: block;
+      position: absolute;
+      left: 0;
+      bottom: 6.5mm;
+      width: 210mm;
+      height: 24mm;
+      background: #fff;
+      z-index: 1;
+    }
+    body.driverSlipMode .driverSlipFooterReplacement,
+    body.warehouseSlipMode .driverSlipFooterReplacement,
+    body.caseSlipMode .driverSlipFooterReplacement {
+      display: block;
+      position: absolute;
+      left: 50%;
+      bottom: 9.2mm;
+      transform: translateX(-50%);
+      width: 194mm;
+      text-align: center;
+      font-size: 2.88mm;
+      line-height: 1.2;
+      color: #111;
+      z-index: 2;
+      white-space: pre-line;
+    }
+    .metaValue {
+      font-size: 3.95mm;
+      font-weight: 400;
+      color: #111;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .metaValue.address {
+      white-space: pre-line;
+      line-height: 1.3;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .tableWrap {
+      border: 0.3mm solid #4a5e7f;
+      margin: 2.5mm auto 2.5mm;
+      width: 100%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 4.0mm;
+    }
+    th, td {
+      border: 0.3mm solid #4a5e7f;
+      padding: 1.7mm 2.2mm;
+      text-align: center;
+    }
+    th {
+      color: #243b61;
+      font-size: 4.8mm;
+      font-weight: 800;
+      background: #f2f4f8;
+      position: relative;
+    }
+    th.transferLeft,
+    th.transferRight {
+      padding: 1.7mm 2.8mm;
+    }
+    .transferHeader {
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+      width: 100%;
+      min-height: 11mm;
+    }
+    .transferHeader.left {
+      justify-content: flex-start;
+    }
+    .transferHeader.right {
+      justify-content: flex-end;
+    }
+    .transferLabel {
+      line-height: 1.1;
+    }
+    .transferIcon {
+      width: 18mm;
+      height: 10.4mm;
+      flex: 0 0 auto;
+      display: inline-block;
+      color: #1f2937;
+    }
+    .transferIcon .truck {
+      fill: currentColor;
+    }
+    .transferIcon .arrow {
+      fill: #fff;
+      stroke: #111;
+      stroke-width: 4.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    body.driverSlipMode .transferIcon .arrow {
+      transform-box: fill-box;
+      transform-origin: center;
+      transform: scaleX(-1);
+    }
+    .transferIcon.left,
+    .transferIcon.right {
+      transform-origin: center;
+    }
+    td.type {
+      width: 34%;
+      text-align: left;
+      padding-left: 4mm;
+      font-size: 4.0mm;
+    }
+    td.qty {
+      width: 16%;
+      font-size: 4.9mm;
+      line-height: 1;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      margin-bottom: 2.8mm;
+    }
+    .sigBox {
+      border: 0.3mm solid #4a5e7f;
+      min-height: 23mm;
+      padding: 2.4mm;
       box-sizing: border-box;
+      text-align: center;
     }
-    .signLeft  { left: 18mm; }
-    .signRight { left: 112mm; }
-
-    .signHint { font-size: 8.5pt; color:#6b7280; margin-bottom: 8mm; }
-
-    .signLine {
-      position:absolute;
-      left: 7px;
-      right: 7px;
-      bottom: 7px;
-      border-top: 1px solid #111827;
-      padding-top: 3px;
-      font-size: 8.5pt;
-      display:flex;
-      justify-content: space-between;
+    .sigTitle {
+      font-size: 4.4mm;
+      font-weight: 400;
+      margin: 0 0 7.5mm;
     }
+    .sigLine {
+      border-top: 1px dotted #888;
+      padding-top: 1mm;
+      font-size: 4.0mm;
+    }
+
+    .footerText {
+      text-align: center;
+      font-size: 3.1mm;
+      line-height: 1.14;
+      color: #b91c1c;
+      page-break-inside: avoid;
+      break-inside: avoid-page;
+    }
+    .footerText .en {
+      display: block;
+      margin-top: 1.1mm;
+    }
+    .footerText b { font-weight: 800; }
   </style>
 </head>
 <body>
@@ -145,87 +493,159 @@
 </div>
 
 <div class="sheet">
-  <img class="bg" src="/briefkopf.png" />
+  <img class="briefkopf" src="/public/briefkopf.svg" alt="Briefkopf" />
+  <div class="driverSlipTopMask" aria-hidden="true"></div>
+  <div class="driverSlipFooterMask" aria-hidden="true"></div>
+  <div class="driverSlipFooterReplacement">ICS Logistik &amp; Transport GmbH - Breslauer Straße 49, D-83395 Freilassing, USt.-ID:DE813616871 Tel.: +49 8654 4697-0 Fax: +49 8654 4697-19 www.ics-logistik.com
+BANKVERB.: Volksbank, BLZ: 71090000, Kto.-Nr.:2330, S.W.I.F.T./BIC: GENODEF1BGL, IBAN: DE72 7109 0000 0000 0023 30</div>
+  <div class="logoFrame">
+    <img class="companyLogo" src="/public/logo.png" alt="ICS Firmenlogo" />
+  </div>
+  <a href="/public/app.html" class="logoHomeBtn" aria-label="Zur App-Startseite"></a>
+  <div class="content">
+    <div class="title" id="receiptTitle">LADEMITTELSCHEIN</div>
 
-  <div class="layer">
-    <div class="title">Palettenschein / Buchungsbeleg</div>
+    <div class="metaCard">
+      <div class="metaLayout">
+        <div class="metaColumn">
+          <div class="metaField carrierField">
+            <div class="metaLabel">Frachtführer:<span class="carrierLabelSub">carrier, prijevoznik, transportator</span></div>
+            <div class="metaValue carrierValue" id="entrepreneurAddress"></div>
+          </div>
+        </div>
+        <div class="metaColumn">
+          <div class="metaField rightAligned">
+            <div class="metaLabel">Datum:</div>
+            <div class="metaValue" id="receiptDate"></div>
+          </div>
 
-    <div class="field f-receipt">
-      <label>Belegnummer</label>
-      <div class="val" id="receiptNo"></div>
-    </div>
+          <div class="metaField rightAligned">
+            <div class="metaLabel">Kennzeichen:<span class="metaLabelSub">license, kamion, camion</span></div>
+            <div class="metaValue" id="trailerNo"></div>
+          </div>
 
-    <div class="field f-dt">
-      <label>Datum/Zeit</label>
-      <div class="val" id="dateTime"></div>
-    </div>
+          <div class="metaField rightAligned" id="driverTrailerRow" style="display:none;">
+            <div class="metaLabel">Trailer:</div>
+            <div class="metaValue" id="driverTrailerNo"></div>
+          </div>
 
-    <div class="field f-loc">
-      <label>Standort / Lager</label>
-      <div class="val" id="location"></div>
-    </div>
+          <div class="metaField rightAligned" id="receiptNoRow">
+            <div class="metaLabel">Belegnummer:</div>
+            <div class="metaValue" id="receiptNoInline"></div>
+          </div>
 
-    <div class="field f-dept">
-      <label>Abteilung</label>
-      <div class="val" id="department"></div>
-    </div>
+          <div class="metaField rightAligned" id="departmentRow">
+            <div class="metaLabel">Abteilung:</div>
+            <div class="metaValue" id="department"></div>
+          </div>
 
-    <!-- GETAUSCHT -->
-    <div class="field f-plate">
-      <label>Kennzeichen</label>
-      <div class="val" id="plate"></div>
-    </div>
+          <div class="metaField rightAligned">
+            <div class="metaLabel">Notiz:</div>
+            <div class="metaValue" id="note"></div>
+          </div>
 
-    <div class="field f-out">
-      <label>Ausgang (OUT)</label>
-      <div class="val" id="qtyOut"></div>
-    </div>
-
-    <div class="field f-in">
-      <label>Eingang (IN)</label>
-      <div class="val" id="qtyIn"></div>
-    </div>
-
-    <div class="field f-ent">
-      <label>Unternehmer</label>
-      <div class="val multiline" id="entrepreneur"></div>
-    </div>
-
-    <div class="field f-user">
-      <label>Benutzer/Mitarbeiterkürzel</label>
-      <div class="val" id="username"></div>
-    </div>
-
-    <div class="field f-note">
-      <label>Notiz</label>
-      <div class="val" id="note"></div>
-    </div>
-
-    <div class="field f-details">
-      <label>Details</label>
-      <div class="val" id="details"></div>
-    </div>
-
-    <div class="signTitle">Unterschriften</div>
-
-    <div class="signBox signLeft">
-      <div class="signHint">Ich bestätige die Richtigkeit der Buchung.</div>
-      <div class="signLine">
-        <span>Unterschrift Fahrer</span>
-        <span>Datum</span>
+          <div class="metaField rightAligned" id="nonExchangeableRow" style="display:none;">
+            <div class="metaLabel">Nicht tauschfähig:</div>
+            <div class="metaValue" id="nonExchangeable"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="signBox signRight">
-      <div class="signHint">Geprüft / übernommen.</div>
-      <div class="signLine">
-        <span>Unterschrift Lagermitarbeiter</span>
-        <span>Datum</span>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="transferLeft" colspan="2">
+              <div class="transferHeader left">
+                <svg class="transferIcon left" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
+                  <g class="truck">
+                    <rect x="48" y="18" width="56" height="28" rx="2"></rect>
+                    <path d="M30 24h18v22H22V32z"></path>
+                    <rect x="22" y="46" width="82" height="8" rx="2"></rect>
+                    <path d="M28 28h13v10H28z" fill="#f2f4f8"></path>
+                    <circle cx="46" cy="58" r="10"></circle>
+                    <circle cx="88" cy="58" r="10"></circle>
+                    <circle cx="46" cy="58" r="4" fill="#f2f4f8"></circle>
+                    <circle cx="88" cy="58" r="4" fill="#f2f4f8"></circle>
+                  </g>
+                  <path class="arrow" d="M112 26h8v-10l12 16-12 16V38h-8z"></path>
+                </svg>
+                <span class="transferLabel">ICS übernimmt von Ihnen</span>
+              </div>
+            </th>
+            <th class="transferRight" colspan="2">
+              <div class="transferHeader right">
+                <span class="transferLabel">ICS übergibt an Sie</span>
+                <svg class="transferIcon right" viewBox="0 0 140 80" aria-hidden="true" focusable="false">
+                  <path class="arrow" d="M2 26h8v-10l12 16-12 16V38H2z"></path>
+                  <g class="truck">
+                    <rect x="36" y="18" width="56" height="28" rx="2"></rect>
+                    <path d="M110 24H92v22h26V32z"></path>
+                    <rect x="36" y="46" width="82" height="8" rx="2"></rect>
+                    <path d="M99 28h13v10H99z" fill="#f2f4f8"></path>
+                    <circle cx="52" cy="58" r="10"></circle>
+                    <circle cx="94" cy="58" r="10"></circle>
+                    <circle cx="52" cy="58" r="4" fill="#f2f4f8"></circle>
+                    <circle cx="94" cy="58" r="4" fill="#f2f4f8"></circle>
+                  </g>
+                </svg>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="qty" id="qtyInEu"></td>
+            <td class="type">Euro-Paletten</td>
+            <td class="qty" id="qtyOutEu"></td>
+            <td class="type">Euro-Paletten</td>
+          </tr>
+          <tr>
+            <td class="qty" id="qtyInH1">0</td>
+            <td class="type">H1-Paletten</td>
+            <td class="qty" id="qtyOutH1">0</td>
+            <td class="type">H1-Paletten</td>
+          </tr>
+          <tr>
+            <td class="qty" id="qtyInGb">0</td>
+            <td class="type">Gitterboxen</td>
+            <td class="qty" id="qtyOutGb">0</td>
+            <td class="type">Gitterboxen</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="signatures">
+      <div class="sigBox">
+        <div class="sigTitle">In Ordnung übernommen.</div>
+        <div class="sigLine">Unterschrift/Stempel</div>
       </div>
+      <div class="sigBox">
+        <div class="sigTitle">In Ordnung übergeben.</div>
+        <div class="sigLine">Unterschrift/Stempel</div>
+      </div>
+    </div>
+
+    <div class="footerText" id="footerTextBlock">
+      <span id="footerTextDe">Ladehilfsmittel werden mit 22 €/Palette verrechnet, zuzüglich 25 € Bearbeitungsgebühr.<br>
+      Die Rückgabe ist nur innerhalb von 6 Wochen mit diesem Originalschein bei ICS-Logistik möglich.<br>
+      Die Gebühr wird nicht gutgeschrieben. Bei Nichttausch durch den Empfänger ist<br>
+      ICS sofort zu informieren. Spätere Reklamationen werden nicht akzeptiert.</span>
+      <span class="en" id="footerTextEn">
+        Loading aids are charged at €22 per pallet, plus a €25 processing fee.<br>
+        Returns are only possible within 6 weeks with this original receipt at ICS-Logistik.<br>
+        The fee is not credited. If exchange is refused by the recipient,<br>
+        ICS must be informed immediately. Later complaints will not be accepted.
+      </span>
     </div>
   </div>
 </div>
 
-<script src="/receipt.js"></script>
+<div class="page-copyright">© 2026 / CTSH Systems</div>
+
+<script src="/public/theme.js"></script>
+<script src="/public/receipt.js"></script>
 </body>
 </html>

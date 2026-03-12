@@ -4,11 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Leerpaletten - Login</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
+  <div class="system-logo-wrap">
+    <img src="/public/logo.png" alt="Systemlogo" class="system-logo">
+    <a href="/public/dashboard.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+    <a href="/public/dashboard.html" class="system-logo-home" aria-label="Zur App-Startseite"></a>
+  </div>
   <header>
-    <div><b>Leerpaletten Management</b></div>
+    <div>
+      <b>Leerpaletten Management</b>
+      <div class="muted" style="margin-top:4px;">Palettenmanegementsystem</div>
+      <div id="themeToggleMount" style="margin-top:8px;"></div>
+    </div>
     <div class="right"><span class="badge">Intranet</span></div>
   </header>
 
@@ -22,7 +31,16 @@
         </div>
         <div>
           <label>Passwort</label>
-          <input id="password" type="password" autocomplete="current-password">
+          <div class="password-field">
+            <input id="password" type="password" autocomplete="current-password">
+            <button
+              id="togglePassword"
+              type="button"
+              class="password-visibility-toggle"
+              aria-label="Passwort anzeigen"
+              aria-pressed="false"
+            >👁</button>
+          </div>
         </div>
       </div>
       <div style="margin-top:12px;">
@@ -33,6 +51,8 @@
     </div>
   </main>
 
-  <script src="/login.js"></script>
+  <footer class="site-copyright">© 2026 / CTSH Systems</footer>
+  <script src="/theme.js"></script>
+<script src="/login.js"></script>
 </body>
 </html>

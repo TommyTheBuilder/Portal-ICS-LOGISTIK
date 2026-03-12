@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 2100 2970"
+     width="2100"
+     height="2970">
+
+  <defs>
+    <style>
+      .meta {
+        fill:#4d4d4d;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .blue {
+        fill:#1d4f8f;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="2100" height="2970" fill="#ffffff"/>
+
+  <!-- Contact lines -->
+  <text class="meta"
+        x="1050"
+        y="510"
+        text-anchor="middle"
+        font-size="34"
+        textLength="1950"
+        lengthAdjust="spacingAndGlyphs">
+    D-83395 Freilassing, Breslauer Strasse 49, Tel. (0049)8654 / 4697-0, Fax (0049)8654 / 4697-19, E-Mail: office@ics-logistik.com
+  </text>
+
+  <text class="meta"
+        x="1050"
+        y="576"
+        text-anchor="middle"
+        font-size="42">
+    www.ics-logistik.com
+  </text>
+
+  <!-- Footer -->
+  <g text-anchor="middle" transform="translate(1050,0)">
+    <text class="blue" x="0" y="2732" font-size="36">
+      Bankverbindung BRD: Volksbank BLZ 71090000, Konto Nr. 2330, IBAN: DE72 7109 0000 0000 0023 30, BIC: GENODEF1BGL
+    </text>
+
+    <text class="blue" x="0" y="2778" font-size="36">
+      Bankverbindung Österreich: Raiffeisenkasse BLZ 35000, Konto Nr. 98632, IBAN: AT56 3500 0000 0009 8632, BIC: RVSAAT2S
+    </text>
+
+    <text class="blue" x="0" y="2824" font-size="35">
+      Sitz der Gesellschaft: Freilassing, Amtsgericht Traunstein, HRB-Nr. 14847, UID-Nr. DEB13616871
+    </text>
+
+    <text class="blue" x="0" y="2872" font-size="43">
+      Geschäftsführer: Hubert Pichler
+    </text>
+  </g>
+
+</svg>
