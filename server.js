@@ -76,6 +76,33 @@ async function q(sql, params = []) {
   return pool.query(sql, params);
 }
 
+const LOGIN_ATTEMPTS = new Map();
+
+function isIpLoginBlocked(ip) {
+  const now = Date.now();
+  const current = LOGIN_ATTEMPTS.get(ip);
+  if (!current || current.expiresAt <= now) {
+    LOGIN_ATTEMPTS.delete(ip);
+    return false;
+  }
+  return current.count >= LOGIN_MAX_ATTEMPTS;
+}
+
+function registerFailedLoginAttempt(ip) {
+  const now = Date.now();
+  const current = LOGIN_ATTEMPTS.get(ip);
+  if (!current || current.expiresAt <= now) {
+    LOGIN_ATTEMPTS.set(ip, { count: 1, expiresAt: now + LOGIN_WINDOW_MS });
+    return;
+  }
+  current.count += 1;
+  LOGIN_ATTEMPTS.set(ip, current);
+}
+
+function clearLoginAttempts(ip) {
+  LOGIN_ATTEMPTS.delete(ip);
+}
+
 function normalizeProductType(value) {
   const normalized = String(value || "euro").trim().toLowerCase();
   if (!PRODUCT_TYPES.includes(normalized)) {
@@ -422,6 +449,13 @@ async function getMyPermissions(user) {
 // ---------- AUTH ----------
 async function loginHandler(req, res) {
   const clientIp = req.clientIp || "unknown";
+app.post("/api/login", async (req, res) => {
+  const forwardedIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const clientIp = String(forwardedIp || req.ip || req.socket?.remoteAddress || "unknown");
+
+  if (isIpLoginBlocked(clientIp)) {
+    return res.status(429).json({ error: "Zu viele Login-Versuche. Bitte später erneut versuchen." });
+  }
 
   const { username, password } = req.body || {};
   const normalizedUsername = String(username || "").trim();
@@ -438,12 +472,14 @@ async function loginHandler(req, res) {
   const user = r.rows[0];
   if (!user || user.is_active !== true) {
     registerFailedLogin(clientIp);
+    registerFailedLoginAttempt(clientIp);
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) {
     registerFailedLogin(clientIp);
+    registerFailedLoginAttempt(clientIp);
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
