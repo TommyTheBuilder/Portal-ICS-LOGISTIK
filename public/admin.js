@@ -390,12 +390,48 @@ async function loadAdminHistory({ resetPage = false } = {}) {
 
 function renderChangeDetails(changes) {
   if (!Array.isArray(changes) || changes.length === 0) return "<span class='muted'>Keine Details</span>";
-  return `<ul style="margin:0; padding-left:18px;">${changes.map(c => {
-    const field = c?.field || "Feld";
-    const from = (c?.from ?? "-");
-    const to = (c?.to ?? "-");
-    return `<li><b>${field}</b>: ${from} → ${to}</li>`;
-  }).join("")}</ul>`;
+
+  const FIELD_LABELS = {
+    receipt_no: "Belegnummer",
+    license_plate: "Kennzeichen",
+    entrepreneur: "Frachtführer",
+    note: "Notiz",
+    qty_in: "Menge (IN)",
+    qty_out: "Menge (OUT)",
+    product_type: "Produktart",
+    employee_code: "Mitarbeiter-ID",
+    status: "Status"
+  };
+
+  return `
+    <div class="change-grid" role="list">
+      ${changes.map(c => {
+        const field = FIELD_LABELS[c?.field] || c?.field || "Feld";
+        const from = (c?.from ?? "-");
+        const to = (c?.to ?? "-");
+        return `
+          <div class="change-row" role="listitem">
+            <div class="change-field">${field}</div>
+            <div class="change-values">
+              <span class="change-old">${from}</span>
+              <span class="change-arrow" aria-hidden="true">→</span>
+              <span class="change-new">${to}</span>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function translateCaseAction(action) {
+  const ACTION_LABELS = {
+    approve: "Genehmigt",
+    submit: "Eingereicht",
+    claim: "Übernommen / Beansprucht",
+    create: "Erstellt"
+  };
+  return ACTION_LABELS[action] || action || "-";
 }
 
 async function openCaseHistory(caseId) {
@@ -414,12 +450,12 @@ async function openCaseHistory(caseId) {
   }
 
   body.innerHTML = `
-    <div class="rollcard-list">
+    <div class="rollcard-list change-history-list">
       ${(data || []).map(entry => `
-        <div class="rollcard" style="margin-bottom:8px;">
+        <div class="rollcard change-history-card">
           <div><b>${formatDateTime(entry.created_at)}</b> · ${entry.changed_by || "-"}</div>
-          <div style="margin-top:6px;"><b>Aktion:</b> ${entry.action || "-"}</div>
-          <div style="margin-top:6px;"><b>Änderung:</b> ${renderChangeDetails(entry.changes)}</div>
+          <div style="margin-top:6px;"><b>Aktion:</b> ${translateCaseAction(entry.action)}</div>
+          <div style="margin-top:8px;"><b>Änderung:</b> ${renderChangeDetails(entry.changes)}</div>
         </div>
       `).join("")}
       ${(data || []).length === 0 ? `<div class="muted">Keine Änderungen gefunden.</div>` : ""}
