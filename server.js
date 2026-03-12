@@ -2379,7 +2379,7 @@ async function ensureRuntimeTables() {
   await q(`CREATE INDEX IF NOT EXISTS idx_booking_case_history_case_created ON booking_case_history(case_id, created_at DESC);`);
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 ensureRuntimeTables()
   .then(() => {
     httpServer.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
