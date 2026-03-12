@@ -146,6 +146,7 @@ function bindSettingsMenu() {
   const menu = $("settingsMenu");
   const darkmodeBtn = $("menuDarkmodeBtn");
   const openPasswordBtn = $("openChangePasswordBtn");
+  const containerRegistrationBtn = $("containerRegistrationBtn");
   const moduleDashboardBtn = $("moduleDashboardBtn");
   if (!trigger || !wrap || !menu) return;
 
@@ -182,6 +183,26 @@ function bindSettingsMenu() {
       $("newPassword").value = "";
       $("confirmPassword").value = "";
       showPasswordModal(true);
+    });
+  }
+
+  if (containerRegistrationBtn) {
+    containerRegistrationBtn.addEventListener("click", async () => {
+      closeSettingsMenu();
+      containerRegistrationBtn.disabled = true;
+      try {
+        const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
+        const data = await readJsonSafe(r);
+        if (!r.ok || !data?.url) {
+          alert(data?.error || "Container Anmeldung ist aktuell nicht verfügbar.");
+          return;
+        }
+        window.location.href = data.url;
+      } catch {
+        alert("Container Anmeldung ist aktuell nicht verfügbar.");
+      } finally {
+        containerRegistrationBtn.disabled = false;
+      }
     });
   }
 
@@ -358,6 +379,9 @@ function applyPermsToUI() {
   }
   if ($("adminBtn")) {
     $("adminBtn").style.display = PERMS?.admin?.full_access ? "" : "none";
+  }
+  if ($("containerRegistrationBtn")) {
+    $("containerRegistrationBtn").style.display = PERMS?.integrations?.container_registration ? "" : "none";
   }
 
   if ($("internalTransferCard")) {
