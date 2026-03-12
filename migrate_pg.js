@@ -274,7 +274,8 @@ async function migrate() {
         "filters": { "all_locations": false },
         "masterdata": { "manage": false },
         "users": { "manage": false, "view_department": false },
-        "roles": { "manage": false }
+        "roles": { "manage": false },
+        "integrations": { "container_registration": false }
       }'::jsonb
     )
     ON CONFLICT (name) DO NOTHING;

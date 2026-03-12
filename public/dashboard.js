@@ -181,6 +181,23 @@ function bindModuleButtons() {
   });
 }
 
+async function updateContainerAdminLink() {
+  const link = document.getElementById("containerAdminLink");
+  if (!link) return;
+  link.style.display = "none";
+
+  try {
+    const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
+    if (!r.ok) return;
+    const data = await r.json().catch(() => ({}));
+    if (!data?.url) return;
+    link.href = data.url;
+    link.style.display = "";
+  } catch {
+    // no token/session logging here
+  }
+}
+
 $("logoutBtn")?.addEventListener("click", () => {
   closeSettingsMenu();
   localStorage.removeItem("token");
@@ -212,4 +229,5 @@ async function loadMe() {
   }
 
   await loadMe();
+  await updateContainerAdminLink();
 })();
