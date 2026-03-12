@@ -152,20 +152,43 @@ function bindModuleButtons() {
   });
 }
 
-async function updateContainerAdminLink() {
+async function bindContainerAdminLink() {
   const link = document.getElementById("containerAdminLink");
   if (!link) return;
   link.style.display = "none";
 
   try {
-    const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
-    if (!r.ok) return;
-    const data = await r.json().catch(() => ({}));
-    if (!data?.url) return;
-    link.href = data.url;
+    const permsResponse = await api("/api/my-permissions", { method: "GET", headers: {} });
+    const perms = await permsResponse.json().catch(() => ({}));
+    const allowed = !!perms?.integrations?.container_registration;
+    if (!allowed) return;
+
     link.style.display = "";
+    link.addEventListener("click", async (event) => {
+      event.preventDefault();
+      if (link.dataset.loading === "1") return;
+
+      link.dataset.loading = "1";
+      const originalText = link.textContent;
+      link.textContent = "Container Anmeldung wird geöffnet ...";
+
+      try {
+        const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data?.url) {
+          setMsg("moduleMsg", data?.error || "Container Anmeldung ist aktuell nicht verfügbar.");
+          return;
+        }
+        window.location.href = data.url;
+      } catch {
+        setMsg("moduleMsg", "Container Anmeldung ist aktuell nicht verfügbar.");
+      } finally {
+        link.dataset.loading = "0";
+        link.textContent = originalText;
+      }
+    });
   } catch {
-    // no token/session logging here
+    // permissions could not be loaded, keep link hidden
   }
 }
 
@@ -197,5 +220,5 @@ async function loadMe() {
   }
 
   await loadMe();
-  await updateContainerAdminLink();
+  await bindContainerAdminLink();
 })();
