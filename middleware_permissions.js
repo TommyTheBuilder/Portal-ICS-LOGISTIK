@@ -10,6 +10,7 @@ const DEFAULTS = {
   masterdata: { manage: false, entrepreneurs_manage: false },
   users: { manage: false, view_department: false },
   roles: { manage: false },
+  integrations: { container_registration: false },
   admin: { full_access: false }
 };
 
@@ -48,6 +49,7 @@ async function loadPermissionsForUser(user) {
       masterdata: { manage: true, entrepreneurs_manage: true },
       users: { manage: true, view_department: true },
       roles: { manage: true },
+      integrations: { container_registration: true },
       admin: { full_access: true }
     };
   }

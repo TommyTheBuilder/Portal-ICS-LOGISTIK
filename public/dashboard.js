@@ -1,5 +1,4 @@
-const token = localStorage.getItem("token");
-if (!token) window.location.href = "/login.html";
+let token = localStorage.getItem("token");
 
 function $(id) { return document.getElementById(id); }
 
@@ -8,7 +7,7 @@ function api(path, opts = {}) {
     ...opts,
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer " + token,
+      ...(token ? { "Authorization": "Bearer " + token } : {}),
       ...(opts.headers || {})
     }
   });
@@ -153,6 +152,23 @@ function bindModuleButtons() {
   });
 }
 
+async function updateContainerAdminLink() {
+  const link = document.getElementById("containerAdminLink");
+  if (!link) return;
+  link.style.display = "none";
+
+  try {
+    const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
+    if (!r.ok) return;
+    const data = await r.json().catch(() => ({}));
+    if (!data?.url) return;
+    link.href = data.url;
+    link.style.display = "";
+  } catch {
+    // no token/session logging here
+  }
+}
+
 $("logoutBtn")?.addEventListener("click", () => {
   closeSettingsMenu();
   localStorage.removeItem("token");
@@ -174,5 +190,12 @@ async function loadMe() {
   bindSettingsMenu();
   bindPasswordModal();
   bindModuleButtons();
+
+  if (!token) {
+    window.location.href = "/login.html";
+    return;
+  }
+
   await loadMe();
+  await updateContainerAdminLink();
 })();
