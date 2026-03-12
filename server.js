@@ -79,16 +79,25 @@ async function q(sql, params = []) {
 
 const LOGIN_ATTEMPTS = new Map();
 
-function tooManyLoginAttempts(ip) {
+function isIpLoginBlocked(ip) {
+  const now = Date.now();
+  const current = LOGIN_ATTEMPTS.get(ip);
+  if (!current || current.expiresAt <= now) {
+    LOGIN_ATTEMPTS.delete(ip);
+    return false;
+  }
+  return current.count >= LOGIN_MAX_ATTEMPTS;
+}
+
+function registerFailedLoginAttempt(ip) {
   const now = Date.now();
   const current = LOGIN_ATTEMPTS.get(ip);
   if (!current || current.expiresAt <= now) {
     LOGIN_ATTEMPTS.set(ip, { count: 1, expiresAt: now + LOGIN_WINDOW_MS });
-    return false;
+    return;
   }
   current.count += 1;
   LOGIN_ATTEMPTS.set(ip, current);
-  return current.count > LOGIN_MAX_ATTEMPTS;
 }
 
 function clearLoginAttempts(ip) {
@@ -440,8 +449,10 @@ async function getMyPermissions(user) {
 
 // ---------- AUTH ----------
 app.post("/api/login", async (req, res) => {
-  const clientIp = String(req.ip || req.headers["x-forwarded-for"] || "unknown");
-  if (tooManyLoginAttempts(clientIp)) {
+  const forwardedIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const clientIp = String(forwardedIp || req.ip || req.socket?.remoteAddress || "unknown");
+
+  if (isIpLoginBlocked(clientIp)) {
     return res.status(429).json({ error: "Zu viele Login-Versuche. Bitte später erneut versuchen." });
   }
 
@@ -458,10 +469,16 @@ app.post("/api/login", async (req, res) => {
   );
 
   const user = r.rows[0];
-  if (!user || user.is_active !== true) return res.status(401).json({ error: "Invalid credentials" });
+  if (!user || user.is_active !== true) {
+    registerFailedLoginAttempt(clientIp);
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
 
   const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+  if (!ok) {
+    registerFailedLoginAttempt(clientIp);
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
 
   clearLoginAttempts(clientIp);
 
