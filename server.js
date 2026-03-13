@@ -615,6 +615,8 @@ app.get("/api/sso/container-planning-session", authRequired, async (req, res) =>
   const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
   const url = `${CONTAINER_PLANNING_APP_URL}${separator}ssoToken=${encodeURIComponent(session)}&session=${encodeURIComponent(session)}`;
   return res.json({ session, ssoToken: session, url, exp: payload.exp });
+  const url = `${CONTAINER_PLANNING_APP_URL}${separator}ssoToken=${encodeURIComponent(session)}`;
+  return res.json({ session, url, exp: payload.exp });
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
