@@ -152,6 +152,36 @@ function bindModuleButtons() {
   });
 }
 
+
+async function bindContainerPlanningLink() {
+  const link = document.getElementById("containerPlanningLink");
+  if (!link) return;
+
+  link.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (link.dataset.loading === "1") return;
+
+    link.dataset.loading = "1";
+    const originalText = link.textContent;
+    link.textContent = "Container Planung wird geöffnet ...";
+
+    try {
+      const r = await api("/api/sso/container-planning-session", { method: "GET", headers: {} });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data?.url) {
+        setMsg("moduleMsg", data?.error || "Container Planung ist aktuell nicht verfügbar.");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setMsg("moduleMsg", "Container Planung ist aktuell nicht verfügbar.");
+    } finally {
+      link.dataset.loading = "0";
+      link.textContent = originalText;
+    }
+  });
+}
+
 async function bindContainerAdminLink() {
   const link = document.getElementById("containerAdminLink");
   if (!link) return;
@@ -221,4 +251,5 @@ async function loadMe() {
 
   await loadMe();
   await bindContainerAdminLink();
+  await bindContainerPlanningLink();
 })();
