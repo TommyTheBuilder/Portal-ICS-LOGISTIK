@@ -142,13 +142,48 @@ function bindPasswordModal() {
   });
 }
 
-function bindModuleButtons() {
-  document.querySelectorAll(".module-button[data-module]").forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.preventDefault();
-      const moduleName = btn.dataset.module || "Modul";
-      setMsg("moduleMsg", `${moduleName} ist vorbereitet und kann jetzt mit dem Zielsystem verknüpft werden.`, true);
-    });
+function bindContainerPlanningLink() {
+  const link = $("containerPlanningLink");
+  if (!link) return;
+
+  link.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (link.dataset.loading === "1") return;
+
+    link.dataset.loading = "1";
+    const originalText = link.textContent;
+    link.textContent = "Container Planung wird geöffnet ...";
+
+    try {
+      const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setMsg("moduleMsg", data?.error || "Container Planung ist aktuell nicht verfügbar.");
+        return;
+      }
+
+      const targetUrl = new URL("https://containerplanung.paletten-ms.de/");
+      const ssoSession = String(data?.session || "").trim();
+      if (ssoSession) {
+        targetUrl.searchParams.set("session", ssoSession);
+      } else if (data?.url) {
+        const sourceUrl = new URL(data.url);
+        const forwardedSession = String(sourceUrl.searchParams.get("session") || "").trim();
+        if (forwardedSession) targetUrl.searchParams.set("session", forwardedSession);
+      }
+
+      if (!targetUrl.searchParams.get("session")) {
+        setMsg("moduleMsg", "Container Planung ist aktuell nicht verfügbar.");
+        return;
+      }
+
+      window.location.href = targetUrl.toString();
+    } catch {
+      setMsg("moduleMsg", "Container Planung ist aktuell nicht verfügbar.");
+    } finally {
+      link.dataset.loading = "0";
+      link.textContent = originalText;
+    }
   });
 }
 
@@ -212,7 +247,7 @@ async function loadMe() {
 (async () => {
   bindSettingsMenu();
   bindPasswordModal();
-  bindModuleButtons();
+  bindContainerPlanningLink();
 
   if (!token) {
     window.location.href = "/login.html";
