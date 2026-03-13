@@ -185,6 +185,10 @@ function buildContainerSessionToken(payload) {
   return `${payloadEncoded}.${signatureEncoded}`;
 }
 
+function buildSharedAuthJwt(payload) {
+  return jwt.sign(payload, SHARED_AUTH_SECRET, { algorithm: "HS256" });
+}
+
 async function logCaseHistory({ caseId, locationId, departmentId, receiptNo = null, changedBy, action, changes = [] }) {
   await q(
     `
@@ -601,15 +605,16 @@ app.get("/api/sso/container-planning-session", authRequired, async (req, res) =>
   }
 
   const payload = {
-    user: req.user.username,
-    roles,
+    username: req.user.username,
+    email: req.user.email || undefined,
+    role: req.user.role || undefined,
     exp: Math.floor(Date.now() / 1000) + 300
   };
 
-  const session = buildContainerSessionToken(payload);
+  const session = buildSharedAuthJwt(payload);
   const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
-  const url = `${CONTAINER_PLANNING_APP_URL}${separator}session=${encodeURIComponent(session)}`;
-  return res.json({ session, url, exp: payload.exp });
+  const url = `${CONTAINER_PLANNING_APP_URL}${separator}ssoToken=${encodeURIComponent(session)}&session=${encodeURIComponent(session)}`;
+  return res.json({ session, ssoToken: session, url, exp: payload.exp });
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
