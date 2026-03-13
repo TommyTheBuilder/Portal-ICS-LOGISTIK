@@ -1,5 +1,45 @@
 let token = localStorage.getItem("token");
 
+function sanitizeDashboardUrl() {
+  const url = new URL(window.location.href);
+  const hadSsoToken = url.searchParams.has("ssoToken");
+  const hadSessionToken = url.searchParams.has("session");
+  if (!hadSsoToken && !hadSessionToken) return;
+
+  url.searchParams.delete("ssoToken");
+  url.searchParams.delete("session");
+  history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+}
+
+async function trySsoIntake() {
+  const params = new URLSearchParams(window.location.search);
+  const ssoToken = String(params.get("ssoToken") || params.get("session") || "").trim();
+  if (!ssoToken) return false;
+
+  try {
+    const response = await fetch("/api/auth/sso-exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: ssoToken })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data?.token) {
+      localStorage.removeItem("token");
+      window.location.href = "/login.html";
+      return false;
+    }
+
+    localStorage.setItem("token", data.token);
+    token = data.token;
+    sanitizeDashboardUrl();
+    return true;
+  } catch {
+    localStorage.removeItem("token");
+    window.location.href = "/login.html";
+    return false;
+  }
+}
+
 function $(id) { return document.getElementById(id); }
 
 function api(path, opts = {}) {
@@ -243,6 +283,8 @@ async function loadMe() {
   bindSettingsMenu();
   bindPasswordModal();
   bindModuleButtons();
+
+  await trySsoIntake();
 
   if (!token) {
     window.location.href = "/login.html";

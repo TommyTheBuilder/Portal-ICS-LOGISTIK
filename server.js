@@ -21,6 +21,7 @@ const ALWAYS_ALLOWED_ORIGINS = [
 const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
 const SHARED_AUTH_SECRET = String(process.env.SHARED_AUTH_SECRET || "13215489156189421598412").trim();
+const SSO_MAX_TOKEN_AGE_SECONDS = Number(process.env.SSO_MAX_TOKEN_AGE_SECONDS || 300);
 const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
 const CONTAINER_PLANNING_APP_URL = String(process.env.CONTAINER_PLANNING_APP_URL || "https://containerplanung.paletten-ms.de").trim();
 
@@ -481,6 +482,71 @@ async function loginHandler(req, res) {
 // Brute-force protection applies only to login routes.
 app.post("/login", checkIpBlocked, loginHandler);
 app.post("/api/login", checkIpBlocked, loginHandler);
+
+app.post("/api/auth/sso-exchange", async (req, res) => {
+  const ssoToken = String(req.body?.token || "").trim();
+  if (!ssoToken) {
+    return res.status(400).json({ error: "token required" });
+  }
+
+  let claims;
+  try {
+    claims = jwt.verify(ssoToken, SHARED_AUTH_SECRET, { algorithms: ["HS256"] });
+  } catch {
+    return res.status(401).json({ error: "Invalid SSO token" });
+  }
+
+  const issuedAt = Number(claims?.iat || 0);
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  if (!issuedAt || (nowInSeconds - issuedAt) > SSO_MAX_TOKEN_AGE_SECONDS) {
+    return res.status(401).json({ error: "SSO token expired" });
+  }
+
+  const username = String(claims?.username || "").trim();
+  if (!username) {
+    return res.status(401).json({ error: "Invalid SSO token" });
+  }
+
+  const userResult = await q(
+    `SELECT id, username, role, location_id, role_id, is_active
+     FROM users
+     WHERE LOWER(username)=LOWER($1)
+     LIMIT 1`,
+    [username]
+  );
+
+  const user = userResult.rows[0];
+  if (!user || user.is_active !== true) {
+    return res.status(401).json({ error: "Invalid SSO token" });
+  }
+
+  const roleFromClaim = String(claims?.role || "").trim();
+  const tokenRole = roleFromClaim || user.role;
+
+  const token = jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+      role: tokenRole,
+      location_id: user.location_id,
+      role_id: user.role_id || null
+    },
+    JWT_SECRET,
+    { expiresIn: "12h" }
+  );
+
+  return res.json({
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      role: tokenRole,
+      location_id: user.location_id,
+      role_id: user.role_id || null
+    }
+  });
+});
+
 app.get("/api/me", authRequired, async (req, res) => {
   const r = await q(
     `SELECT u.id,
@@ -606,15 +672,18 @@ app.get("/api/sso/container-planning-session", authRequired, async (req, res) =>
 
   const payload = {
     username: req.user.username,
+    user: req.user.username,
+    sub: req.user.username,
     email: req.user.email || undefined,
     role: req.user.role || undefined,
+    roles,
     exp: Math.floor(Date.now() / 1000) + 300
   };
 
-  const session = buildSharedAuthJwt(payload);
+  const ssoToken = buildSharedAuthJwt(payload);
   const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
-  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}ssoToken=${encodeURIComponent(session)}&session=${encodeURIComponent(session)}`;
-  return res.json({ session, ssoToken: session, url: redirectUrl, exp: payload.exp });
+  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}ssoToken=${encodeURIComponent(ssoToken)}&token=${encodeURIComponent(ssoToken)}&session=${encodeURIComponent(ssoToken)}`;
+  return res.json({ session: ssoToken, ssoToken, token: ssoToken, url: redirectUrl, exp: payload.exp });
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
