@@ -157,27 +157,14 @@ function bindContainerPlanningLink() {
     try {
       const r = await api("/api/sso/container-session", { method: "GET", headers: {} });
       const data = await r.json().catch(() => ({}));
-      if (!r.ok) {
+      if (!r.ok || !data?.url) {
         setMsg("moduleMsg", data?.error || "Container Planung ist aktuell nicht verfügbar.");
         return;
       }
 
-      const targetUrl = new URL("https://containerplanung.paletten-ms.de/");
-      const ssoSession = String(data?.session || "").trim();
-      if (ssoSession) {
-        targetUrl.searchParams.set("session", ssoSession);
-      } else if (data?.url) {
-        const sourceUrl = new URL(data.url);
-        const forwardedSession = String(sourceUrl.searchParams.get("session") || "").trim();
-        if (forwardedSession) targetUrl.searchParams.set("session", forwardedSession);
-      }
-
-      if (!targetUrl.searchParams.get("session")) {
-        setMsg("moduleMsg", "Container Planung ist aktuell nicht verfügbar.");
-        return;
-      }
-
-      window.location.href = targetUrl.toString();
+      const url = new URL(data.url);
+      url.hostname = "containerplanung.paletten-ms.de";
+      window.location.href = url.toString();
     } catch {
       setMsg("moduleMsg", "Container Planung ist aktuell nicht verfügbar.");
     } finally {
