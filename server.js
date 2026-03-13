@@ -22,6 +22,7 @@ const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE || "100kb";
 const PRODUCT_TYPES = ["euro", "h1", "gitterbox"];
 const SHARED_AUTH_SECRET = String(process.env.SHARED_AUTH_SECRET || "13215489156189421598412").trim();
 const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
+const CONTAINER_PLANNING_APP_URL = String(process.env.CONTAINER_PLANNING_APP_URL || "https://containerplanung.paletten-ms.de").trim();
 
 function getAllowedOrigins() {
   if (CORS_ORIGIN === "*") return "*";
@@ -579,6 +580,35 @@ app.get("/api/sso/container-session", authRequired, async (req, res) => {
 
   const session = buildContainerSessionToken(payload);
   const url = `${CONTAINER_APP_URL}?session=${encodeURIComponent(session)}`;
+  return res.json({ session, url, exp: payload.exp });
+});
+
+
+app.get("/api/sso/container-planning-session", authRequired, async (req, res) => {
+  if (!SHARED_AUTH_SECRET) {
+    return res.status(500).json({ error: "SHARED_AUTH_SECRET missing" });
+  }
+
+  const perms = await getMyPermissions(req.user);
+  const roles = Array.from(new Set([
+    ...flattenPermissionRoles(perms),
+    req.user.role === "admin" ? "admin" : null,
+    perms?.integrations?.container_registration ? "ContainerAnmeldung" : null
+  ].filter(Boolean)));
+
+  if (!roles.includes("ContainerAnmeldung")) {
+    return res.status(403).json({ error: "No Permissions" });
+  }
+
+  const payload = {
+    user: req.user.username,
+    roles,
+    exp: Math.floor(Date.now() / 1000) + 300
+  };
+
+  const session = buildContainerSessionToken(payload);
+  const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
+  const url = `${CONTAINER_PLANNING_APP_URL}${separator}session=${encodeURIComponent(session)}`;
   return res.json({ session, url, exp: payload.exp });
 });
 
