@@ -723,36 +723,47 @@ app.get("/api/sso/container-session", containerPermissionRequired, async (req, r
 });
 
 
-app.get("/api/sso/container-planning-session", containerPermissionRequired, async (req, res) => {
+async function createContainerPlanningSession(req, res) {
   if (!SHARED_AUTH_SECRET) {
     return res.status(500).json({ error: "SHARED_AUTH_SECRET missing" });
   }
 
-  const perms = await getMyPermissions(req.containerUser);
-  const canOpenContainerRegistration = hasContainerRegistrationPermission(perms);
+  const perms = await getMyPermissions(req.user);
 
   const roles = Array.from(new Set([
     ...flattenPermissionRoles(perms),
-    req.containerUser?.role === "admin" ? "admin" : null,
-    canOpenContainerRegistration ? "ContainerAnmeldung" : null
+    req.user?.role === "admin" ? "admin" : null
   ].filter(Boolean)));
 
-  if (!canOpenContainerRegistration) {
-    return res.status(403).json({ error: "No Permissions" });
-  }
-
   const payload = {
-    username: req.containerUser.username,
-    user: req.containerUser.username,
+    username: req.user.username,
+    user: req.user.username,
     roles,
     exp: Math.floor(Date.now() / 1000) + 300
   };
 
   const ssoToken = buildSharedAuthJwt(payload);
   const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
-  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}token=${encodeURIComponent(ssoToken)}&user=${encodeURIComponent(req.containerUser.username)}`;
-  return res.json({ session: ssoToken, ssoToken, token: ssoToken, user: req.containerUser.username, url: redirectUrl, exp: payload.exp });
-});
+  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}token=${encodeURIComponent(ssoToken)}&user=${encodeURIComponent(req.user.username)}`;
+
+  return res.json({
+    session: {
+      token: ssoToken,
+      user_id: req.user.id,
+      role: req.user.role,
+      permissions: perms,
+      exp: payload.exp
+    },
+    ssoToken,
+    token: ssoToken,
+    user: req.user.username,
+    url: redirectUrl,
+    exp: payload.exp
+  });
+}
+
+app.get("/api/container-planning-session", authRequired, createContainerPlanningSession);
+app.get("/api/sso/container-planning-session", authRequired, createContainerPlanningSession);
 
 app.get("/api/notifications", authRequired, async (req, res) => {
   await pruneNotificationsForUser(req.user.id);
