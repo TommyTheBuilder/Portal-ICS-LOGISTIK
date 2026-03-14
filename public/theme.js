@@ -25,6 +25,7 @@
 
     try {
       await fetch("/api/theme", {
+        credentials: "include",
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -51,6 +52,7 @@
 
     try {
       const response = await fetch("/api/theme", {
+        credentials: "include",
         headers: authHeader
       });
       if (!response.ok) return;

@@ -140,6 +140,7 @@
         ? `/api/receipt/${encodeURIComponent(bookingId)}`
         : `/api/cases/${encodeURIComponent(caseId)}/receipt`;
       res = await fetch(path, {
+        credentials: "include",
         headers: { Authorization: "Bearer " + token }
       });
       data = await res.json();

@@ -26,6 +26,27 @@ const SSO_MAX_TOKEN_AGE_SECONDS = Number(process.env.SSO_MAX_TOKEN_AGE_SECONDS |
 const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
 const CONTAINER_PLANNING_APP_URL = String(process.env.CONTAINER_PLANNING_APP_URL || "https://containerplanung.paletten-ms.de").trim();
 
+const AUTH_COOKIE_NAME = String(process.env.AUTH_COOKIE_NAME || "portal_auth").trim();
+const AUTH_COOKIE_DOMAIN = String(process.env.AUTH_COOKIE_DOMAIN || ".paletten-ms.de").trim();
+const AUTH_COOKIE_SAME_SITE = String(process.env.AUTH_COOKIE_SAME_SITE || "None").trim();
+const AUTH_COOKIE_MAX_AGE_SECONDS = Number(process.env.AUTH_COOKIE_MAX_AGE_SECONDS || 12 * 60 * 60);
+
+function buildAuthCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: AUTH_COOKIE_SAME_SITE,
+    domain: AUTH_COOKIE_DOMAIN,
+    path: "/",
+    maxAge: AUTH_COOKIE_MAX_AGE_SECONDS * 1000
+  };
+}
+
+function setAuthCookie(res, token) {
+  if (!AUTH_COOKIE_NAME || !token) return;
+  res.cookie(AUTH_COOKIE_NAME, token, buildAuthCookieOptions());
+}
+
 function getAllowedOrigins() {
   if (CORS_ORIGIN === "*") return "*";
   return Array.from(new Set([
@@ -477,6 +498,8 @@ async function loginHandler(req, res) {
     { expiresIn: "12h" }
   );
 
+  setAuthCookie(res, token);
+
   return res.json({
     token,
     user: {
@@ -556,6 +579,8 @@ async function exchangeSsoToken(req, res) {
     JWT_SECRET,
     { expiresIn: "12h" }
   );
+
+  setAuthCookie(res, token);
 
   return res.json({
     token,
