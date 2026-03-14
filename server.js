@@ -649,8 +649,8 @@ app.get("/api/sso/container-session", authRequired, async (req, res) => {
   };
 
   const session = buildContainerSessionToken(payload);
-  const url = `${CONTAINER_APP_URL}?session=${encodeURIComponent(session)}`;
-  return res.json({ session, url, exp: payload.exp });
+  const appUrl = `${CONTAINER_APP_URL}?session=${encodeURIComponent(session)}`;
+  return res.json({ session, url: appUrl, exp: payload.exp });
 });
 
 
