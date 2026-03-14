@@ -231,8 +231,8 @@ async function migrate() {
   `);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS ip_preferences (
-      ip_address TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       theme TEXT NOT NULL DEFAULT 'light' CHECK (theme IN ('light','dark')),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
