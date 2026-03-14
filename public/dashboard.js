@@ -233,7 +233,7 @@ async function bindContainerAdminLink() {
   try {
     const permsResponse = await api("/api/my-permissions", { method: "GET", headers: {} });
     const perms = await permsResponse.json().catch(() => ({}));
-    const allowed = !!perms?.integrations?.container_registration;
+    const allowed = !!(perms?.integrations?.container_login || perms?.integrations?.container_registration);
     if (!allowed) return;
 
     link.style.display = "";

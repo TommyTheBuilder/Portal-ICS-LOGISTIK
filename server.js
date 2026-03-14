@@ -178,6 +178,15 @@ function flattenPermissionRoles(perms, prefix = "") {
   return roles;
 }
 
+
+function hasContainerRegistrationPermission(perms) {
+  return !!(perms?.integrations?.container_login || perms?.integrations?.container_registration);
+}
+
+function hasContainerAdminPermission(user, perms) {
+  return !!(user?.role === "admin" || perms?.admin?.full_access);
+}
+
 function buildContainerSessionToken(payload) {
   const payloadEncoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
   const signatureEncoded = crypto.createHmac("sha256", SHARED_AUTH_SECRET)
@@ -374,7 +383,7 @@ async function getMyPermissions(user) {
     masterdata: { manage: true, entrepreneurs_manage: true },
     users: { manage: true, view_department: true },
     roles: { manage: true },
-    integrations: { container_registration: true },
+    integrations: { container_login: true, container_registration: true },
     admin: { full_access: true }
   };
 
@@ -400,7 +409,7 @@ async function getMyPermissions(user) {
     masterdata: { manage: false, entrepreneurs_manage: false },
     users: { manage: false, view_department: false },
     roles: { manage: false },
-    integrations: { container_registration: false },
+    integrations: { container_login: false, container_registration: false },
     admin: { full_access: false }
   };
 
@@ -644,13 +653,18 @@ app.get("/api/sso/container-session", authRequired, async (req, res) => {
   }
 
   const perms = await getMyPermissions(req.user);
+  const canOpenContainerRegistration = hasContainerRegistrationPermission(perms);
+  const canOpenContainerAdmin = hasContainerAdminPermission(req.user, perms);
+
   const roles = Array.from(new Set([
     ...flattenPermissionRoles(perms),
     req.user.role === "admin" ? "admin" : null,
-    perms?.integrations?.container_registration ? "ContainerAnmeldung" : null
+    canOpenContainerRegistration ? "ContainerAnmeldung" : null,
+    canOpenContainerAdmin ? "Admin" : null,
+    canOpenContainerAdmin ? "Adminberechtigung" : null
   ].filter(Boolean)));
 
-  if (!roles.includes("ContainerAnmeldung")) {
+  if (!canOpenContainerRegistration) {
     return res.status(403).json({ error: "No Permissions" });
   }
 
@@ -673,13 +687,15 @@ app.get("/api/sso/container-planning-session", authRequired, async (req, res) =>
   }
 
   const perms = await getMyPermissions(req.user);
+  const canOpenContainerRegistration = hasContainerRegistrationPermission(perms);
+
   const roles = Array.from(new Set([
     ...flattenPermissionRoles(perms),
     req.user.role === "admin" ? "admin" : null,
-    perms?.integrations?.container_registration ? "ContainerAnmeldung" : null
+    canOpenContainerRegistration ? "ContainerAnmeldung" : null
   ].filter(Boolean)));
 
-  if (!roles.includes("ContainerAnmeldung")) {
+  if (!canOpenContainerRegistration) {
     return res.status(403).json({ error: "No Permissions" });
   }
 
