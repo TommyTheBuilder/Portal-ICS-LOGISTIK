@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
+const { pool: appPool } = require("./db_pg");
 
 const ADMIN_PERMISSION_KEY = String(process.env.ADMIN_PERMISSION_KEY || "integration.container_login").trim();
 const ADMIN_AUTH_DATABASE_URL = String(process.env.ADMIN_AUTH_DATABASE_URL || "").trim();
@@ -22,7 +23,7 @@ let adminPool = null;
 
 function getAdminPool() {
   if (!ADMIN_AUTH_DATABASE_URL) {
-    throw new Error("ADMIN_AUTH_DATABASE_URL missing");
+    return appPool;
   }
   if (!adminPool) {
     adminPool = new Pool({ connectionString: ADMIN_AUTH_DATABASE_URL });

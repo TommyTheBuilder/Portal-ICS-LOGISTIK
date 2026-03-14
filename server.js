@@ -493,8 +493,20 @@ async function loginHandler(req, res) {
 app.post("/login", checkIpBlocked, loginHandler);
 app.post("/api/login", checkIpBlocked, loginHandler);
 
-app.post("/api/auth/sso-exchange", async (req, res) => {
-  const ssoToken = String(req.body?.token || "").trim();
+function resolveIncomingSsoToken(req) {
+  return String(
+    req.body?.token
+    || req.body?.ssoToken
+    || req.body?.session
+    || req.query?.token
+    || req.query?.ssoToken
+    || req.query?.session
+    || ""
+  ).trim();
+}
+
+async function exchangeSsoToken(req, res) {
+  const ssoToken = resolveIncomingSsoToken(req);
   if (!ssoToken) {
     return res.status(400).json({ error: "token required" });
   }
@@ -555,7 +567,11 @@ app.post("/api/auth/sso-exchange", async (req, res) => {
       role_id: user.role_id || null
     }
   });
-});
+}
+
+app.post("/api/auth/sso-exchange", exchangeSsoToken);
+app.post("/api/auth/sso-forward-token", exchangeSsoToken);
+app.get("/api/auth/sso-forward-token", exchangeSsoToken);
 
 app.get("/api/me", authRequired, async (req, res) => {
   const r = await q(
