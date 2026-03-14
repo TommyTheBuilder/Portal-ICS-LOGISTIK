@@ -11,6 +11,7 @@ async function submitLogin() {
 
   try {
     const r = await fetch("/api/login", {
+      credentials: "include",
       method: "POST",
       headers: { "Content-Type":"application/json" },
       body: JSON.stringify({ username, password })

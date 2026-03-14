@@ -21,6 +21,7 @@ async function trySsoIntake() {
 
   try {
     const response = await fetch("/api/auth/sso-exchange", {
+      credentials: "include",
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: ssoToken })
@@ -45,6 +46,7 @@ async function trySsoIntake() {
 
 function api(path, opts = {}) {
   return fetch(path, {
+    credentials: "include",
     ...opts,
     headers: {
       "Content-Type": "application/json",

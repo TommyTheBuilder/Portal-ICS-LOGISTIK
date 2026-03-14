@@ -11,6 +11,7 @@ const crypto = require("crypto");
 const { pool } = require("./db_pg");
 const { authRequired, adminRequired, JWT_SECRET } = require("./middleware_auth");
 const { requirePermission } = require("./middleware_permissions");
+const { containerPermissionRequired } = require("./middleware_container_auth");
 const { checkIpBlocked, registerFailedLogin, clearFailedLogin } = require("./security/loginRateLimit");
 
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
@@ -44,7 +45,7 @@ const app = express();
 app.set("trust proxy", true);
 app.disable("x-powered-by");
 app.use(helmet());
-app.use(cors({ origin: corsOriginResolver }));
+app.use(cors({ origin: corsOriginResolver, credentials: true }));
 app.use(express.json({ limit: MAX_BODY_SIZE }));
 app.get("/", (req, res) => res.redirect("/login.html"));
 app.get("/login", (req, res) => res.redirect("/login.html"));
@@ -647,18 +648,18 @@ app.get("/api/my-permissions", authRequired, async (req, res) => {
   res.json(perms);
 });
 
-app.get("/api/sso/container-session", authRequired, async (req, res) => {
+app.get("/api/sso/container-session", containerPermissionRequired, async (req, res) => {
   if (!SHARED_AUTH_SECRET) {
     return res.status(500).json({ error: "SHARED_AUTH_SECRET missing" });
   }
 
-  const perms = await getMyPermissions(req.user);
+  const perms = await getMyPermissions(req.containerUser);
   const canOpenContainerRegistration = hasContainerRegistrationPermission(perms);
-  const canOpenContainerAdmin = hasContainerAdminPermission(req.user, perms);
+  const canOpenContainerAdmin = hasContainerAdminPermission(req.containerUser, perms);
 
   const roles = Array.from(new Set([
     ...flattenPermissionRoles(perms),
-    req.user.role === "admin" ? "admin" : null,
+    req.containerUser?.role === "admin" ? "admin" : null,
     canOpenContainerRegistration ? "ContainerAnmeldung" : null,
     canOpenContainerAdmin ? "Admin" : null,
     canOpenContainerAdmin ? "Adminberechtigung" : null
@@ -669,29 +670,29 @@ app.get("/api/sso/container-session", authRequired, async (req, res) => {
   }
 
   const payload = {
-    user: req.user.username,
+    user: req.containerUser.username,
     roles,
     exp: Math.floor(Date.now() / 1000) + 300
   };
 
   const session = buildContainerSessionToken(payload);
   const separator = CONTAINER_APP_URL.includes("?") ? "&" : "?";
-  const appUrl = `${CONTAINER_APP_URL}${separator}token=${encodeURIComponent(session)}&user=${encodeURIComponent(req.user.username)}`;
-  return res.json({ session, token: session, user: req.user.username, url: appUrl, exp: payload.exp });
+  const appUrl = `${CONTAINER_APP_URL}${separator}token=${encodeURIComponent(session)}&user=${encodeURIComponent(req.containerUser.username)}`;
+  return res.json({ session, token: session, user: req.containerUser.username, url: appUrl, exp: payload.exp });
 });
 
 
-app.get("/api/sso/container-planning-session", authRequired, async (req, res) => {
+app.get("/api/sso/container-planning-session", containerPermissionRequired, async (req, res) => {
   if (!SHARED_AUTH_SECRET) {
     return res.status(500).json({ error: "SHARED_AUTH_SECRET missing" });
   }
 
-  const perms = await getMyPermissions(req.user);
+  const perms = await getMyPermissions(req.containerUser);
   const canOpenContainerRegistration = hasContainerRegistrationPermission(perms);
 
   const roles = Array.from(new Set([
     ...flattenPermissionRoles(perms),
-    req.user.role === "admin" ? "admin" : null,
+    req.containerUser?.role === "admin" ? "admin" : null,
     canOpenContainerRegistration ? "ContainerAnmeldung" : null
   ].filter(Boolean)));
 
@@ -700,16 +701,16 @@ app.get("/api/sso/container-planning-session", authRequired, async (req, res) =>
   }
 
   const payload = {
-    username: req.user.username,
-    user: req.user.username,
+    username: req.containerUser.username,
+    user: req.containerUser.username,
     roles,
     exp: Math.floor(Date.now() / 1000) + 300
   };
 
   const ssoToken = buildSharedAuthJwt(payload);
   const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
-  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}token=${encodeURIComponent(ssoToken)}&user=${encodeURIComponent(req.user.username)}`;
-  return res.json({ session: ssoToken, ssoToken, token: ssoToken, user: req.user.username, url: redirectUrl, exp: payload.exp });
+  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}token=${encodeURIComponent(ssoToken)}&user=${encodeURIComponent(req.containerUser.username)}`;
+  return res.json({ session: ssoToken, ssoToken, token: ssoToken, user: req.containerUser.username, url: redirectUrl, exp: payload.exp });
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
