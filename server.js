@@ -596,28 +596,40 @@ app.post("/api/change-password", authRequired, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/api/theme", async (req, res) => {
-  const ipAddress = String(req.ip || req.headers["x-forwarded-for"] || "unknown");
+app.get("/api/theme", authRequired, async (req,res) => {
+
+  const userId = req.user.id;
+
   const pref = await q(
-    `SELECT theme FROM ip_preferences WHERE ip_address=$1 LIMIT 1`,
-    [ipAddress]
+    `SELECT theme
+     FROM user_preferences
+     WHERE user_id=$1`,
+    [userId]
   );
-  res.json({ theme: pref.rowCount ? pref.rows[0].theme : "light" });
+
+  res.json({
+    theme: pref.rowCount ? pref.rows[0].theme : "light"
+  });
 });
 
-app.put("/api/theme", async (req, res) => {
+app.put("/api/theme", authRequired, async (req, res) => {
+
   const nextTheme = String(req.body?.theme || "").trim().toLowerCase();
-  if (!["light", "dark"].includes(nextTheme)) {
+
+  if (!["light","dark"].includes(nextTheme)) {
     return res.status(400).json({ error: "invalid theme" });
   }
-  const ipAddress = String(req.ip || req.headers["x-forwarded-for"] || "unknown");
+
+  const userId = req.user.id;
+
   await q(
-    `INSERT INTO ip_preferences (ip_address, theme)
+    `INSERT INTO user_preferences (user_id, theme)
      VALUES ($1, $2)
-     ON CONFLICT (ip_address)
-     DO UPDATE SET theme=EXCLUDED.theme, updated_at=now()`,
-    [ipAddress, nextTheme]
+     ON CONFLICT (user_id)
+     DO UPDATE SET theme = EXCLUDED.theme, updated_at = now()`,
+    [userId, nextTheme]
   );
+
   res.json({ ok: true, theme: nextTheme });
 });
 
