@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 const { pool: appPool } = require("./db_pg");
 
-const ADMIN_PERMISSION_KEY = String(process.env.ADMIN_PERMISSION_KEY || "integration.container_login").trim();
+const ADMIN_PERMISSION_KEY = String(process.env.ADMIN_PERMISSION_KEY || "integrations.container_registration").trim();
 const ADMIN_AUTH_DATABASE_URL = String(process.env.ADMIN_AUTH_DATABASE_URL || "").trim();
 const ADMIN_AUTH_QUERY = String(process.env.ADMIN_AUTH_QUERY || "").trim();
 const SESSION_COOKIE_NAME = String(process.env.ADMIN_SESSION_COOKIE_NAME || "connect.sid").trim();
@@ -20,6 +20,72 @@ LIMIT 1
 `;
 
 let adminPool = null;
+
+function splitPermissionKeys(rawKeys) {
+  return String(rawKeys || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+const permissionKeys = Array.from(new Set([
+  ...splitPermissionKeys(ADMIN_PERMISSION_KEY),
+  "integrations.container_registration",
+  "integrations.container_login",
+  "integration.container_login"
+]));
+
+function hasPermissionPath(perms, permPath) {
+  if (!permPath) return false;
+  const parts = String(permPath).split(".").filter(Boolean);
+  let cur = perms;
+  for (const part of parts) {
+    if (!cur || typeof cur !== "object") return false;
+    cur = cur[part];
+  }
+  return cur === true;
+}
+
+function canUseContainer(perms) {
+  if (perms?.admin?.full_access) return true;
+  return permissionKeys.some((key) => hasPermissionPath(perms, key));
+}
+
+async function resolveUserByAppSchema(client, principal) {
+  const userLookup = await client.query(
+    `SELECT u.id, u.username, u.role, u.role_id, r.permissions AS role_permissions
+     FROM users u
+     LEFT JOIN roles r ON r.id = u.role_id
+     WHERE u.id = $1
+     LIMIT 1`,
+    [principal.id]
+  );
+
+  if (!userLookup.rowCount) {
+    return { status: 401, error: "No session" };
+  }
+
+  const userRow = userLookup.rows[0];
+  const rolePermissions = userRow.role_permissions && typeof userRow.role_permissions === "object"
+    ? userRow.role_permissions
+    : {};
+
+  const isAdmin = String(userRow.role || "") === "admin";
+  if (!isAdmin && !canUseContainer(rolePermissions)) {
+    return { status: 403, error: "Missing permission" };
+  }
+
+  return {
+    status: 200,
+    user: {
+      id: Number(userRow.id),
+      username: String(userRow.username || principal.username || ""),
+      role: String(userRow.role || principal.role || ""),
+      permission: ADMIN_PERMISSION_KEY,
+      auth_source: principal.source
+    }
+  };
+}
 
 function getAdminPool() {
   if (!ADMIN_AUTH_DATABASE_URL) {
@@ -169,6 +235,10 @@ async function resolveUserByAuth(req) {
   const client = getAdminPool();
   const principal = await resolvePrincipal(req, client);
   if (!principal) return { status: 401, error: "No session" };
+
+  if (!ADMIN_AUTH_DATABASE_URL && !ADMIN_AUTH_QUERY) {
+    return resolveUserByAppSchema(client, principal);
+  }
 
   const sql = ADMIN_AUTH_QUERY || DEFAULT_ADMIN_AUTH_QUERY;
   const permissionMatch = await client.query(sql, [principal.id, ADMIN_PERMISSION_KEY]);
