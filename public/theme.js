@@ -12,12 +12,24 @@
     }
   }
 
+  function getAuthHeader() {
+    const token = localStorage.getItem("token");
+    if (!token) return {};
+    return { "Authorization": "Bearer " + token };
+  }
+
   async function persistTheme(theme) {
     localStorage.setItem(THEME_KEY, theme);
+    const authHeader = getAuthHeader();
+    if (!authHeader.Authorization) return;
+
     try {
       await fetch("/api/theme", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader
+        },
         body: JSON.stringify({ theme })
       });
     } catch {
@@ -31,8 +43,16 @@
       applyTheme(localTheme);
     }
 
+    const authHeader = getAuthHeader();
+    if (!authHeader.Authorization) {
+      if (!localTheme) applyTheme("light");
+      return;
+    }
+
     try {
-      const response = await fetch("/api/theme");
+      const response = await fetch("/api/theme", {
+        headers: authHeader
+      });
       if (!response.ok) return;
       const data = await response.json();
       const userTheme = (data && data.theme) === "dark" ? "dark" : "light";
