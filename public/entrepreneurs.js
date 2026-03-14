@@ -5,6 +5,7 @@ function $(id) { return document.getElementById(id); }
 
 function api(path, opts = {}) {
   return fetch(path, {
+    credentials: "include",
     ...opts,
     headers: {
       "Content-Type": "application/json",

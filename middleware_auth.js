@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const { pool } = require("./db_pg");
 
+const AUTH_COOKIE_NAME = String(process.env.AUTH_COOKIE_NAME || "portal_auth").trim();
+
 const JWT_SECRET = process.env.JWT_SECRET || "7xK9!mP2#vQ8@zL4$rT1%wN6&bH3*eF9";
 if (JWT_SECRET === "CHANGE_ME_SUPER_SECRET" && process.env.ALLOW_INSECURE_JWT !== "true") {
   throw new Error("JWT_SECRET must be set (or explicitly set ALLOW_INSECURE_JWT=true for local dev only)");
@@ -8,7 +10,11 @@ if (JWT_SECRET === "CHANGE_ME_SUPER_SECRET" && process.env.ALLOW_INSECURE_JWT !=
 
 function authRequired(req, res, next) {
   const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  const headerToken = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  const cookieHeader = String(req.headers.cookie || "");
+  const cookieMatch = cookieHeader.match(new RegExp(`(?:^|;\\s*)${AUTH_COOKIE_NAME}=([^;]+)`));
+  const cookieToken = cookieMatch?.[1] ? decodeURIComponent(cookieMatch[1]) : "";
+  const token = headerToken || cookieToken;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
