@@ -1,12 +1,54 @@
-const token = localStorage.getItem("token");
-if (!token) window.location.href = "/login.html";
+let token = localStorage.getItem("token");
+
+function sanitizeAdminUrl() {
+  const url = new URL(window.location.href);
+  const hadSsoToken = url.searchParams.has("ssoToken");
+  const hadSessionToken = url.searchParams.has("session");
+  const hadToken = url.searchParams.has("token");
+  if (!hadSsoToken && !hadSessionToken && !hadToken) return;
+
+  url.searchParams.delete("ssoToken");
+  url.searchParams.delete("session");
+  url.searchParams.delete("token");
+  url.searchParams.delete("user");
+  history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+}
+
+async function trySsoIntake() {
+  const params = new URLSearchParams(window.location.search);
+  const ssoToken = String(params.get("token") || params.get("ssoToken") || params.get("session") || "").trim();
+  if (!ssoToken) return false;
+
+  try {
+    const response = await fetch("/api/auth/sso-exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: ssoToken })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data?.token) {
+      localStorage.removeItem("token");
+      window.location.href = "/login.html";
+      return false;
+    }
+
+    localStorage.setItem("token", data.token);
+    token = data.token;
+    sanitizeAdminUrl();
+    return true;
+  } catch {
+    localStorage.removeItem("token");
+    window.location.href = "/login.html";
+    return false;
+  }
+}
 
 function api(path, opts = {}) {
   return fetch(path, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer " + token,
+      ...(token ? { "Authorization": "Bearer " + token } : {}),
       ...(opts.headers || {})
     }
   });
@@ -1094,6 +1136,12 @@ $("saveUserBtn")?.addEventListener("click", async () => {
 // ---------------- Init ----------------
 (async function init() {
   try {
+    await trySsoIntake();
+    if (!token) {
+      window.location.href = "/login.html";
+      return;
+    }
+
     bindTabs();
     bindSettingsMenu();
     bindPasswordModal();
