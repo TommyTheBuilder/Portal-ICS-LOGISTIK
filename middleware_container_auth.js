@@ -1,9 +1,11 @@
+const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 
 const ADMIN_PERMISSION_KEY = String(process.env.ADMIN_PERMISSION_KEY || "integration.container_login").trim();
 const ADMIN_AUTH_DATABASE_URL = String(process.env.ADMIN_AUTH_DATABASE_URL || "").trim();
 const ADMIN_AUTH_QUERY = String(process.env.ADMIN_AUTH_QUERY || "").trim();
 const SESSION_COOKIE_NAME = String(process.env.ADMIN_SESSION_COOKIE_NAME || "connect.sid").trim();
+const JWT_SECRET = process.env.JWT_SECRET || "7xK9!mP2#vQ8@zL4$rT1%wN6&bH3*eF9";
 
 const DEFAULT_ADMIN_AUTH_QUERY = `
 SELECT u.id AS user_id, u.username
@@ -117,31 +119,70 @@ function extractUserIdFromSession(sessionPayload) {
   return null;
 }
 
-async function resolveUserBySession(req) {
+function extractUserFromBearer(req) {
+  const header = String(req.headers.authorization || "");
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) return null;
+
+  try {
+    const claims = jwt.verify(token, JWT_SECRET);
+    const id = Number(claims?.id);
+    if (!Number.isInteger(id) || id <= 0) return null;
+    return {
+      id,
+      username: claims?.username ? String(claims.username) : "",
+      role: claims?.role ? String(claims.role) : ""
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function resolvePrincipal(req, client) {
   const cookies = parseCookieHeader(req.headers.cookie || "");
   const rawCookie = cookies[SESSION_COOKIE_NAME];
   const sid = normalizeSessionId(rawCookie);
-  if (!sid) return { status: 401, error: "No session" };
 
+  if (sid) {
+    const sessionPayload = await loadSessionPayloadBySid(client, sid);
+    const sessionUserId = extractUserIdFromSession(sessionPayload);
+    if (sessionUserId) {
+      return {
+        source: "session",
+        id: sessionUserId,
+        username: "",
+        role: ""
+      };
+    }
+  }
+
+  const bearerUser = extractUserFromBearer(req);
+  if (bearerUser) {
+    return { source: "bearer", ...bearerUser };
+  }
+
+  return null;
+}
+
+async function resolveUserByAuth(req) {
   const client = getAdminPool();
-  const sessionPayload = await loadSessionPayloadBySid(client, sid);
-  if (!sessionPayload) return { status: 401, error: "No session" };
-
-  const userId = extractUserIdFromSession(sessionPayload);
-  if (!userId) return { status: 401, error: "No session" };
+  const principal = await resolvePrincipal(req, client);
+  if (!principal) return { status: 401, error: "No session" };
 
   const sql = ADMIN_AUTH_QUERY || DEFAULT_ADMIN_AUTH_QUERY;
-  const permissionMatch = await client.query(sql, [userId, ADMIN_PERMISSION_KEY]);
+  const permissionMatch = await client.query(sql, [principal.id, ADMIN_PERMISSION_KEY]);
 
   if (!permissionMatch.rowCount) {
     return { status: 403, error: "Missing permission" };
   }
 
   const row = permissionMatch.rows[0] || {};
-  const resolvedUserId = Number(row.user_id || row.id || userId);
-  let username = row.username ? String(row.username) : "";
+  const resolvedUserId = Number(row.user_id || row.id || principal.id);
 
-  if (!username) {
+  let username = row.username ? String(row.username) : principal.username;
+  let role = row.role ? String(row.role) : principal.role;
+
+  if (!username || !role) {
     const userLookup = await client.query(
       `SELECT id, username, role FROM users WHERE id = $1 LIMIT 1`,
       [resolvedUserId]
@@ -149,20 +190,12 @@ async function resolveUserBySession(req) {
     if (!userLookup.rowCount) {
       return { status: 401, error: "No session" };
     }
-    username = String(userLookup.rows[0].username || "");
+    if (!username) username = String(userLookup.rows[0].username || "");
+    if (!role) role = String(userLookup.rows[0].role || "");
   }
 
   if (!username) {
     return { status: 401, error: "No session" };
-  }
-
-  let role = row.role ? String(row.role) : "";
-  if (!role) {
-    const roleLookup = await client.query(
-      `SELECT role FROM users WHERE id = $1 LIMIT 1`,
-      [resolvedUserId]
-    );
-    role = roleLookup.rowCount ? String(roleLookup.rows[0].role || "") : "";
   }
 
   return {
@@ -171,13 +204,14 @@ async function resolveUserBySession(req) {
       id: resolvedUserId,
       username,
       role,
-      permission: ADMIN_PERMISSION_KEY
+      permission: ADMIN_PERMISSION_KEY,
+      auth_source: principal.source
     }
   };
 }
 
 function containerPermissionRequired(req, res, next) {
-  resolveUserBySession(req)
+  resolveUserByAuth(req)
     .then((result) => {
       if (result.status === 401) {
         return res.status(401).json({ error: "Not authenticated" });
