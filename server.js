@@ -24,6 +24,11 @@ const SHARED_AUTH_SECRET = String(process.env.SHARED_AUTH_SECRET || "13215489156
 const SSO_MAX_TOKEN_AGE_SECONDS = Number(process.env.SSO_MAX_TOKEN_AGE_SECONDS || 300);
 const CONTAINER_APP_URL = String(process.env.CONTAINER_APP_URL || "https://container.paletten-ms.de/admin.html").trim();
 const CONTAINER_PLANNING_APP_URL = String(process.env.CONTAINER_PLANNING_APP_URL || "https://containerplanung.paletten-ms.de").trim();
+const SESSION_COOKIE_NAME = String(process.env.SESSION_COOKIE_NAME || "session").trim() || "session";
+const SESSION_COOKIE_DOMAIN = String(process.env.SESSION_COOKIE_DOMAIN || ".paletten-ms.de").trim() || ".paletten-ms.de";
+const SESSION_COOKIE_SAME_SITE = ["strict", "lax", "none"].includes(String(process.env.SESSION_COOKIE_SAME_SITE || "lax").toLowerCase())
+  ? String(process.env.SESSION_COOKIE_SAME_SITE || "lax").toLowerCase()
+  : "lax";
 
 function getAllowedOrigins() {
   if (CORS_ORIGIN === "*") return "*";
@@ -657,13 +662,27 @@ app.get("/api/sso/container-session", authRequired, async (req, res) => {
   const payload = {
     user: req.user.username,
     roles,
-    exp: Math.floor(Date.now() / 1000) + 300
+    exp: Math.floor(Date.now() / 1000) + SSO_MAX_TOKEN_AGE_SECONDS
   };
 
   const session = buildContainerSessionToken(payload);
-  const separator = CONTAINER_APP_URL.includes("?") ? "&" : "?";
-  const appUrl = `${CONTAINER_APP_URL}${separator}token=${encodeURIComponent(session)}&user=${encodeURIComponent(req.user.username)}`;
-  return res.json({ session, token: session, user: req.user.username, url: appUrl, exp: payload.exp });
+  res.cookie(SESSION_COOKIE_NAME, session, {
+    domain: SESSION_COOKIE_DOMAIN,
+    path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: SESSION_COOKIE_SAME_SITE,
+    maxAge: SSO_MAX_TOKEN_AGE_SECONDS * 1000
+  });
+
+  return res.json({
+    ok: true,
+    user: req.user.username,
+    url: CONTAINER_APP_URL,
+    exp: payload.exp,
+    cookieName: SESSION_COOKIE_NAME,
+    maxAge: SSO_MAX_TOKEN_AGE_SECONDS
+  });
 });
 
 
