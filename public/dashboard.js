@@ -4,16 +4,19 @@ function sanitizeDashboardUrl() {
   const url = new URL(window.location.href);
   const hadSsoToken = url.searchParams.has("ssoToken");
   const hadSessionToken = url.searchParams.has("session");
-  if (!hadSsoToken && !hadSessionToken) return;
+  const hadToken = url.searchParams.has("token");
+  if (!hadSsoToken && !hadSessionToken && !hadToken) return;
 
   url.searchParams.delete("ssoToken");
   url.searchParams.delete("session");
+  url.searchParams.delete("token");
+  url.searchParams.delete("user");
   history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
 }
 
 async function trySsoIntake() {
   const params = new URLSearchParams(window.location.search);
-  const ssoToken = String(params.get("ssoToken") || params.get("session") || "").trim();
+  const ssoToken = String(params.get("token") || params.get("ssoToken") || params.get("session") || "").trim();
   if (!ssoToken) return false;
 
   try {

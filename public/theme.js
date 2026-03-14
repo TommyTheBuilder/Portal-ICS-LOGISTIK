@@ -35,9 +35,9 @@
       const response = await fetch("/api/theme");
       if (!response.ok) return;
       const data = await response.json();
-      const ipTheme = (data && data.theme) === "dark" ? "dark" : "light";
-      applyTheme(ipTheme);
-      localStorage.setItem(THEME_KEY, ipTheme);
+      const userTheme = (data && data.theme) === "dark" ? "dark" : "light";
+      applyTheme(userTheme);
+      localStorage.setItem(THEME_KEY, userTheme);
     } catch {
       if (!localTheme) applyTheme("light");
     }

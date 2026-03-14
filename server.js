@@ -661,8 +661,9 @@ app.get("/api/sso/container-session", authRequired, async (req, res) => {
   };
 
   const session = buildContainerSessionToken(payload);
-  const appUrl = `${CONTAINER_APP_URL}?session=${encodeURIComponent(session)}`;
-  return res.json({ session, url: appUrl, exp: payload.exp });
+  const separator = CONTAINER_APP_URL.includes("?") ? "&" : "?";
+  const appUrl = `${CONTAINER_APP_URL}${separator}token=${encodeURIComponent(session)}&user=${encodeURIComponent(req.user.username)}`;
+  return res.json({ session, token: session, user: req.user.username, url: appUrl, exp: payload.exp });
 });
 
 
@@ -685,16 +686,14 @@ app.get("/api/sso/container-planning-session", authRequired, async (req, res) =>
   const payload = {
     username: req.user.username,
     user: req.user.username,
-    email: req.user.email || undefined,
-    role: req.user.role || undefined,
     roles,
     exp: Math.floor(Date.now() / 1000) + 300
   };
 
   const ssoToken = buildSharedAuthJwt(payload);
   const separator = CONTAINER_PLANNING_APP_URL.includes("?") ? "&" : "?";
-  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}ssoToken=${encodeURIComponent(ssoToken)}&token=${encodeURIComponent(ssoToken)}`;
-  return res.json({ session: ssoToken, ssoToken, token: ssoToken, url: redirectUrl, exp: payload.exp });
+  const redirectUrl = `${CONTAINER_PLANNING_APP_URL}${separator}token=${encodeURIComponent(ssoToken)}&user=${encodeURIComponent(req.user.username)}`;
+  return res.json({ session: ssoToken, ssoToken, token: ssoToken, user: req.user.username, url: redirectUrl, exp: payload.exp });
 });
 
 app.get("/api/notifications", authRequired, async (req, res) => {
@@ -2442,8 +2441,8 @@ app.get("/api/export/xlsx", authRequired, requirePermission("bookings.export"), 
 
 async function ensureRuntimeTables() {
   await q(`
-    CREATE TABLE IF NOT EXISTS ip_preferences (
-      ip_address TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       theme TEXT NOT NULL DEFAULT 'light' CHECK (theme IN ('light','dark')),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
