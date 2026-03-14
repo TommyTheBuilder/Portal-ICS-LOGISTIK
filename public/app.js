@@ -381,7 +381,7 @@ function applyPermsToUI() {
     $("adminBtn").style.display = PERMS?.admin?.full_access ? "" : "none";
   }
   if ($("containerRegistrationBtn")) {
-    $("containerRegistrationBtn").style.display = PERMS?.integrations?.container_registration ? "" : "none";
+    $("containerRegistrationBtn").style.display = (PERMS?.integrations?.container_login || PERMS?.integrations?.container_registration) ? "" : "none";
   }
 
   if ($("internalTransferCard")) {

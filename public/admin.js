@@ -819,7 +819,10 @@ function getPermCheckboxes() {
       view_department: $("p_users_view_department")?.checked || false
     },
     roles: { manage: $("p_roles_manage")?.checked || false },
-    integrations: { container_registration: $("p_integrations_container_registration")?.checked || false },
+    integrations: {
+      container_login: $("p_integrations_container_registration")?.checked || false,
+      container_registration: $("p_integrations_container_registration")?.checked || false
+    },
     admin: { full_access: $("p_admin_full_access")?.checked || false }
   };
 }
@@ -866,7 +869,7 @@ function setPermCheckboxes(perms) {
   }
   $("p_roles_manage").checked = !!p?.roles?.manage;
   if ($("p_integrations_container_registration")) {
-    $("p_integrations_container_registration").checked = !!p?.integrations?.container_registration;
+    $("p_integrations_container_registration").checked = !!(p?.integrations?.container_login || p?.integrations?.container_registration);
   }
   if ($("p_admin_full_access")) {
     $("p_admin_full_access").checked = !!p?.admin?.full_access;
@@ -906,7 +909,7 @@ $("createRoleBtn")?.addEventListener("click", async () => {
       masterdata: { manage:false, entrepreneurs_manage:false },
       users: { manage:false, view_department:false },
       roles: { manage:false },
-      integrations: { container_registration:false },
+      integrations: { container_login:false, container_registration:false },
       admin: { full_access:false }
     }})
   });
