@@ -56,7 +56,7 @@
       <h3 style="margin-top:0;">Neue Rolle anlegen</h3>
       <div class="row role-create-row">
         <div>
-          <label>Rollenname</label>
+          <label for="roleName">Rollenname</label>
           <input id="roleName" placeholder="z.B. Dispo">
         </div>
         <div>
@@ -74,7 +74,7 @@
 
       <div class="rights-controls">
         <div class="rights-role-field">
-          <label>Rolle auswählen</label>
+          <label for="roleSelect">Rolle auswählen</label>
           <select id="roleSelect"></select>
         </div>
         <div class="rights-action">
@@ -162,7 +162,7 @@
         <h3 style="margin-top:0;">Standorte</h3>
         <div class="row">
           <div>
-            <label>Neuer Standort</label>
+            <label for="locName">Neuer Standort</label>
             <input id="locName" placeholder="z.B. Lager Wien">
           </div>
           <button class="primary" id="createLocBtn">Anlegen</button>
@@ -181,19 +181,19 @@
         <h3 style="margin-top:0;">Frachtführer</h3>
         <div class="row">
           <div>
-            <label>Frachtführername</label>
+            <label for="entName">Frachtführername</label>
             <input id="entName" placeholder="z.B. Spedition Müller">
           </div>
           <div>
-            <label>Straße</label>
+            <label for="entStreet">Straße</label>
             <input id="entStreet" placeholder="z.B. Musterstraße 12">
           </div>
           <div>
-            <label>PLZ</label>
+            <label for="entPostal">PLZ</label>
             <input id="entPostal" placeholder="z.B. 1010">
           </div>
           <div>
-            <label>Ort</label>
+            <label for="entCity">Ort</label>
             <input id="entCity" placeholder="z.B. Wien">
           </div>
           <div>
@@ -218,7 +218,7 @@
         <h3 style="margin-top:0;">Abteilungen</h3>
         <div class="row">
           <div>
-            <label>Neue Abteilung</label>
+            <label for="depName">Neue Abteilung</label>
             <input id="depName" placeholder="z.B. Wareneingang">
           </div>
           <button class="primary" id="createDepBtn">Anlegen</button>
@@ -241,24 +241,24 @@
       <h3 style="margin-top:0;">Benutzer anlegen</h3>
       <div class="row">
         <div>
-          <label>Benutzername</label>
+          <label for="uName">Benutzername</label>
           <input id="uName" placeholder="z.B. max">
         </div>
         <div>
-          <label>Passwort</label>
+          <label for="uPass">Passwort</label>
           <input id="uPass" placeholder="Passwort" type="password" autocomplete="new-password">
         </div>
         <div>
-          <label>Standort</label>
+          <label for="uLocation">Standort</label>
           <select id="uLocation"></select>
         </div>
         <div>
-          <label>Business-Rolle (Rechte)</label>
+          <label for="uRoleId">Business-Rolle (Rechte)</label>
           <select id="uRoleId"></select>
           <small class="muted">Pflichtfeld für Berechtigungen</small>
         </div>
         <div>
-          <label>Fixe Abteilung</label>
+          <label for="uFixedDepartment">Fixe Abteilung</label>
           <select id="uFixedDepartment"></select>
           <small class="muted">Optional (für Abteilungs-Benachrichtigungen)</small>
         </div>
@@ -273,19 +273,19 @@
       <h3 style="margin-top:0;">Benutzer bearbeiten</h3>
       <div class="row">
         <div>
-          <label>Benutzer</label>
+          <label for="editUserSelect">Benutzer</label>
           <select id="editUserSelect"></select>
         </div>
         <div>
-          <label>Standort</label>
+          <label for="editUserLocation">Standort</label>
           <select id="editUserLocation"></select>
         </div>
         <div>
-          <label>Business-Rolle (Rechte)</label>
+          <label for="editUserRoleId">Business-Rolle (Rechte)</label>
           <select id="editUserRoleId"></select>
         </div>
         <div>
-          <label>Fixe Abteilung</label>
+          <label for="editUserDepartment">Fixe Abteilung</label>
           <select id="editUserDepartment"></select>
         </div>
         <div>
@@ -302,15 +302,15 @@
       </div>
       <div class="row">
         <div>
-          <label>Filter Benutzername</label>
+          <label for="usersFilterUsername">Filter Benutzername</label>
           <input id="usersFilterUsername" placeholder="z.B. max">
         </div>
         <div>
-          <label>Filter Abteilung</label>
+          <label for="usersFilterDepartment">Filter Abteilung</label>
           <select id="usersFilterDepartment"></select>
         </div>
         <div>
-          <label>Filter Standort</label>
+          <label for="usersFilterLocation">Filter Standort</label>
           <select id="usersFilterLocation"></select>
         </div>
       </div>
@@ -337,31 +337,31 @@
       <h3 style="margin-top:0;">Buchungshistorie</h3>
       <div class="row">
         <div>
-          <label>Standort</label>
+          <label for="adminHistLocation">Standort</label>
           <select id="adminHistLocation"></select>
         </div>
         <div>
-          <label>Abteilung</label>
+          <label for="adminHistDepartment">Abteilung</label>
           <select id="adminHistDepartment"></select>
         </div>
         <div>
-          <label>Von</label>
+          <label for="adminHistFrom">Von</label>
           <input id="adminHistFrom" type="date">
         </div>
         <div>
-          <label>Bis</label>
+          <label for="adminHistTo">Bis</label>
           <input id="adminHistTo" type="date">
         </div>
         <div>
-          <label>Frachtführer</label>
+          <label for="adminHistEntrepreneur">Frachtführer</label>
           <input id="adminHistEntrepreneur" placeholder="Name">
         </div>
         <div>
-          <label>Kennzeichen</label>
+          <label for="adminHistPlate">Kennzeichen</label>
           <input id="adminHistPlate" placeholder="z.B. W123AB">
         </div>
         <div>
-          <label>Belegnummer</label>
+          <label for="adminHistReceipt">Belegnummer</label>
           <input id="adminHistReceipt" placeholder="z.B. ICS...">
         </div>
       </div>
@@ -393,15 +393,15 @@
     <p class="muted" style="margin-top:0;">Verwenden Sie ein sicheres Passwort mit mindestens 8 Zeichen.</p>
     <div class="row" style="margin-top:8px;">
       <div>
-        <label>Aktuelles Passwort</label>
+        <label for="currentPassword">Aktuelles Passwort</label>
         <input id="currentPassword" type="password" autocomplete="new-password" placeholder="Aktuelles Passwort">
       </div>
       <div>
-        <label>Neues Passwort</label>
+        <label for="newPassword">Neues Passwort</label>
         <input id="newPassword" type="password" autocomplete="off" placeholder="Mindestens 8 Zeichen">
       </div>
       <div>
-        <label>Neues Passwort wiederholen</label>
+        <label for="confirmPassword">Neues Passwort wiederholen</label>
         <input id="confirmPassword" type="password" autocomplete="off" placeholder="Passwort bestätigen">
       </div>
     </div>
